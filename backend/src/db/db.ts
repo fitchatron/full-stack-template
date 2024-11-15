@@ -7,7 +7,7 @@ import postgres from "postgres";
 
 const client = postgres(process.env.DATABASE_URL ?? "");
 export const db = drizzle(client, {
-	schema,
-	logger: true,
-	casing: "snake_case",
+  schema,
+  logger: true,
+  casing: "snake_case",
 });

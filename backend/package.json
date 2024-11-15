@@ -1,35 +1,43 @@
 {
-	"name": "api",
-	"version": "1.0.0",
-	"description": "api service for full stack template. Uses Node, Hono and Drizzle to create a RESTful service.",
-	"main": "./src/main.js",
-	"type": "module",
-	"scripts": {
-		"start": "node dist/main.js",
-		"build": "tsc",
-		"dev": "tsx watch src/main.ts",
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"db:generate": "drizzle-kit generate",
-		"db:drop": "drizzle-kit drop",
-		"db:push": "drizzle-kit push",
-		"db:pull": "drizzle-kit introspect",
-		"db:studio": "drizzle-kit studio"
-	},
-	"author": "fitchatron",
-	"license": "ISC",
-	"devDependencies": {
-		"@types/cors": "^2.8.17",
-		"@types/express": "^5.0.0",
-		"@types/node": "^22.9.0",
-		"drizzle-kit": "^0.28.1",
-		"tsx": "^4.19.2",
-		"typescript": "^5.6.3"
-	},
-	"dependencies": {
-		"cors": "^2.8.5",
-		"dotenv": "^16.4.5",
-		"drizzle-orm": "^0.36.2",
-		"express": "^4.21.1",
-		"postgres": "^3.4.5"
-	}
+  "name": "api",
+  "version": "1.0.0",
+  "description": "api service for full stack template. Uses Node, Hono and Drizzle to create a RESTful service.",
+  "main": "./src/main.js",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/main.js",
+    "build": "tsc",
+    "dev": "tsx watch src/main.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint .",
+    "prettier-check": "npx prettier --check .",
+    "prettier-write": "npx prettier --write .",
+    "db:generate": "drizzle-kit generate",
+    "db:drop": "drizzle-kit drop",
+    "db:push": "drizzle-kit push",
+    "db:pull": "drizzle-kit introspect",
+    "db:studio": "drizzle-kit studio"
+  },
+  "author": "fitchatron",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.9.0",
+    "drizzle-kit": "^0.28.1",
+    "eslint": "^9.14.0",
+    "globals": "^15.12.0",
+    "prettier": "3.3.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.14.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.36.2",
+    "express": "^4.21.1",
+    "postgres": "^3.4.5"
+  }
 }

@@ -8,8 +8,8 @@ app.use(cors());
 
 // Define a route for the root path ('/')
 app.get("/", (req: Request, res: Response) => {
-	// Send a response to the client
-	res.send("Hello, TypeScript + Node.js + Express!");
+  // Send a response to the client
+  res.send("Hello, TypeScript + Node.js + Express!");
 });
 app.use("/users", users);
 app.use("/status", status);
