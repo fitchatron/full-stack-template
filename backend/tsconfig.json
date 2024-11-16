@@ -108,7 +108,10 @@
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
     "paths": {
       "@api/*": ["./src/api/*"],
-      "@db/*": ["./src/db/*"]
+      "@db/*": ["./src/db/*"],
+      "@models/*": ["./src/models/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@validators/*": ["./src/validators/*"]
     }
   }
 }
