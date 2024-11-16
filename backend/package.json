@@ -38,6 +38,7 @@
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.2",
     "express": "^4.21.1",
-    "postgres": "^3.4.5"
+    "postgres": "^3.4.5",
+    "zod": "^3.23.8"
   }
 }
