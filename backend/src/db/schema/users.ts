@@ -1,5 +1,7 @@
-import { timestamps, userMetadata } from "@db/columns.helpers";
+import { relations } from "drizzle-orm";
 import { pgTable, varchar, uuid, index, unique } from "drizzle-orm/pg-core";
+import { timestamps, userMetadata } from "@db/columns.helpers";
+import { userRoles } from "@db/schema/user-roles";
 
 export const users = pgTable(
   "users",
@@ -16,3 +18,10 @@ export const users = pgTable(
     index("nci_users_email").on(table.email),
   ]
 );
+
+//MARK: - RELATIONS
+export const usersRelations = relations(users, ({ many }) => {
+  return {
+    userRoles: many(userRoles),
+  };
+});
