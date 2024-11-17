@@ -17,3 +17,9 @@ export const addUserSchema = userSchema.pick({
   createdBy: true,
   modifiedBy: true,
 });
+
+export const updateUserSchema = z.object({
+  firstName: z.string().min(1).max(255).optional(),
+  lastName: z.string().min(1).max(255).optional(),
+  email: z.string().email().optional(),
+});

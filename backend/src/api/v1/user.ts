@@ -1,9 +1,10 @@
 import express, { Request, Response } from "express";
 import { db } from "@db/db";
 import { users } from "@db/schema";
-import { addUserSchema } from "@validators/user";
+import { addUserSchema, updateUserSchema } from "@validators/user";
 import { eventLogger } from "@utils/logger";
 import { type PaginatedResponse } from "@models/pagination";
+import { eq } from "drizzle-orm";
 
 const app = express();
 
@@ -50,14 +51,10 @@ app.get("/", async (req: Request, res: Response) => {
 
 app.post("/", async (req: Request, res: Response) => {
   try {
-    const body = req.body;
-    console.log("BODY", body);
-    const result = addUserSchema.safeParse(body);
+    const result = addUserSchema.safeParse(req.body);
     if (!result.success) {
       throw result.error;
     }
-    console.log("validation passed");
-
     const user = await db.insert(users).values(result.data).returning();
     res.status(201).send(user);
     return;
@@ -68,22 +65,100 @@ app.post("/", async (req: Request, res: Response) => {
   }
 });
 
-app.get("/:userId", (req: Request, res: Response) => {
-  const userId = req.params.userId;
-  res.send(`Get user by Id ${userId}`);
-  return;
+app.get("/:userId", async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId;
+
+    const user = await getUserById(userId);
+
+    if (!user) {
+      res.status(404).send({ message: "Unable to get user" });
+      return;
+    }
+    res.status(200).send(user);
+    return;
+  } catch (error) {
+    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+    logEvent();
+    res.status(500).send({ message: "Unable to get user" });
+  }
 });
 
-app.put("/:userId", (req: Request, res: Response) => {
-  const userId = req.params.userId;
-  res.send(`Update user by Id ${userId}`);
-  return;
+app.put("/:userId", async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId;
+    const currentValue = await getUserById(userId);
+    if (!currentValue) {
+      res.status(404).send({ message: "Unable to get user" });
+      return;
+    }
+
+    const result = updateUserSchema.safeParse(req.body);
+    if (!result.success) {
+      throw result.error;
+    }
+    const newValue = result.data;
+    const changes = new Set<string>();
+    Object.entries(newValue).forEach(([key, value]) => {
+      currentValue[
+        key as keyof {
+          firstName: string;
+          lastName: string;
+          email: string;
+        }
+      ] !== value && changes.add(key);
+    });
+
+    if (changes.size === 0) {
+      throw new Error("No Changes to user");
+    }
+    const payload: { [key: string]: any } = {
+      updatedAt: new Date(),
+      updatedBy: userId,
+    };
+    changes.forEach((changeKey) => {
+      payload[changeKey] =
+        newValue[
+          changeKey as keyof {
+            firstName: string;
+            lastName: string;
+            email: string;
+          }
+        ];
+    });
+    console.log("payload is", payload);
+
+    const updated = await db
+      .update(users)
+      .set(payload)
+      .where(eq(users.id, userId))
+      .returning();
+    res.status(200).send(updated);
+    return;
+  } catch (error) {
+    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+    logEvent();
+    res.status(500).send({ message: "Unable to update user" });
+  }
 });
 
-app.delete("/:userId", (req: Request, res: Response) => {
-  const userId = req.params.userId;
-  res.send(`Delete user by Id ${userId}`);
-  return;
+app.delete("/:userId", async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId;
+    const rows = await db.delete(users).where(eq(users.id, userId));
+    res.status(200).send({ success: true, rows: rows.count });
+    return;
+  } catch (error) {
+    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+    logEvent();
+    res.status(500).send({ message: "Unable to delete user" });
+  }
 });
+
+async function getUserById(id: string) {
+  return db.query.users.findFirst({
+    where: eq(users.id, id),
+  });
+}
 
 export default app;

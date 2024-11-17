@@ -4,7 +4,7 @@ import v1 from "@api/v1/index";
 
 const app = express();
 app.use(express.json());
-app.use(express.urlencoded());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 // Define a route for the root path ('/')
