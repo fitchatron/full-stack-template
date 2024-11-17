@@ -1,5 +1,5 @@
-import express, { Request, Response } from "express";
-import users from "@api/v1/user";
+import express from "express";
+import users from "@api/v1/users";
 import status from "@api/v1/status";
 
 const VERSION = "v1";
