@@ -1,6 +1,14 @@
 export type PaginatedResponse<T> = {
-  items: Array<T>;
+  items: T;
   metadata: PaginatedMetadata;
+  links: Link;
+};
+
+type Link = {
+  first: string | null;
+  last: string | null;
+  prev: string | null;
+  next: string | null;
 };
 
 type PaginatedMetadata = {

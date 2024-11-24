@@ -3,8 +3,8 @@ import { db } from "@db/db";
 import { users } from "@db/schema";
 import { addUserSchema, updateUserSchema } from "@validators/user";
 import { eventLogger } from "@utils/logger";
-import { type PaginatedResponse } from "@models/pagination";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
+import { withPagination } from "@db/utils";
 
 const app = express();
 
@@ -13,33 +13,15 @@ app.get("/", async (req: Request, res: Response) => {
     const page = parseInt(req.query.page?.toString() ?? "1");
     const limit = parseInt(req.query.limit?.toString() ?? "10");
 
-    const startIndex = (page - 1) * limit;
-    const total = await db.$count(users);
-    const pages = Math.ceil(total / limit);
-    const result = await db
-      .select()
-      .from(users)
-      .offset(startIndex)
-      .limit(limit);
+    const query = db.select().from(users);
 
-    const payload: PaginatedResponse<{
-      id: string;
-      firstName: string;
-      lastName: string;
-      email: string;
-      createdBy: string | null;
-      updatedBy: string | null;
-      createdAt: Date;
-      updatedAt: Date;
-    }> = {
-      items: result,
-      metadata: {
-        limit,
-        page,
-        pages,
-        total,
-      },
-    };
+    const payload = await withPagination(
+      query.$dynamic(),
+      asc(users.id),
+      page,
+      limit,
+      req,
+    );
     res.status(200).send(payload);
     return;
   } catch (error) {
