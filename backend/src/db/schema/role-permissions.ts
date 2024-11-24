@@ -1,4 +1,4 @@
-import { pgTable, primaryKey, serial } from "drizzle-orm/pg-core";
+import { pgTable, primaryKey, uuid } from "drizzle-orm/pg-core";
 import { timestamps, userMetadata } from "@db/columns.helpers";
 import { relations } from "drizzle-orm";
 import { roles } from "@db/schema/roles";
@@ -7,10 +7,10 @@ import { permissions } from "@db/schema/permissions";
 export const rolePermissions = pgTable(
   "role_permissions",
   {
-    roleId: serial()
+    roleId: uuid()
       .notNull()
       .references(() => roles.id),
-    permissionId: serial()
+    permissionId: uuid()
       .notNull()
       .references(() => permissions.id),
     ...timestamps,
@@ -21,7 +21,7 @@ export const rolePermissions = pgTable(
       name: "pk_role_permissions_role_id_permission_id",
       columns: [table.roleId, table.permissionId],
     }),
-  ]
+  ],
 );
 
 // MARK: -  RELATIONS
@@ -36,5 +36,5 @@ export const rolePermissionsRelations = relations(
       fields: [rolePermissions.permissionId],
       references: [permissions.id],
     }),
-  })
+  }),
 );
