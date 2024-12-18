@@ -4,6 +4,7 @@ import { eventLogger } from "@utils/logger";
 import { asc, eq } from "drizzle-orm";
 import { roles } from "@db/schema/roles";
 import { withPagination } from "@db/utils";
+import { addRoleSchema, updateRoleSchema } from "@validators/user";
 
 const app = express();
 
@@ -31,11 +32,33 @@ app.get("/", async (req: Request, res: Response) => {
   }
 });
 
-app.post("/", async (req: Request, res: Response) => {});
+app.post("/", async (req: Request, res: Response) => {
+  try {
+    const result = addRoleSchema.safeParse(req.body);
+    if (!result.success) {
+      throw result.error;
+    }
+    const role = await db.insert(roles).values(result.data).returning();
+    res.status(201).send(role);
+    return;
+  } catch (error) {
+    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+    logEvent();
+    res.status(500).send({ message: "Unable to create role" });
+  }
+});
 
 app.get("/:roleId", async (req: Request, res: Response) => {
   try {
     const roleId = req.params.roleId;
+
+    const role = await getRoleById(roleId);
+
+    if (!role) {
+      res.status(404).send({ message: "Unable to get role" });
+      return;
+    }
+    res.status(200).send(role);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -47,6 +70,51 @@ app.get("/:roleId", async (req: Request, res: Response) => {
 app.put("/:roleId", async (req: Request, res: Response) => {
   try {
     const roleId = req.params.roleId;
+    const currentValue = await getRoleById(roleId);
+    if (!currentValue) {
+      res.status(404).send({ message: "Unable to get role" });
+      return;
+    }
+
+    const result = updateRoleSchema.safeParse(req.body);
+    if (!result.success) {
+      throw result.error;
+    }
+    const newValue = result.data;
+    const changes = new Set<string>();
+    Object.entries(newValue).forEach(([key, value]) => {
+      currentValue[
+        key as keyof {
+          name: string;
+          description: string;
+        }
+      ] !== value && changes.add(key);
+    });
+
+    if (changes.size === 0) {
+      throw new Error("No Changes to role");
+    }
+    const payload: { [key: string]: any } = {
+      updatedAt: new Date(),
+      updatedBy: roleId,
+    };
+    changes.forEach((changeKey) => {
+      payload[changeKey] =
+        newValue[
+          changeKey as keyof {
+            name: string;
+            description: string;
+          }
+        ];
+    });
+    console.log("payload is", payload);
+
+    const updated = await db
+      .update(roles)
+      .set(payload)
+      .where(eq(roles.id, roleId))
+      .returning();
+    res.status(200).send(updated);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -67,5 +135,11 @@ app.delete("/:roleId", async (req: Request, res: Response) => {
     res.status(500).send({ message: "Unable to delete role" });
   }
 });
+
+async function getRoleById(id: string) {
+  return db.query.roles.findFirst({
+    where: eq(roles.id, id),
+  });
+}
 
 export default app;
