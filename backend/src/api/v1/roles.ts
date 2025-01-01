@@ -1,10 +1,11 @@
 import express, { Request, Response } from "express";
 import { db } from "@db/db";
 import { eventLogger } from "@utils/logger";
-import { asc, eq } from "drizzle-orm";
-import { roles } from "@db/schema";
+import { and, asc, eq } from "drizzle-orm";
+import { roles, rolePermissions } from "@db/schema";
 import { withPagination } from "@db/utils";
 import { addRoleSchema, updateRoleSchema } from "@validators/role";
+import { addRolePermissionSchema } from "@validators/role-permission";
 
 const app = express();
 
@@ -138,6 +139,52 @@ app.delete("/:roleId", async (req: Request, res: Response) => {
     res.status(500).send({ message: "Unable to delete role" });
   }
 });
+
+app.post("/:roleId/permissions", async (req: Request, res: Response) => {
+  try {
+    const roleId = req.params.roleId;
+    const result = addRolePermissionSchema.safeParse({ ...req.body, roleId });
+
+    if (!result.success) {
+      throw result.error;
+    }
+    const rolePermission = await db
+      .insert(rolePermissions)
+      .values(result.data)
+      .returning();
+    res.status(201).send(rolePermission);
+    return;
+  } catch (error) {
+    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+    logEvent();
+    res.status(500).send({ message: "Unable to create role permission" });
+  }
+});
+
+app.delete(
+  "/:roleId/permissions/:permissionId",
+  async (req: Request, res: Response) => {
+    try {
+      const roleId = req.params.roleId;
+      const permissionId = req.params.permissionId;
+      const rows = await db
+        .delete(rolePermissions)
+        .where(
+          and(
+            eq(rolePermissions.roleId, roleId),
+            eq(rolePermissions.permissionId, permissionId),
+          ),
+        );
+
+      res.status(200).send({ success: true, rows: rows.count });
+      return;
+    } catch (error) {
+      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+      logEvent();
+      res.status(500).send({ message: "Unable to delete role permission" });
+    }
+  },
+);
 
 async function getRoleById(id: string) {
   return db.query.roles.findFirst({
