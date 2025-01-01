@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import { db } from "@db/db";
 import { eventLogger } from "@utils/logger";
 import { asc, eq } from "drizzle-orm";
-import { roles } from "@db/schema/roles";
+import { roles } from "@db/schema";
 import { withPagination } from "@db/utils";
 import { addRoleSchema, updateRoleSchema } from "@validators/role";
 
@@ -96,7 +96,7 @@ app.put("/:roleId", async (req: Request, res: Response) => {
     }
     const payload: { [key: string]: any } = {
       updatedAt: new Date(),
-      updatedBy: roleId,
+      // updatedBy: roleId,
     };
     changes.forEach((changeKey) => {
       payload[changeKey] =
@@ -107,7 +107,6 @@ app.put("/:roleId", async (req: Request, res: Response) => {
           }
         ];
     });
-    console.log("payload is", payload);
 
     const updated = await db
       .update(roles)

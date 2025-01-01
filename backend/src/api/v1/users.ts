@@ -96,7 +96,7 @@ app.put("/:userId", async (req: Request, res: Response) => {
     }
     const payload: { [key: string]: any } = {
       updatedAt: new Date(),
-      updatedBy: userId,
+      // updatedBy: userId,
     };
     changes.forEach((changeKey) => {
       payload[changeKey] =
@@ -108,8 +108,6 @@ app.put("/:userId", async (req: Request, res: Response) => {
           }
         ];
     });
-    console.log("payload is", payload);
-
     const updated = await db
       .update(users)
       .set(payload)
