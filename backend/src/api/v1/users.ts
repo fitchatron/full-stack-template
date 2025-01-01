@@ -1,10 +1,11 @@
 import express, { Request, Response } from "express";
 import { db } from "@db/db";
-import { users } from "@db/schema";
+import { userRoles, users } from "@db/schema";
 import { addUserSchema, updateUserSchema } from "@validators/user";
 import { eventLogger } from "@utils/logger";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { withPagination } from "@db/utils";
+import { addUserRoleSchema } from "@validators/user-roles";
 
 const app = express();
 
@@ -136,6 +137,41 @@ app.delete("/:userId", async (req: Request, res: Response) => {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
     logEvent();
     res.status(500).send({ message: "Unable to delete user" });
+  }
+});
+
+app.post("/:userId/roles", async (req: Request, res: Response) => {
+  try {
+    const roleId = req.params.roleId;
+    const result = addUserRoleSchema.safeParse({ ...req.body, roleId });
+
+    if (!result.success) {
+      throw result.error;
+    }
+    const userRole = await db.insert(userRoles).values(result.data).returning();
+    res.status(201).send(userRole);
+    return;
+  } catch (error) {
+    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+    logEvent();
+    res.status(500).send({ message: "Unable to create user role" });
+  }
+});
+
+app.delete("/:userId/roles/:roleId", async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId;
+    const roleId = req.params.roleId;
+    const rows = await db
+      .delete(userRoles)
+      .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)));
+
+    res.status(200).send({ success: true, rows: rows.count });
+    return;
+  } catch (error) {
+    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+    logEvent();
+    res.status(500).send({ message: "Unable to delete user role" });
   }
 });
 
