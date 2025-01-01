@@ -4,7 +4,7 @@ import { eventLogger } from "@utils/logger";
 import { asc, eq } from "drizzle-orm";
 import { roles } from "@db/schema/roles";
 import { withPagination } from "@db/utils";
-import { addRoleSchema, updateRoleSchema } from "@validators/user";
+import { addRoleSchema, updateRoleSchema } from "@validators/role";
 
 const app = express();
 
