@@ -9,8 +9,8 @@ const START_PAGE = 1;
 export async function withPagination<T extends PgSelect>(
   qb: T,
   orderByColumn: PgColumn | SQL | SQL.Aliased | undefined,
-  page: number = 1,
-  limit: number = 10,
+  page = 1,
+  limit = 10,
   req: Request,
 ) {
   const total = await db.$count(qb);

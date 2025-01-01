@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  primaryKey,
-  serial,
-  uuid,
-  varchar,
-} from "drizzle-orm/pg-core";
+import { pgTable, primaryKey, uuid } from "drizzle-orm/pg-core";
 import { timestamps, userMetadata } from "@db/columns.helpers";
 import { roles } from "@db/schema/roles";
 import { users } from "@db/schema/users";

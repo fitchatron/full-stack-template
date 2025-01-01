@@ -41,8 +41,11 @@ app.post("/", async (req: Request, res: Response) => {
     if (!result.success) {
       throw result.error;
     }
-    const role = await db.insert(permissions).values(result.data).returning();
-    res.status(201).send(role);
+    const permission = await db
+      .insert(permissions)
+      .values(result.data)
+      .returning();
+    res.status(201).send(permission);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -54,7 +57,12 @@ app.post("/", async (req: Request, res: Response) => {
 app.get("/:permissionId", async (req: Request, res: Response) => {
   try {
     const permissionId = req.params.permissionId;
-    return;
+    const permission = getPermissionById(permissionId);
+    if (!permission) {
+      res.status(404).send({ message: "Unable to get permission" });
+      return;
+    }
+    res.status(200).send(permission);
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
     logEvent();
@@ -67,7 +75,7 @@ app.put("/:permissionId", async (req: Request, res: Response) => {
     const permissionId = req.params.permissionId;
     const currentValue = await getPermissionById(permissionId);
     if (!currentValue) {
-      res.status(404).send({ message: "Unable to get role" });
+      res.status(404).send({ message: "Unable to get permission" });
       return;
     }
 
@@ -78,18 +86,22 @@ app.put("/:permissionId", async (req: Request, res: Response) => {
     const newValue = result.data;
     const changes = new Set<string>();
     Object.entries(newValue).forEach(([key, value]) => {
-      currentValue[
-        key as keyof {
-          name: string;
-          description: string;
-        }
-      ] !== value && changes.add(key);
+      if (
+        currentValue[
+          key as keyof {
+            name: string;
+            description: string;
+          }
+        ] !== value
+      ) {
+        changes.add(key);
+      }
     });
 
     if (changes.size === 0) {
-      throw new Error("No Changes to role");
+      throw new Error("No Changes to permission");
     }
-    const payload: { [key: string]: any } = {
+    const payload: Record<string, number | string | Date | boolean> = {
       updatedAt: new Date(),
       // updatedBy: permissionId,
     };
@@ -100,7 +112,7 @@ app.put("/:permissionId", async (req: Request, res: Response) => {
             name: string;
             description: string;
           }
-        ];
+        ] ?? "";
     });
 
     const updated = await db
@@ -134,7 +146,7 @@ app.delete("/:permissionId", async (req: Request, res: Response) => {
 });
 
 async function getPermissionById(id: string) {
-  return db.query.roles.findFirst({
+  return db.query.permissions.findFirst({
     where: eq(permissions.id, id),
   });
 }

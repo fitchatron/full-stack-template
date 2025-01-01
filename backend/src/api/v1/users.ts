@@ -82,19 +82,23 @@ app.put("/:userId", async (req: Request, res: Response) => {
     const newValue = result.data;
     const changes = new Set<string>();
     Object.entries(newValue).forEach(([key, value]) => {
-      currentValue[
-        key as keyof {
-          firstName: string;
-          lastName: string;
-          email: string;
-        }
-      ] !== value && changes.add(key);
+      if (
+        currentValue[
+          key as keyof {
+            firstName: string;
+            lastName: string;
+            email: string;
+          }
+        ] !== value
+      ) {
+        changes.add(key);
+      }
     });
 
     if (changes.size === 0) {
       throw new Error("No Changes to user");
     }
-    const payload: { [key: string]: any } = {
+    const payload: Record<string, number | string | Date | boolean> = {
       updatedAt: new Date(),
       // updatedBy: userId,
     };
@@ -106,7 +110,7 @@ app.put("/:userId", async (req: Request, res: Response) => {
             lastName: string;
             email: string;
           }
-        ];
+        ] ?? "";
     });
     const updated = await db
       .update(users)
