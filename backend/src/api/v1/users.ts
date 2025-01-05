@@ -1,63 +1,47 @@
 import express, { Request, Response } from "express";
 import { db } from "@db/db";
-import { userRoles, users } from "@db/schema";
-import { addUserSchema, updateUserSchema } from "@validators/user";
+import { userRoles } from "@db/schema";
 import { eventLogger } from "@utils/logger";
-import { and, asc, eq } from "drizzle-orm";
-import { withPagination } from "@db/utils";
+import { and, eq } from "drizzle-orm";
 import { addUserRoleSchema } from "@validators/user-roles";
+import { userService } from "@services/user-service";
 
 const app = express();
+const service = userService();
+
 app.get("/", async (req: Request, res: Response) => {
-  try {
-    const page = parseInt(req.query.page?.toString() ?? "1");
-    const limit = parseInt(req.query.limit?.toString() ?? "10");
+  const { data, error } = await service.getUsers(req);
 
-    const query = db.select().from(users);
-
-    const payload = await withPagination(
-      query.$dynamic(),
-      asc(users.id),
-      page,
-      limit,
-      req,
-    );
-    res.status(200).send(payload);
+  if (error) {
+    res.status(error.code).send(error.message);
     return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to fetch users" });
   }
+  res.status(200).send(data);
+  return;
 });
 
 app.post("/", async (req: Request, res: Response) => {
-  try {
-    const result = addUserSchema.safeParse(req.body);
-    if (!result.success) {
-      throw result.error;
-    }
-    const user = await db.insert(users).values(result.data).returning();
-    res.status(201).send(user);
+  const { data, error } = await service.createUser(req);
+
+  if (error) {
+    res.status(error.code).send(error.message);
     return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to create user" });
   }
+  res.status(200).send(data);
+  return;
 });
 
 app.get("/:userId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
 
-    const user = await getUserById(userId);
+    const { data, error } = await service.getUserById(userId);
 
-    if (!user) {
-      res.status(404).send({ message: "Unable to get user" });
+    if (error) {
+      res.status(error.code).send(error.message);
       return;
     }
-    res.status(200).send(user);
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -69,55 +53,12 @@ app.get("/:userId", async (req: Request, res: Response) => {
 app.put("/:userId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
-    const currentValue = await getUserById(userId);
-    if (!currentValue) {
-      res.status(404).send({ message: "Unable to get user" });
+    const { data, error } = await service.updateUserById(userId, req.body);
+    if (error) {
+      res.status(error.code).send(error.message);
       return;
     }
-
-    const result = updateUserSchema.safeParse(req.body);
-    if (!result.success) {
-      throw result.error;
-    }
-    const newValue = result.data;
-    const changes = new Set<string>();
-    Object.entries(newValue).forEach(([key, value]) => {
-      if (
-        currentValue[
-          key as keyof {
-            firstName: string;
-            lastName: string;
-            email: string;
-          }
-        ] !== value
-      ) {
-        changes.add(key);
-      }
-    });
-
-    if (changes.size === 0) {
-      throw new Error("No Changes to user");
-    }
-    const payload: Record<string, number | string | Date | boolean> = {
-      updatedAt: new Date(),
-      // updatedBy: userId,
-    };
-    changes.forEach((changeKey) => {
-      payload[changeKey] =
-        newValue[
-          changeKey as keyof {
-            firstName: string;
-            lastName: string;
-            email: string;
-          }
-        ] ?? "";
-    });
-    const updated = await db
-      .update(users)
-      .set(payload)
-      .where(eq(users.id, userId))
-      .returning();
-    res.status(200).send(updated);
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -129,8 +70,12 @@ app.put("/:userId", async (req: Request, res: Response) => {
 app.delete("/:userId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
-    const rows = await db.delete(users).where(eq(users.id, userId));
-    res.status(200).send({ success: true, rows: rows.count });
+    const { data, error } = await service.deleteUserById(userId);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -173,11 +118,5 @@ app.delete("/:userId/roles/:roleId", async (req: Request, res: Response) => {
     res.status(500).send({ message: "Unable to delete user role" });
   }
 });
-
-async function getUserById(id: string) {
-  return db.query.users.findFirst({
-    where: eq(users.id, id),
-  });
-}
 
 export default app;
