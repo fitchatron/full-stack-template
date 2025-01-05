@@ -8,7 +8,6 @@ import { withPagination } from "@db/utils";
 import { addUserRoleSchema } from "@validators/user-roles";
 
 const app = express();
-
 app.get("/", async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page?.toString() ?? "1");

@@ -110,6 +110,7 @@
       "@api/*": ["./src/api/*"],
       "@db/*": ["./src/db/*"],
       "@models/*": ["./src/models/*"],
+      "@services/*": ["./src/services/*"],
       "@utils/*": ["./src/utils/*"],
       "@validators/*": ["./src/validators/*"]
     }
