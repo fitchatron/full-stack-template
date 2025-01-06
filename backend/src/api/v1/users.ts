@@ -9,6 +9,39 @@ import { userService } from "@services/user-service";
 const app = express();
 const service = userService();
 
+/**
+ * @swagger
+ * /api/v1/users:
+ *   get:
+ *     summary: Retrieve list of users
+ *     description: Get a paginated list of users.
+ *     responses:
+ *       200:
+ *         description: A list of examples
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   firstName:
+ *                     type: string
+ *                   lastName:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                   createdAt:
+ *                     type: string
+ *                   updatedAt:
+ *                     type: string
+ *                   createdBy:
+ *                     type: string
+ *                   updatedBy:
+ *                     type: string
+ */
 app.get("/", async (req: Request, res: Response) => {
   const { data, error } = await service.getUsers(req);
 
