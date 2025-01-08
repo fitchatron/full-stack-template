@@ -10,14 +10,22 @@ const app = express();
 const service = userService();
 
 /**
+ * @swagger
+ * tags:
+ *   name: Users
+ *   description: User management and retrieval
+ */
+
+/**
  * @openapi
  * /api/v1/users:
  *   get:
  *     summary: Retrieve list of users
  *     description: Get a paginated list of users.
+ *     tags: [Users]
  *     responses:
  *       200:
- *         description: A list of users
+ *         description: OK
  *         content:
  *           application/json:
  *             schema:
@@ -31,6 +39,10 @@ const service = userService();
  *                    $ref: '#/components/schemas/PaginatedMetadata'
  *                links:
  *                    $ref: '#/components/schemas/PaginatedLinks'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  */
 app.get("/", async (req: Request, res: Response) => {
   const { data, error } = await service.getUsers(req);
@@ -43,6 +55,51 @@ app.get("/", async (req: Request, res: Response) => {
   return;
 });
 
+/**
+ * @openapi
+ * /api/v1/users:
+ *   post:
+ *     summary: Create a new user
+ *     description: Create a new user from the payload
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - firstName
+ *               - lastName
+ *               - email
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: must be unique
+ *             example:
+ *               firstName: John
+ *               lastName: Doe
+ *               email: john.doe@example.com
+ *     responses:
+ *       201:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *              $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/DuplicateEmail'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *
+ */
 app.post("/", async (req: Request, res: Response) => {
   const { data, error } = await service.createUser(req);
 
