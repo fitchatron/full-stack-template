@@ -10,37 +10,27 @@ const app = express();
 const service = userService();
 
 /**
- * @swagger
+ * @openapi
  * /api/v1/users:
  *   get:
  *     summary: Retrieve list of users
  *     description: Get a paginated list of users.
  *     responses:
  *       200:
- *         description: A list of examples
+ *         description: A list of users
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   firstName:
- *                     type: string
- *                   lastName:
- *                     type: string
- *                   email:
- *                     type: string
- *                   createdAt:
- *                     type: string
- *                   updatedAt:
- *                     type: string
- *                   createdBy:
- *                     type: string
- *                   updatedBy:
- *                     type: string
+ *              type: object
+ *              properties:
+ *                items:
+ *                  type: array
+ *                  items:
+ *                    $ref: '#/components/schemas/User'
+ *                metadata:
+ *                    $ref: '#/components/schemas/PaginatedMetadata'
+ *                links:
+ *                    $ref: '#/components/schemas/PaginatedLinks'
  */
 app.get("/", async (req: Request, res: Response) => {
   const { data, error } = await service.getUsers(req);
@@ -60,7 +50,7 @@ app.post("/", async (req: Request, res: Response) => {
     res.status(error.code).send(error.message);
     return;
   }
-  res.status(200).send(data);
+  res.status(201).send(data);
   return;
 });
 

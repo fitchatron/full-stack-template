@@ -14,7 +14,7 @@ const swaggerOptions: Options = {
       },
     ],
   },
-  apis: ["src/api/v1/*.ts"], // Path to the API docs in your routes
+  apis: ["src/docs/*.yml", "src/api/v1/*.ts"], // Path to the API docs in your routes
 };
 
 export default swaggerOptions;
