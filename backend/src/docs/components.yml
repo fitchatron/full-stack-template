@@ -96,6 +96,16 @@ components:
             code: 400
             message: Email already taken
 
+    DuplicateEntity:
+      description: Entity already exists
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: 400
+            message: Entity already exists in database
+
     Unauthorized:
       description: Unauthorized
       content:
