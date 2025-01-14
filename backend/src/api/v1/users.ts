@@ -10,13 +10,6 @@ const app = express();
 const service = userService();
 
 /**
- * @swagger
- * tags:
- *   name: Users
- *   description: User management and retrieval
- */
-
-/**
  * @openapi
  * /api/v1/users:
  *   get:
@@ -241,11 +234,11 @@ app.put("/:userId", async (req: Request, res: Response) => {
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: UserId
+ *         name: userId
  *         required: true
  *         schema:
  *           type: string
- *         description: User id
+ *         description: User ID
  *     responses:
  *       "200":
  *         description: Number of rows deleted
@@ -287,7 +280,7 @@ app.delete("/:userId", async (req: Request, res: Response) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: User id
+ *         description: User ID
  *     requestBody:
  *       required: true
  *       content:
@@ -321,7 +314,7 @@ app.delete("/:userId", async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *              $ref: '#/components/schemas/User'
+ *              $ref: '#/components/schemas/UserRole'
  *       400:
  *         $ref: '#/components/responses/DuplicateEntity'
  *       401:
@@ -363,13 +356,13 @@ app.post("/:userId/roles", async (req: Request, res: Response) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: User id
+ *         description: User ID
  *       - in: path
  *         name: roleId
  *         required: true
  *         schema:
  *           type: string
- *         description: Role id
+ *         description: Role ID
  *     responses:
  *       "200":
  *         description: Number of rows deleted
