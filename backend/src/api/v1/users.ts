@@ -1,64 +1,149 @@
 import express, { Request, Response } from "express";
 import { db } from "@db/db";
-import { userRoles, users } from "@db/schema";
-import { addUserSchema, updateUserSchema } from "@validators/user";
+import { userRoles } from "@db/schema";
 import { eventLogger } from "@utils/logger";
-import { and, asc, eq } from "drizzle-orm";
-import { withPagination } from "@db/utils";
+import { and, eq } from "drizzle-orm";
 import { addUserRoleSchema } from "@validators/user-roles";
+import { userService } from "@services/user-service";
 
 const app = express();
+const service = userService();
 
+/**
+ * @openapi
+ * /api/v1/users:
+ *   get:
+ *     summary: Retrieve list of users
+ *     description: Get a paginated list of users.
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *              type: object
+ *              properties:
+ *                items:
+ *                  type: array
+ *                  items:
+ *                    $ref: '#/components/schemas/User'
+ *                metadata:
+ *                    $ref: '#/components/schemas/PaginatedMetadata'
+ *                links:
+ *                    $ref: '#/components/schemas/PaginatedLinks'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
 app.get("/", async (req: Request, res: Response) => {
-  try {
-    const page = parseInt(req.query.page?.toString() ?? "1");
-    const limit = parseInt(req.query.limit?.toString() ?? "10");
+  const { data, error } = await service.getUsers(req);
 
-    const query = db.select().from(users);
-
-    const payload = await withPagination(
-      query.$dynamic(),
-      asc(users.id),
-      page,
-      limit,
-      req,
-    );
-    res.status(200).send(payload);
+  if (error) {
+    res.status(error.code).send(error.message);
     return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to fetch users" });
   }
+  res.status(200).send(data);
+  return;
 });
 
+/**
+ * @openapi
+ * /api/v1/users:
+ *   post:
+ *     summary: Create a new user
+ *     description: Create a new user from the payload
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - firstName
+ *               - lastName
+ *               - email
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: must be unique
+ *             example:
+ *               firstName: John
+ *               lastName: Doe
+ *               email: john.doe@example.com
+ *     responses:
+ *       201:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *              $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/DuplicateEmail'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *
+ */
 app.post("/", async (req: Request, res: Response) => {
-  try {
-    const result = addUserSchema.safeParse(req.body);
-    if (!result.success) {
-      throw result.error;
-    }
-    const user = await db.insert(users).values(result.data).returning();
-    res.status(201).send(user);
+  const { data, error } = await service.createUser(req);
+
+  if (error) {
+    res.status(error.code).send(error.message);
     return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to create user" });
   }
+  res.status(201).send(data);
+  return;
 });
 
+/**
+ * @openapi
+ * /api/v1/users/{userId}:
+ *   get:
+ *     summary: Get a user
+ *     description: Get a user by ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       201:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *              $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *
+ */
 app.get("/:userId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
 
-    const user = await getUserById(userId);
+    const { data, error } = await service.getUserById(userId);
 
-    if (!user) {
-      res.status(404).send({ message: "Unable to get user" });
+    if (error) {
+      res.status(error.code).send(error.message);
       return;
     }
-    res.status(200).send(user);
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -67,58 +152,69 @@ app.get("/:userId", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/v1/users/{userId}:
+ *   put:
+ *     summary: Update a user
+ *     description: Update a user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - firstName
+ *               - lastName
+ *               - email
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: must be unique
+ *             example:
+ *               firstName: John
+ *               lastName: Doe
+ *               email: john.doe@example.com
+ *     responses:
+ *       201:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *              $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/DuplicateEmail'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *
+ */
 app.put("/:userId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
-    const currentValue = await getUserById(userId);
-    if (!currentValue) {
-      res.status(404).send({ message: "Unable to get user" });
+    const { data, error } = await service.updateUserById(userId, req.body);
+    if (error) {
+      res.status(error.code).send(error.message);
       return;
     }
-
-    const result = updateUserSchema.safeParse(req.body);
-    if (!result.success) {
-      throw result.error;
-    }
-    const newValue = result.data;
-    const changes = new Set<string>();
-    Object.entries(newValue).forEach(([key, value]) => {
-      if (
-        currentValue[
-          key as keyof {
-            firstName: string;
-            lastName: string;
-            email: string;
-          }
-        ] !== value
-      ) {
-        changes.add(key);
-      }
-    });
-
-    if (changes.size === 0) {
-      throw new Error("No Changes to user");
-    }
-    const payload: Record<string, number | string | Date | boolean> = {
-      updatedAt: new Date(),
-      // updatedBy: userId,
-    };
-    changes.forEach((changeKey) => {
-      payload[changeKey] =
-        newValue[
-          changeKey as keyof {
-            firstName: string;
-            lastName: string;
-            email: string;
-          }
-        ] ?? "";
-    });
-    const updated = await db
-      .update(users)
-      .set(payload)
-      .where(eq(users.id, userId))
-      .returning();
-    res.status(200).send(updated);
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -127,11 +223,41 @@ app.put("/:userId", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/v1/users/{userId}:
+ *   delete:
+ *     summary: Delete a user
+ *     description: Logged in users can delete only themselves. Only admins can delete other users.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       "200":
+ *         description: Number of rows deleted
+ *       "401":
+ *         $ref: '#/components/responses/Unauthorized'
+ *       "403":
+ *         $ref: '#/components/responses/Forbidden'
+ *       "404":
+ *         $ref: '#/components/responses/NotFound'
+ */
 app.delete("/:userId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
-    const rows = await db.delete(users).where(eq(users.id, userId));
-    res.status(200).send({ success: true, rows: rows.count });
+    const { data, error } = await service.deleteUserById(userId);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -140,6 +266,63 @@ app.delete("/:userId", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ *
+ * @openapi
+ * /api/v1/users/{userId}/roles:
+ *   post:
+ *     summary: Create a new user role
+ *     description: Create a new user role for the given user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - roleId
+ *               - createdBy
+ *               - modifiedBy
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               roleId:
+ *                 type: string
+ *               createdBy:
+ *                 type: string
+ *                 format: date-time
+ *               modifiedBy:
+ *                 type: string
+ *                 format: date-time
+ *             example:
+ *               userId: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+ *               roleId: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+ *               createdBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+ *               modifiedBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+ *     responses:
+ *       201:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *              $ref: '#/components/schemas/UserRole'
+ *       400:
+ *         $ref: '#/components/responses/DuplicateEntity'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *
+ */
 app.post("/:userId/roles", async (req: Request, res: Response) => {
   try {
     const roleId = req.params.roleId;
@@ -158,6 +341,38 @@ app.post("/:userId/roles", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/v1/users/{userId}/roles/{roleId}:
+ *   delete:
+ *     summary: Delete a user role
+ *     description: Deletes a user role given a user ID and role ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *       - in: path
+ *         name: roleId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Role ID
+ *     responses:
+ *       "200":
+ *         description: Number of rows deleted
+ *       "401":
+ *         $ref: '#/components/responses/Unauthorized'
+ *       "403":
+ *         $ref: '#/components/responses/Forbidden'
+ *       "404":
+ *         $ref: '#/components/responses/NotFound'
+ */
 app.delete("/:userId/roles/:roleId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
@@ -174,11 +389,5 @@ app.delete("/:userId/roles/:roleId", async (req: Request, res: Response) => {
     res.status(500).send({ message: "Unable to delete user role" });
   }
 });
-
-async function getUserById(id: string) {
-  return db.query.users.findFirst({
-    where: eq(users.id, id),
-  });
-}
 
 export default app;

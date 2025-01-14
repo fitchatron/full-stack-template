@@ -109,7 +109,9 @@
     "paths": {
       "@api/*": ["./src/api/*"],
       "@db/*": ["./src/db/*"],
+      "@docs/*": ["./src/docs/*"],
       "@models/*": ["./src/models/*"],
+      "@services/*": ["./src/services/*"],
       "@utils/*": ["./src/utils/*"],
       "@validators/*": ["./src/validators/*"]
     }
