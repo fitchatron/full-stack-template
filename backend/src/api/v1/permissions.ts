@@ -94,7 +94,7 @@ app.get("/", async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
- *              $ref: '#/components/schemas/Permissions'
+ *              $ref: '#/components/schemas/Permission'
  *       400:
  *         $ref: '#/components/responses/DuplicateEntity'
  *       401:
