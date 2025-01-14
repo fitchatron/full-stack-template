@@ -1,12 +1,6 @@
 import express, { Request, Response } from "express";
 
 const app = express();
-/**
- * @swagger
- * tags:
- *   name: Status
- *   description: Server status
- */
 
 /**
  * @openapi
