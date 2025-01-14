@@ -9,6 +9,8 @@ export const users = pgTable(
     id: uuid().primaryKey().defaultRandom(),
     firstName: varchar().notNull(),
     lastName: varchar().notNull(),
+    passwordHash: varchar().notNull(),
+    salt: varchar().notNull(),
     email: varchar({ length: 255 }).notNull().unique(),
     ...timestamps,
     ...userMetadata,
@@ -16,7 +18,7 @@ export const users = pgTable(
   (table) => [
     unique("unique_users_email").on(table.email).nullsNotDistinct(),
     index("nci_users_email").on(table.email),
-  ]
+  ],
 );
 
 //MARK: - RELATIONS

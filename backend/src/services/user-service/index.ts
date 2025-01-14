@@ -1,4 +1,5 @@
 import { Request } from "express";
+import { cryptoService } from "@utils/crypto";
 import { db } from "@db/db";
 import { withPagination } from "@db/utils";
 import { users } from "@db/schema";
@@ -7,6 +8,8 @@ import { asc, eq } from "drizzle-orm";
 import { eventLogger } from "@utils/logger";
 
 export function userService() {
+  const { generateSaltAndHash } = cryptoService();
+
   async function getUsers(req: Request) {
     try {
       const page = parseInt(req.query.page?.toString() ?? "1");
@@ -40,13 +43,37 @@ export function userService() {
         // createdBy: "b2d12509-ecc1-4bb3-ae22-550afe76af95",
         // modifiedBy: "b2d12509-ecc1-4bb3-ae22-550afe76af95",
       });
-      console.log("parsed");
       if (!result.success) {
-        throw result.error;
+        const fieldErrors = result.error.flatten().fieldErrors;
+        const validationErrors = Object.entries(fieldErrors).map(
+          ([field, errors]) => {
+            return `${field}: ${errors.join("\n")}`;
+          },
+        );
+        return {
+          data: undefined,
+          error: {
+            code: 400,
+            message: `Failed to Create user. Missing or invalid data. ${validationErrors}`,
+          },
+        };
       }
-      const user = (await db.insert(users).values(result.data).returning()).at(
-        0,
-      );
+
+      // Hash password
+      const { salt, hash } = await generateSaltAndHash(result.data.password);
+
+      const user = (
+        await db
+          .insert(users)
+          .values({
+            firstName: result.data.firstName,
+            lastName: result.data.lastName,
+            email: result.data.email,
+            passwordHash: hash,
+            salt: salt,
+          })
+          .returning()
+      ).at(0);
       if (!user) throw new Error("No user returned");
       return { data: user, error: undefined };
     } catch (error) {

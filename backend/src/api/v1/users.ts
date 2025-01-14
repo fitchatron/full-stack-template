@@ -65,6 +65,8 @@ app.get("/", async (req: Request, res: Response) => {
  *               - firstName
  *               - lastName
  *               - email
+ *               - password
+ *               - confirmPassword
  *             properties:
  *               firstName:
  *                 type: string
@@ -74,10 +76,17 @@ app.get("/", async (req: Request, res: Response) => {
  *                 type: string
  *                 format: email
  *                 description: must be unique
+ *               password:
+ *                 type: string
+ *               confirmPassword:
+ *                 type: string
+ *                 description: must match password
  *             example:
  *               firstName: John
  *               lastName: Doe
  *               email: john.doe@example.com
+ *               password: s3cr3tPa55word
+ *               confirmPassword: s3cr3tPa55word
  *     responses:
  *       201:
  *         description: OK
