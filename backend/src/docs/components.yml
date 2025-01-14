@@ -1,5 +1,93 @@
 components:
   schemas:
+    Permission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        createdBy:
+          type: string
+          format: uuid
+        updatedBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      example:
+        id: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        name: public
+        description: Public permission for app.
+        createdBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        createdAt: 2025-01-05T03:27:15.221Z
+        updatedBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        updatedAt: 2025-01-05T03:27:15.221Z
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        createdBy:
+          type: string
+          format: uuid
+        updatedBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      example:
+        id: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        name: public
+        description: Default role for users of the app.
+        createdBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        createdAt: 2025-01-05T03:27:15.221Z
+        updatedBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        updatedAt: 2025-01-05T03:27:15.221Z
+    RolePermission:
+      type: object
+      properties:
+        roleId:
+          type: string
+          format: uuid
+        permissionId:
+          type: string
+          format: uuid
+        createdBy:
+          type: string
+          format: uuid
+        updatedBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      example:
+        roleId: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        permissionId: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        createdBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        createdAt: 2025-01-05T03:27:15.221Z
+        updatedBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        updatedAt: 2025-01-05T03:27:15.221Z
     User:
       type: object
       properties:
@@ -30,6 +118,34 @@ components:
         firstName: John
         lastName: Doe
         email: john.doe@example.com
+        createdBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        createdAt: 2025-01-05T03:27:15.221Z
+        updatedBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        updatedAt: 2025-01-05T03:27:15.221Z
+    UserRole:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        roleId:
+          type: string
+          format: uuid
+        createdBy:
+          type: string
+          format: uuid
+        updatedBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      example:
+        userId: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+        roleId: 14c5f260-2ae0-49b7-9968-f6ed2e082526
         createdBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
         createdAt: 2025-01-05T03:27:15.221Z
         updatedBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
