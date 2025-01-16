@@ -1,15 +1,12 @@
 import { Request } from "express";
-import { cryptoService } from "@utils/crypto";
 import { db } from "@db/db";
 import { withPagination } from "@db/utils";
 import { users } from "@db/schema";
-import { addUserSchema, updateUserSchema } from "@validators/user";
+import { updateUserSchema } from "@validators/user";
 import { asc, eq } from "drizzle-orm";
 import { eventLogger } from "@utils/logger";
 
 export function userService() {
-  const { generateSaltAndHash } = cryptoService();
-
   async function getUsers(req: Request) {
     try {
       const page = parseInt(req.query.page?.toString() ?? "1");
@@ -32,56 +29,6 @@ export function userService() {
       return {
         data: undefined,
         error: { code: 500, message: "Unable to fetch users" },
-      };
-    }
-  }
-
-  async function createUser(req: Request) {
-    try {
-      const result = addUserSchema.safeParse({
-        ...req.body,
-        // createdBy: "b2d12509-ecc1-4bb3-ae22-550afe76af95",
-        // modifiedBy: "b2d12509-ecc1-4bb3-ae22-550afe76af95",
-      });
-      if (!result.success) {
-        const fieldErrors = result.error.flatten().fieldErrors;
-        const validationErrors = Object.entries(fieldErrors).map(
-          ([field, errors]) => {
-            return `${field}: ${errors.join("\n")}`;
-          },
-        );
-        return {
-          data: undefined,
-          error: {
-            code: 400,
-            message: `Failed to Create user. Missing or invalid data. ${validationErrors}`,
-          },
-        };
-      }
-
-      // Hash password
-      const { salt, hash } = await generateSaltAndHash(result.data.password);
-
-      const user = (
-        await db
-          .insert(users)
-          .values({
-            firstName: result.data.firstName,
-            lastName: result.data.lastName,
-            email: result.data.email,
-            passwordHash: hash,
-            salt: salt,
-          })
-          .returning()
-      ).at(0);
-      if (!user) throw new Error("No user returned");
-      return { data: user, error: undefined };
-    } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
-      return {
-        data: undefined,
-        error: { code: 500, message: "Unable to create user" },
       };
     }
   }
@@ -194,5 +141,5 @@ export function userService() {
     }
   }
 
-  return { getUsers, createUser, getUserById, updateUserById, deleteUserById };
+  return { getUsers, getUserById, updateUserById, deleteUserById };
 }

@@ -26,5 +26,23 @@ export function cryptoService() {
     return { hash, salt };
   }
 
-  return { createPepperHash, hashStringWithPepper, generateSaltAndHash };
+  async function compareValueToHash(
+    value: string,
+    hash: string,
+    options?: { hashWithpepper: boolean },
+  ) {
+    const _options = {
+      hashWithpepper: options?.hashWithpepper ?? false,
+    };
+
+    const data = _options.hashWithpepper ? hashStringWithPepper(value) : value;
+
+    return bcrypt.compare(data, hash);
+  }
+  return {
+    createPepperHash,
+    hashStringWithPepper,
+    generateSaltAndHash,
+    compareValueToHash,
+  };
 }

@@ -1,4 +1,5 @@
 import express from "express";
+import auth from "@api/v1/auth";
 import users from "@api/v1/users";
 import roles from "@api/v1/roles";
 import permissions from "@api/v1/permissions";
@@ -14,6 +15,7 @@ const app = express();
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 app.use(`/${VERSION}/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use(`/${VERSION}/auth`, auth);
 app.use(`/${VERSION}/permissions`, permissions);
 app.use(`/${VERSION}/roles`, roles);
 app.use(`/${VERSION}/status`, status);
