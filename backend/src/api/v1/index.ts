@@ -1,4 +1,5 @@
 import express from "express";
+import { requireAuth } from "@middleware/auth";
 import auth from "@api/v1/auth";
 import users from "@api/v1/users";
 import roles from "@api/v1/roles";
@@ -14,11 +15,15 @@ const app = express();
 // Set up Swagger UI
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
-app.use(`/${VERSION}/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use(
+  `/${VERSION}/api-docs`,
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocs, { swaggerOptions: { withCredentials: true } }),
+);
 app.use(`/${VERSION}/auth`, auth);
-app.use(`/${VERSION}/permissions`, permissions);
-app.use(`/${VERSION}/roles`, roles);
-app.use(`/${VERSION}/status`, status);
-app.use(`/${VERSION}/users`, users);
+app.use(`/${VERSION}/permissions`, requireAuth, permissions);
+app.use(`/${VERSION}/roles`, requireAuth, roles);
+app.use(`/${VERSION}/status`, requireAuth, status);
+app.use(`/${VERSION}/users`, requireAuth, users);
 
 export default app;

@@ -11,11 +11,12 @@ const service = authService();
 
 /**
  * @openapi
- * /api/v1/auth/signup:
+ * /api/v1/auth/register:
  *   post:
  *     summary: Create a new user
  *     description: Create a new user from the payload
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -51,6 +52,11 @@ const service = authService();
  *     responses:
  *       201:
  *         description: OK
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *              type: string
+ *              example: session=abcde12345; Path=/; HttpOnly
  *         content:
  *           application/json:
  *             schema:
@@ -63,24 +69,25 @@ const service = authService();
  *         $ref: '#/components/responses/Forbidden'
  *
  */
-app.post("/signup", async (req: Request, res: Response) => {
-  const { data, error } = await service.signUpUser(req);
+app.post("/register", async (req: Request, res: Response) => {
+  const { data, error } = await service.signUpUser(req, res);
 
   if (error) {
     res.status(error.code).send(error.message);
     return;
   }
-  res.status(201).send(data);
+  res.status(201).json(data);
   return;
 });
 
 /**
  * @openapi
- * /api/v1/auth/signin:
+ * /api/v1/auth/login:
  *   post:
  *     summary: Sign in user
  *     description: Sign in an existing user
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -103,6 +110,11 @@ app.post("/signup", async (req: Request, res: Response) => {
  *     responses:
  *       200:
  *         description: OK
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *              type: string
+ *              example: session=abcde12345; Path=/; HttpOnly
  *         content:
  *           application/json:
  *             schema:
@@ -111,14 +123,14 @@ app.post("/signup", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/Unauthorized'
  *
  */
-app.post("/signin", async (req: Request, res: Response) => {
-  const { data, error } = await service.signInUser(req);
+app.post("/login", async (req: Request, res: Response) => {
+  const { data, error } = await service.signInUser(req, res);
 
   if (error) {
     res.status(error.code).send(error.message);
     return;
   }
-  res.status(201).send(data);
+  res.status(201).json(data);
   return;
 });
 
@@ -129,6 +141,8 @@ app.post("/signin", async (req: Request, res: Response) => {
  *     summary: Reset a password
  *     description: Reset a user's password
  *     tags: [Auth]
+ *     security:
+ *       cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -165,7 +179,7 @@ app.post("/signin", async (req: Request, res: Response) => {
  *
  */
 app.post("/reset-password", async (req: Request, res: Response) => {
-  res.status(405).send(true);
+  res.status(405).json(true);
   return;
 });
 

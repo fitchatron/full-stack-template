@@ -110,6 +110,7 @@
       "@api/*": ["./src/api/*"],
       "@db/*": ["./src/db/*"],
       "@docs/*": ["./src/docs/*"],
+      "@middleware/*": ["./src/middleware/*"],
       "@models/*": ["./src/models/*"],
       "@services/*": ["./src/services/*"],
       "@utils/*": ["./src/utils/*"],

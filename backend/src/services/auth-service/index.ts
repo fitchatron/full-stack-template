@@ -1,15 +1,16 @@
-import { Request } from "express";
+import { Request, Response } from "express";
 import { cryptoService } from "@utils/crypto";
 import { db } from "@db/db";
-import { users } from "@db/schema";
+import { sessions, users } from "@db/schema";
 import { signUpUserSchema, signInUserSchema } from "@validators/auth";
 import { eventLogger } from "@utils/logger";
 import { eq } from "drizzle-orm";
+import { randomBytes } from "crypto";
 
 export function authService() {
   const { generateSaltAndHash, compareValueToHash } = cryptoService();
 
-  async function signUpUser(req: Request) {
+  async function signUpUser(req: Request, res: Response) {
     try {
       const result = signUpUserSchema.safeParse({
         ...req.body,
@@ -46,6 +47,14 @@ export function authService() {
           .returning()
       ).at(0);
       if (!user) throw new Error("No user returned");
+      const session = await createSession(req, user.id);
+      // Set cookie
+      res.cookie("session", session.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        expires: session.expiresAt,
+      });
       return { data: user, error: undefined };
     } catch (error) {
       const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -57,8 +66,11 @@ export function authService() {
     }
   }
 
-  async function signInUser(req: Request) {
+  async function signInUser(req: Request, res: Response) {
     try {
+      console.log("the request is");
+      console.log(req);
+
       const result = signInUserSchema.safeParse({
         ...req.body,
       });
@@ -79,6 +91,14 @@ export function authService() {
 
       if (!match) return failedSignInHelper();
 
+      const session = await createSession(req, user.id);
+      // Set cookie
+      res.cookie("session", session.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        expires: session.expiresAt,
+      });
       return { data: user, error: undefined };
     } catch (error) {
       const { logEvent } = eventLogger({
@@ -86,10 +106,7 @@ export function authService() {
         message: `${error}`,
       });
       logEvent();
-      return {
-        data: undefined,
-        error: { code: 500, message: "Unable to create user" },
-      };
+      return failedSignInHelper();
     }
   }
 
@@ -102,6 +119,27 @@ export function authService() {
       },
     };
   }
+
+  async function createSession(req: Request, userId: string) {
+    const ipAddress = `${req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress}`;
+    // Hash password
+    const { hash } = await generateSaltAndHash(ipAddress);
+    const userAgent = req.headers["user-agent"];
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30); // 30 days from now
+
+    const session = (
+      await db
+        .insert(sessions)
+        .values({ token, userId, ipAddress: hash, userAgent, expiresAt })
+        .returning()
+    ).at(0);
+
+    if (!session) throw new Error("Failed to create session");
+    return session;
+  }
+
   return {
     signUpUser,
     signInUser,
