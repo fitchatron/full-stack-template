@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import { Request, Response, Router } from "express";
 import { db } from "@db/db";
 import { eventLogger } from "@utils/logger";
 import { asc, eq } from "drizzle-orm";
@@ -9,7 +9,7 @@ import {
   updatePermissionSchema,
 } from "@validators/permission";
 
-const app = express();
+const router = Router();
 
 /**
  * @openapi
@@ -39,7 +39,7 @@ const app = express();
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-app.get("/", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page?.toString() ?? "1");
     const limit = parseInt(req.query.limit?.toString() ?? "10");
@@ -87,7 +87,7 @@ app.get("/", async (req: Request, res: Response) => {
  *                 type: string
  *             example:
  *               name: public
- *               description: Public permission for app.
+ *               description: Public permission for router.
  *     responses:
  *       201:
  *         description: OK
@@ -103,7 +103,7 @@ app.get("/", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/Forbidden'
  *
  */
-app.post("/", async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
     const result = addPermissionSchema.safeParse(req.body);
     if (!result.success) {
@@ -151,7 +151,7 @@ app.post("/", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-app.get("/:permissionId", async (req: Request, res: Response) => {
+router.get("/:permissionId", async (req: Request, res: Response) => {
   try {
     const permissionId = req.params.permissionId;
     const permission = getPermissionById(permissionId);
@@ -198,7 +198,7 @@ app.get("/:permissionId", async (req: Request, res: Response) => {
  *                 type: string
  *             example:
  *               name: public
- *               description: Public permission for app.
+ *               description: Public permission for router.
  *     responses:
  *       201:
  *         description: OK
@@ -216,7 +216,7 @@ app.get("/:permissionId", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-app.put("/:permissionId", async (req: Request, res: Response) => {
+router.put("/:permissionId", async (req: Request, res: Response) => {
   try {
     const permissionId = req.params.permissionId;
     const currentValue = await getPermissionById(permissionId);
@@ -302,7 +302,7 @@ app.put("/:permissionId", async (req: Request, res: Response) => {
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
-app.delete("/:permissionId", async (req: Request, res: Response) => {
+router.delete("/:permissionId", async (req: Request, res: Response) => {
   try {
     const permissionId = req.params.permissionId;
     const rows = await db
@@ -323,4 +323,4 @@ async function getPermissionById(id: string) {
   });
 }
 
-export default app;
+export default router;

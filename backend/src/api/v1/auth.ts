@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import { Request, Response, Router } from "express";
 // import { db } from "@db/db";
 // import { userRoles } from "@db/schema";
 // import { eventLogger } from "@utils/logger";
@@ -6,7 +6,7 @@ import express, { Request, Response } from "express";
 // import { addUserRoleSchema } from "@validators/user-roles";
 import { authService } from "@services/auth-service";
 
-const app = express();
+const router = Router();
 const service = authService();
 
 /**
@@ -69,7 +69,7 @@ const service = authService();
  *         $ref: '#/components/responses/Forbidden'
  *
  */
-app.post("/register", async (req: Request, res: Response) => {
+router.post("/register", async (req: Request, res: Response) => {
   const { data, error } = await service.signUpUser(req, res);
 
   if (error) {
@@ -123,7 +123,7 @@ app.post("/register", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/Unauthorized'
  *
  */
-app.post("/login", async (req: Request, res: Response) => {
+router.post("/login", async (req: Request, res: Response) => {
   const { data, error } = await service.signInUser(req, res);
 
   if (error) {
@@ -178,9 +178,9 @@ app.post("/login", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/Unauthorized'
  *
  */
-app.post("/reset-password", async (req: Request, res: Response) => {
+router.post("/reset-password", async (req: Request, res: Response) => {
   res.status(405).json(true);
   return;
 });
 
-export default app;
+export default router;

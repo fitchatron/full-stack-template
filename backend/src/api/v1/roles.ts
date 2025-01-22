@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import { Request, Response, Router } from "express";
 import { db } from "@db/db";
 import { eventLogger } from "@utils/logger";
 import { and, asc, eq } from "drizzle-orm";
@@ -7,7 +7,7 @@ import { withPagination } from "@db/utils";
 import { addRoleSchema, updateRoleSchema } from "@validators/role";
 import { addRolePermissionSchema } from "@validators/role-permission";
 
-const app = express();
+const router = Router();
 
 /**
  * @openapi
@@ -37,7 +37,7 @@ const app = express();
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-app.get("/", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page?.toString() ?? "1");
     const limit = parseInt(req.query.limit?.toString() ?? "10");
@@ -85,7 +85,7 @@ app.get("/", async (req: Request, res: Response) => {
  *                 type: string
  *             example:
  *               name: public
- *               description: Default role for users of the app.
+ *               description: Default role for users of the router.
  *     responses:
  *       201:
  *         description: OK
@@ -101,7 +101,7 @@ app.get("/", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/Forbidden'
  *
  */
-app.post("/", async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
     const result = addRoleSchema.safeParse(req.body);
     if (!result.success) {
@@ -146,7 +146,7 @@ app.post("/", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-app.get("/:roleId", async (req: Request, res: Response) => {
+router.get("/:roleId", async (req: Request, res: Response) => {
   try {
     const roleId = req.params.roleId;
 
@@ -196,7 +196,7 @@ app.get("/:roleId", async (req: Request, res: Response) => {
  *                 type: string
  *             example:
  *               name: public
- *               description: Default role for users of the app.
+ *               description: Default role for users of the router.
  *     responses:
  *       201:
  *         description: OK
@@ -214,7 +214,7 @@ app.get("/:roleId", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-app.put("/:roleId", async (req: Request, res: Response) => {
+router.put("/:roleId", async (req: Request, res: Response) => {
   try {
     const roleId = req.params.roleId;
     const currentValue = await getRoleById(roleId);
@@ -299,7 +299,7 @@ app.put("/:roleId", async (req: Request, res: Response) => {
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
-app.delete("/:roleId", async (req: Request, res: Response) => {
+router.delete("/:roleId", async (req: Request, res: Response) => {
   try {
     const roleId = req.params.roleId;
     const rows = await db.delete(roles).where(eq(roles.id, roleId));
@@ -369,7 +369,7 @@ app.delete("/:roleId", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/Forbidden'
  *
  */
-app.post("/:roleId/permissions", async (req: Request, res: Response) => {
+router.post("/:roleId/permissions", async (req: Request, res: Response) => {
   try {
     const roleId = req.params.roleId;
     const result = addRolePermissionSchema.safeParse({ ...req.body, roleId });
@@ -422,7 +422,7 @@ app.post("/:roleId/permissions", async (req: Request, res: Response) => {
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
-app.delete(
+router.delete(
   "/:roleId/permissions/:permissionId",
   async (req: Request, res: Response) => {
     try {
@@ -453,4 +453,4 @@ async function getRoleById(id: string) {
   });
 }
 
-export default app;
+export default router;

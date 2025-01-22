@@ -1,6 +1,6 @@
-import express, { Request, Response } from "express";
+import { Request, Response, Router } from "express";
 
-const app = express();
+const router = Router();
 
 /**
  * @openapi
@@ -27,7 +27,7 @@ const app = express();
  *               runAt: "2025-01-10T03:30:22.440Z"
  *
  */
-app.get("/", (req: Request, res: Response) => {
+router.get("/", (req: Request, res: Response) => {
   res.status(200).send({
     status: "Running",
     runAt: new Date().toISOString(),
@@ -35,4 +35,4 @@ app.get("/", (req: Request, res: Response) => {
   return;
 });
 
-export default app;
+export default router;

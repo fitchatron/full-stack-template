@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import { Request, Response, Router } from "express";
 import { db } from "@db/db";
 import { userRoles } from "@db/schema";
 import { eventLogger } from "@utils/logger";
@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { addUserRoleSchema } from "@validators/user-roles";
 import { userService } from "@services/user-service";
 
-const app = express();
+const router = Router();
 const service = userService();
 
 /**
@@ -37,7 +37,7 @@ const service = userService();
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-app.get("/", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   const { data, error } = await service.getUsers(req);
 
   if (error) {
@@ -77,7 +77,7 @@ app.get("/", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-app.get("/:userId", async (req: Request, res: Response) => {
+router.get("/:userId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
 
@@ -150,7 +150,7 @@ app.get("/:userId", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-app.put("/:userId", async (req: Request, res: Response) => {
+router.put("/:userId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
     const { data, error } = await service.updateUserById(userId, req.body);
@@ -193,7 +193,7 @@ app.put("/:userId", async (req: Request, res: Response) => {
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
-app.delete("/:userId", async (req: Request, res: Response) => {
+router.delete("/:userId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
     const { data, error } = await service.deleteUserById(userId);
@@ -267,7 +267,7 @@ app.delete("/:userId", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/Forbidden'
  *
  */
-app.post("/:userId/roles", async (req: Request, res: Response) => {
+router.post("/:userId/roles", async (req: Request, res: Response) => {
   try {
     const roleId = req.params.roleId;
     const result = addUserRoleSchema.safeParse({ ...req.body, roleId });
@@ -317,7 +317,7 @@ app.post("/:userId/roles", async (req: Request, res: Response) => {
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
-app.delete("/:userId/roles/:roleId", async (req: Request, res: Response) => {
+router.delete("/:userId/roles/:roleId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
     const roleId = req.params.roleId;
@@ -334,4 +334,4 @@ app.delete("/:userId/roles/:roleId", async (req: Request, res: Response) => {
   }
 });
 
-export default app;
+export default router;

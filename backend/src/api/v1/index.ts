@@ -1,4 +1,4 @@
-import express from "express";
+import { Router } from "express";
 import { requireAuth } from "@middleware/auth";
 import auth from "@api/v1/auth";
 import users from "@api/v1/users";
@@ -10,20 +10,20 @@ import swaggerUi from "swagger-ui-express";
 import swaggerOptions from "@docs/swagger-options";
 
 const VERSION = "v1";
-const app = express();
+const router = Router();
 
 // Set up Swagger UI
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
-app.use(
+router.use(
   `/${VERSION}/api-docs`,
   swaggerUi.serve,
   swaggerUi.setup(swaggerDocs, { swaggerOptions: { withCredentials: true } }),
 );
-app.use(`/${VERSION}/auth`, auth);
-app.use(`/${VERSION}/permissions`, requireAuth, permissions);
-app.use(`/${VERSION}/roles`, requireAuth, roles);
-app.use(`/${VERSION}/status`, requireAuth, status);
-app.use(`/${VERSION}/users`, requireAuth, users);
+router.use(`/${VERSION}/auth`, auth);
+router.use(`/${VERSION}/permissions`, requireAuth, permissions);
+router.use(`/${VERSION}/roles`, requireAuth, roles);
+router.use(`/${VERSION}/status`, requireAuth, status);
+router.use(`/${VERSION}/users`, requireAuth, users);
 
-export default app;
+export default router;
