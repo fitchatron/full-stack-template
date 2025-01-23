@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "@middleware/auth";
+import { requireAuth } from "@middleware/authentication";
 import auth from "@api/v1/auth";
 import users from "@api/v1/users";
 import roles from "@api/v1/roles";

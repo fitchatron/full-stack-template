@@ -5,6 +5,7 @@ import { eventLogger } from "@utils/logger";
 import { and, eq } from "drizzle-orm";
 import { addUserRoleSchema } from "@validators/user-roles";
 import { userService } from "@services/user-service";
+import permit from "@middleware/authorization";
 
 const router = Router();
 const service = userService();
@@ -37,7 +38,7 @@ const service = userService();
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", permit("superuser"), async (req: Request, res: Response) => {
   const { data, error } = await service.getUsers(req);
 
   if (error) {
@@ -269,8 +270,8 @@ router.delete("/:userId", async (req: Request, res: Response) => {
  */
 router.post("/:userId/roles", async (req: Request, res: Response) => {
   try {
-    const roleId = req.params.roleId;
-    const result = addUserRoleSchema.safeParse({ ...req.body, roleId });
+    const userId = req.params.userId;
+    const result = addUserRoleSchema.safeParse({ ...req.body, userId });
 
     if (!result.success) {
       throw result.error;

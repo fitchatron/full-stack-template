@@ -52,7 +52,7 @@ export async function requireAuth(
 
     next();
   } catch (error) {
-    console.error("Auth middleware error:", error);
+    console.error("Authentication middleware error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 }
