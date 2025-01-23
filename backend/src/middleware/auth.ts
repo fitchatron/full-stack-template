@@ -1,6 +1,5 @@
 import { db } from "@db/db";
 import { sessions } from "@db/schema";
-import { cryptoService } from "@utils/crypto";
 import { and, eq } from "drizzle-orm";
 import { Request, Response, NextFunction } from "express";
 
@@ -10,13 +9,9 @@ export async function requireAuth(
   next: NextFunction,
 ) {
   try {
-    const { generateSaltAndHash } = cryptoService();
     const token = req.cookies.session;
-
-    const ipAddress = `${req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress}`;
-    // Hash password
-    const { hash: hashIpAddress } = await generateSaltAndHash(ipAddress);
     const userAgent = req.headers["user-agent"] ?? "";
+
     if (!token) {
       res.status(401).json({ error: "Authentication required" });
       return;
@@ -26,7 +21,6 @@ export async function requireAuth(
       with: { user: true },
       where: and(
         eq(sessions.token, token),
-        eq(sessions.ipAddress, hashIpAddress),
         eq(sessions.userAgent, userAgent),
         // lt(sessions.expiresAt, new Date()),
       ),
