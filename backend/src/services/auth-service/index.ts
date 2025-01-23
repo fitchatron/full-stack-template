@@ -6,6 +6,7 @@ import { signUpUserSchema, signInUserSchema } from "@validators/auth";
 import { eventLogger } from "@utils/logger";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
+import { APP_CONFIG } from "@utils/config/app.config";
 
 export function authService() {
   const { generateSaltAndHash, compareValueToHash } = cryptoService();
@@ -132,7 +133,13 @@ export function authService() {
     const session = (
       await db
         .insert(sessions)
-        .values({ token, userId, ipAddress: hash, userAgent, expiresAt })
+        .values({
+          token,
+          userId,
+          ipAddress: APP_CONFIG.hashValues ? hash : ipAddress,
+          userAgent,
+          expiresAt,
+        })
         .returning()
     ).at(0);
 
