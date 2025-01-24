@@ -1,15 +1,9 @@
 import { Request, Response, Router } from "express";
-import { db } from "@db/db";
 import { eventLogger } from "@utils/logger";
-import { asc, eq } from "drizzle-orm";
-import { withPagination } from "@db/utils";
-import { permissions } from "@db/schema";
-import {
-  addPermissionSchema,
-  updatePermissionSchema,
-} from "@validators/permission";
+import { permissionService } from "@services/permission-service";
 
 const router = Router();
+const service = permissionService();
 
 /**
  * @openapi
@@ -40,27 +34,14 @@ const router = Router();
  *         $ref: '#/components/responses/Forbidden'
  */
 router.get("/", async (req: Request, res: Response) => {
-  try {
-    const page = parseInt(req.query.page?.toString() ?? "1");
-    const limit = parseInt(req.query.limit?.toString() ?? "10");
+  const { data, error } = await service.getPermissions(req);
 
-    const query = db.select().from(permissions);
-
-    const payload = await withPagination(
-      query.$dynamic(),
-      asc(permissions.id),
-      page,
-      limit,
-      req,
-    );
-
-    res.status(200).send(payload);
+  if (error) {
+    res.status(error.code).send(error.message);
     return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to fetch permissions" });
   }
+  res.status(200).send(data);
+  return;
 });
 
 /**
@@ -104,22 +85,14 @@ router.get("/", async (req: Request, res: Response) => {
  *
  */
 router.post("/", async (req: Request, res: Response) => {
-  try {
-    const result = addPermissionSchema.safeParse(req.body);
-    if (!result.success) {
-      throw result.error;
-    }
-    const permission = await db
-      .insert(permissions)
-      .values(result.data)
-      .returning();
-    res.status(201).send(permission);
+  const { data, error } = await service.createPermission(req);
+
+  if (error) {
+    res.status(error.code).send(error.message);
     return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to create permission" });
   }
+  res.status(200).send(data);
+  return;
 });
 
 /**
@@ -154,12 +127,15 @@ router.post("/", async (req: Request, res: Response) => {
 router.get("/:permissionId", async (req: Request, res: Response) => {
   try {
     const permissionId = req.params.permissionId;
-    const permission = getPermissionById(permissionId);
-    if (!permission) {
-      res.status(404).send({ message: "Unable to get permission" });
+
+    const { data, error } = await service.getPermissionById(permissionId);
+
+    if (error) {
+      res.status(error.code).send(error.message);
       return;
     }
-    res.status(200).send(permission);
+    res.status(200).send(data);
+    return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
     logEvent();
@@ -219,55 +195,15 @@ router.get("/:permissionId", async (req: Request, res: Response) => {
 router.put("/:permissionId", async (req: Request, res: Response) => {
   try {
     const permissionId = req.params.permissionId;
-    const currentValue = await getPermissionById(permissionId);
-    if (!currentValue) {
-      res.status(404).send({ message: "Unable to get permission" });
+    const { data, error } = await service.updatePermissionById(
+      permissionId,
+      req.body,
+    );
+    if (error) {
+      res.status(error.code).send(error.message);
       return;
     }
-
-    const result = updatePermissionSchema.safeParse(req.body);
-    if (!result.success) {
-      throw result.error;
-    }
-    const newValue = result.data;
-    const changes = new Set<string>();
-    Object.entries(newValue).forEach(([key, value]) => {
-      if (
-        currentValue[
-          key as keyof {
-            name: string;
-            description: string;
-          }
-        ] !== value
-      ) {
-        changes.add(key);
-      }
-    });
-
-    if (changes.size === 0) {
-      throw new Error("No Changes to permission");
-    }
-    const payload: Record<string, number | string | Date | boolean> = {
-      updatedAt: new Date(),
-      // updatedBy: permissionId,
-    };
-    changes.forEach((changeKey) => {
-      payload[changeKey] =
-        newValue[
-          changeKey as keyof {
-            name: string;
-            description: string;
-          }
-        ] ?? "";
-    });
-
-    const updated = await db
-      .update(permissions)
-      .set(payload)
-      .where(eq(permissions.id, permissionId))
-      .returning();
-    res.status(200).send(updated);
-    return;
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -305,10 +241,12 @@ router.put("/:permissionId", async (req: Request, res: Response) => {
 router.delete("/:permissionId", async (req: Request, res: Response) => {
   try {
     const permissionId = req.params.permissionId;
-    const rows = await db
-      .delete(permissions)
-      .where(eq(permissions.id, permissionId));
-    res.status(200).send({ success: true, rows: rows.count });
+    const { data, error } = await service.deletePermissionById(permissionId);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -316,11 +254,5 @@ router.delete("/:permissionId", async (req: Request, res: Response) => {
     res.status(500).send({ message: "Unable to delete permission" });
   }
 });
-
-async function getPermissionById(id: string) {
-  return db.query.permissions.findFirst({
-    where: eq(permissions.id, id),
-  });
-}
 
 export default router;
