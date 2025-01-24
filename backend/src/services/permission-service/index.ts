@@ -1,7 +1,7 @@
 import { Request } from "express";
 import { db } from "@db/db";
 import { withPagination } from "@db/utils";
-import { users, permissions } from "@db/schema";
+import { permissions } from "@db/schema";
 import { asc, eq } from "drizzle-orm";
 import { eventLogger } from "@utils/logger";
 import {
@@ -32,7 +32,7 @@ export function permissionService() {
       logEvent();
       return {
         data: undefined,
-        error: { code: 500, message: "Unable to fetch users" },
+        error: { code: 500, message: "Unable to fetch permissions" },
       };
     }
   }
@@ -136,7 +136,11 @@ export function permissionService() {
           ] ?? "";
       });
       const updated = (
-        await db.update(users).set(payload).where(eq(users.id, id)).returning()
+        await db
+          .update(permissions)
+          .set(payload)
+          .where(eq(permissions.id, id))
+          .returning()
       ).at(0);
 
       if (!updated) throw new Error("No permission returned");
