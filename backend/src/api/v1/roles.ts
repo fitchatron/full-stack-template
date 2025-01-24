@@ -1,13 +1,13 @@
 import { Request, Response, Router } from "express";
 import { db } from "@db/db";
 import { eventLogger } from "@utils/logger";
-import { and, asc, eq } from "drizzle-orm";
-import { roles, rolePermissions } from "@db/schema";
-import { withPagination } from "@db/utils";
-import { addRoleSchema, updateRoleSchema } from "@validators/role";
+import { and, eq } from "drizzle-orm";
+import { rolePermissions } from "@db/schema";
 import { addRolePermissionSchema } from "@validators/role-permission";
+import { roleService } from "@services/role-service";
 
 const router = Router();
+const service = roleService();
 
 /**
  * @openapi
@@ -38,27 +38,14 @@ const router = Router();
  *         $ref: '#/components/responses/Forbidden'
  */
 router.get("/", async (req: Request, res: Response) => {
-  try {
-    const page = parseInt(req.query.page?.toString() ?? "1");
-    const limit = parseInt(req.query.limit?.toString() ?? "10");
+  const { data, error } = await service.getRoles(req);
 
-    const query = db.select().from(roles);
-
-    const payload = await withPagination(
-      query.$dynamic(),
-      asc(roles.id),
-      page,
-      limit,
-      req,
-    );
-
-    res.status(200).send(payload);
+  if (error) {
+    res.status(error.code).send(error.message);
     return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to fetch roles" });
   }
+  res.status(200).send(data);
+  return;
 });
 
 /**
@@ -102,19 +89,14 @@ router.get("/", async (req: Request, res: Response) => {
  *
  */
 router.post("/", async (req: Request, res: Response) => {
-  try {
-    const result = addRoleSchema.safeParse(req.body);
-    if (!result.success) {
-      throw result.error;
-    }
-    const role = await db.insert(roles).values(result.data).returning();
-    res.status(201).send(role);
+  const { data, error } = await service.createRole(req);
+
+  if (error) {
+    res.status(error.code).send(error.message);
     return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to create role" });
   }
+  res.status(200).send(data);
+  return;
 });
 
 /**
@@ -150,13 +132,13 @@ router.get("/:roleId", async (req: Request, res: Response) => {
   try {
     const roleId = req.params.roleId;
 
-    const role = await getRoleById(roleId);
+    const { data, error } = await service.getRoleById(roleId);
 
-    if (!role) {
-      res.status(404).send({ message: "Unable to get role" });
+    if (error) {
+      res.status(error.code).send(error.message);
       return;
     }
-    res.status(200).send(role);
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -217,54 +199,12 @@ router.get("/:roleId", async (req: Request, res: Response) => {
 router.put("/:roleId", async (req: Request, res: Response) => {
   try {
     const roleId = req.params.roleId;
-    const currentValue = await getRoleById(roleId);
-    if (!currentValue) {
-      res.status(404).send({ message: "Unable to get role" });
+    const { data, error } = await service.updateRoleById(roleId, req.body);
+    if (error) {
+      res.status(error.code).send(error.message);
       return;
     }
-
-    const result = updateRoleSchema.safeParse(req.body);
-    if (!result.success) {
-      throw result.error;
-    }
-    const newValue = result.data;
-    const changes = new Set<string>();
-    Object.entries(newValue).forEach(([key, value]) => {
-      if (
-        currentValue[
-          key as keyof {
-            name: string;
-            description: string;
-          }
-        ] !== value
-      ) {
-        changes.add(key);
-      }
-    });
-
-    if (changes.size === 0) {
-      throw new Error("No Changes to role");
-    }
-    const payload: Record<string, number | string | Date | boolean> = {
-      updatedAt: new Date(),
-      // updatedBy: roleId,
-    };
-    changes.forEach((changeKey) => {
-      payload[changeKey] =
-        newValue[
-          changeKey as keyof {
-            name: string;
-            description: string;
-          }
-        ] ?? "";
-    });
-
-    const updated = await db
-      .update(roles)
-      .set(payload)
-      .where(eq(roles.id, roleId))
-      .returning();
-    res.status(200).send(updated);
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -302,8 +242,12 @@ router.put("/:roleId", async (req: Request, res: Response) => {
 router.delete("/:roleId", async (req: Request, res: Response) => {
   try {
     const roleId = req.params.roleId;
-    const rows = await db.delete(roles).where(eq(roles.id, roleId));
-    res.status(200).send({ success: true, rows: rows.count });
+    const { data, error } = await service.deleteRoleById(roleId);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
@@ -446,11 +390,5 @@ router.delete(
     }
   },
 );
-
-async function getRoleById(id: string) {
-  return db.query.roles.findFirst({
-    where: eq(roles.id, id),
-  });
-}
 
 export default router;
