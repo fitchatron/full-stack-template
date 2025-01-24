@@ -1,11 +1,8 @@
 import { Request, Response, Router } from "express";
-import { db } from "@db/db";
-import { userRoles } from "@db/schema";
 import { eventLogger } from "@utils/logger";
-import { and, eq } from "drizzle-orm";
-import { addUserRoleSchema } from "@validators/user-roles";
 import { userService } from "@services/user-service";
 import permit from "@middleware/authorization";
+import { userRoleService } from "@services/user-role-service";
 
 const router = Router();
 const service = userService();
@@ -269,21 +266,15 @@ router.delete("/:userId", async (req: Request, res: Response) => {
  *
  */
 router.post("/:userId/roles", async (req: Request, res: Response) => {
-  try {
-    const userId = req.params.userId;
-    const result = addUserRoleSchema.safeParse({ ...req.body, userId });
+  const { createUserRole } = userRoleService();
 
-    if (!result.success) {
-      throw result.error;
-    }
-    const userRole = await db.insert(userRoles).values(result.data).returning();
-    res.status(201).send(userRole);
+  const { data, error } = await createUserRole(req);
+  if (error) {
+    res.status(error.code).send(error.message);
     return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to create user role" });
   }
+  res.status(200).send(data);
+  return;
 });
 
 /**
@@ -322,11 +313,14 @@ router.delete("/:userId/roles/:roleId", async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
     const roleId = req.params.roleId;
-    const rows = await db
-      .delete(userRoles)
-      .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)));
+    const { deleteUserRole } = userRoleService();
 
-    res.status(200).send({ success: true, rows: rows.count });
+    const { data, error } = await deleteUserRole(userId, roleId);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
   } catch (error) {
     const { logEvent } = eventLogger({ type: "error", message: `${error}` });
