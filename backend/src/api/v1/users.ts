@@ -266,9 +266,10 @@ router.delete("/:userId", async (req: Request, res: Response) => {
  *
  */
 router.post("/:userId/roles", async (req: Request, res: Response) => {
+  const userId = req.params.userId;
   const { createUserRole } = userRoleService();
 
-  const { data, error } = await createUserRole(req);
+  const { data, error } = await createUserRole(userId, req.body);
   if (error) {
     res.status(error.code).send(error.message);
     return;

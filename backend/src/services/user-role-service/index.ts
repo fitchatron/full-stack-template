@@ -4,13 +4,14 @@ import { parseZodErrorToResponse } from "@utils/error";
 import { eventLogger } from "@utils/logger";
 import { addUserRoleSchema } from "@validators/user-roles";
 import { and, eq } from "drizzle-orm";
-import { Request } from "express";
 
 export function userRoleService() {
-  async function createUserRole(req: Request) {
+  async function createUserRole(
+    userId: string,
+    payload: Record<string, string>,
+  ) {
     try {
-      const userId = req.params.userId;
-      const result = addUserRoleSchema.safeParse({ ...req.body, userId });
+      const result = addUserRoleSchema.safeParse({ payload, userId });
 
       if (!result.success) {
         return parseZodErrorToResponse(result.error);
