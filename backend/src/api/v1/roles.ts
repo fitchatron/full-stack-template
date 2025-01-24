@@ -1,10 +1,7 @@
 import { Request, Response, Router } from "express";
-import { db } from "@db/db";
 import { eventLogger } from "@utils/logger";
-import { and, eq } from "drizzle-orm";
-import { rolePermissions } from "@db/schema";
-import { addRolePermissionSchema } from "@validators/role-permission";
 import { roleService } from "@services/role-service";
+import { rolePermissionService } from "@services/role-permission-service";
 
 const router = Router();
 const service = roleService();
@@ -314,24 +311,16 @@ router.delete("/:roleId", async (req: Request, res: Response) => {
  *
  */
 router.post("/:roleId/permissions", async (req: Request, res: Response) => {
-  try {
-    const roleId = req.params.roleId;
-    const result = addRolePermissionSchema.safeParse({ ...req.body, roleId });
+  const roleId = req.params.roleId;
+  const { createRolePermission } = rolePermissionService();
 
-    if (!result.success) {
-      throw result.error;
-    }
-    const rolePermission = await db
-      .insert(rolePermissions)
-      .values(result.data)
-      .returning();
-    res.status(201).send(rolePermission);
+  const { data, error } = await createRolePermission(roleId, req.body);
+  if (error) {
+    res.status(error.code).send(error.message);
     return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to create role permission" });
   }
+  res.status(200).send(data);
+  return;
 });
 
 /**
@@ -372,16 +361,14 @@ router.delete(
     try {
       const roleId = req.params.roleId;
       const permissionId = req.params.permissionId;
-      const rows = await db
-        .delete(rolePermissions)
-        .where(
-          and(
-            eq(rolePermissions.roleId, roleId),
-            eq(rolePermissions.permissionId, permissionId),
-          ),
-        );
+      const { deleteRolePermission } = rolePermissionService();
 
-      res.status(200).send({ success: true, rows: rows.count });
+      const { data, error } = await deleteRolePermission(roleId, permissionId);
+      if (error) {
+        res.status(error.code).send(error.message);
+        return;
+      }
+      res.status(200).send(data);
       return;
     } catch (error) {
       const { logEvent } = eventLogger({ type: "error", message: `${error}` });
