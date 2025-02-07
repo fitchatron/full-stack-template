@@ -19,10 +19,17 @@ export function cryptoService() {
     return hex;
   }
 
-  async function generateSaltAndHash(data: string, rounds = 10) {
-    const salt = await bcrypt.genSalt(rounds);
-    const peppered = hashStringWithPepper(data);
-    const hash = await bcrypt.hash(peppered, salt);
+  async function generateSaltAndHash(
+    value: string,
+    options?: { hashWithpepper: boolean; rounds: number },
+  ) {
+    const _options = {
+      hashWithpepper: options?.hashWithpepper ?? true,
+      rounds: options?.rounds ?? 10,
+    };
+    const salt = await bcrypt.genSalt(_options.rounds);
+    const data = _options.hashWithpepper ? hashStringWithPepper(value) : value;
+    const hash = await bcrypt.hash(data, salt);
     return { hash, salt };
   }
 
@@ -32,7 +39,7 @@ export function cryptoService() {
     options?: { hashWithpepper: boolean },
   ) {
     const _options = {
-      hashWithpepper: options?.hashWithpepper ?? false,
+      hashWithpepper: options?.hashWithpepper ?? true,
     };
 
     const data = _options.hashWithpepper ? hashStringWithPepper(value) : value;
