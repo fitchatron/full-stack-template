@@ -4,6 +4,7 @@ import auth from "@api/v1/auth";
 import users from "@api/v1/users";
 import roles from "@api/v1/roles";
 import permissions from "@api/v1/permissions";
+import policies from "@api/v1/policies";
 import status from "@api/v1/status";
 import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
@@ -22,6 +23,7 @@ router.use(
 );
 router.use(`/${VERSION}/auth`, auth);
 router.use(`/${VERSION}/permissions`, requireAuth, permissions);
+router.use(`/${VERSION}/policies`, requireAuth, policies);
 router.use(`/${VERSION}/roles`, requireAuth, roles);
 router.use(`/${VERSION}/status`, requireAuth, status);
 router.use(`/${VERSION}/users`, requireAuth, users);

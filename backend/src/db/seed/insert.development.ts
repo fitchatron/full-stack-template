@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { db } from "@db/db";
-import { seedPermissions } from "@db/seed/permissions";
+// import { seedPermissions } from "@db/seed/permissions";
+import { seedPolicies } from "@db/seed/policies";
 import { createSystemUser, truncateTables } from "@db/seed/system";
 import { cryptoService } from "@utils/crypto";
 import { roles, sessions, userRoles, users } from "@db/schema";
@@ -122,8 +123,8 @@ const main = async () => {
     await createSystemUser();
     console.log("🦸 Admin user created...\n");
 
-    await seedPermissions();
-    console.log("🕵️‍♀️ Roles and permissions created...\n");
+    await seedPolicies();
+    console.log("🕵️‍♀️ Roles and policies created...\n");
 
     await seedUsers();
     console.log("💁‍♀️ Users created...\n");

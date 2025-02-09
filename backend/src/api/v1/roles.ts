@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import { eventLogger } from "@utils/logger";
 import { roleService } from "@services/role-service";
 import { rolePermissionService } from "@services/role-permission-service";
+import { rolePolicyService } from "@services/role-policy-service";
 
 const router = Router();
 const service = roleService();
@@ -374,6 +375,131 @@ router.delete(
       const { logEvent } = eventLogger({ type: "error", message: `${error}` });
       logEvent();
       res.status(500).send({ message: "Unable to delete role permission" });
+    }
+  },
+);
+
+/**
+ *
+ * @openapi
+ * /api/v1/roles/{roleId}/policies:
+ *   post:
+ *     summary: Create a new role policy
+ *     description: Create a new role policy for the given role
+ *     tags: [Roles]
+ *     parameters:
+ *       - in: path
+ *         name: roleId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Role ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - roleId
+ *               - policyId
+ *               - createdBy
+ *               - modifiedBy
+ *             properties:
+ *               roleId:
+ *                 type: string
+ *               policyId:
+ *                 type: string
+ *               createdBy:
+ *                 type: string
+ *                 format: date-time
+ *               modifiedBy:
+ *                 type: string
+ *                 format: date-time
+ *             example:
+ *               roleId: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+ *               policyId: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+ *               createdBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+ *               modifiedBy: 14c5f260-2ae0-49b7-9968-f6ed2e082526
+ *     responses:
+ *       201:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *              $ref: '#/components/schemas/RolePolicy'
+ *       400:
+ *         $ref: '#/components/responses/DuplicateEntity'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *
+ */
+router.post("/:roleId/policies", async (req: Request, res: Response) => {
+  const roleId = req.params.roleId;
+  const { createRolePolicy } = rolePolicyService();
+
+  const { data, error } = await createRolePolicy(roleId, req.body);
+  if (error) {
+    res.status(error.code).send(error.message);
+    return;
+  }
+  res.status(200).send(data);
+  return;
+});
+
+/**
+ * @openapi
+ * /api/v1/roles/{roleId}/policies/{policyId}:
+ *   delete:
+ *     summary: Delete a role policy
+ *     description: Deletes a role policy given a role ID and policy ID
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: roleId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Role ID
+ *       - in: path
+ *         name: policyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Policy ID
+ *     responses:
+ *       "200":
+ *         description: Number of rows deleted
+ *       "401":
+ *         $ref: '#/components/responses/Unauthorized'
+ *       "403":
+ *         $ref: '#/components/responses/Forbidden'
+ *       "404":
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete(
+  "/:roleId/policies/:policyId",
+  async (req: Request, res: Response) => {
+    try {
+      const roleId = req.params.roleId;
+      const policyId = req.params.policyId;
+      const { deleteRolePolicy } = rolePolicyService();
+
+      const { data, error } = await deleteRolePolicy(roleId, policyId);
+      if (error) {
+        res.status(error.code).send(error.message);
+        return;
+      }
+      res.status(200).send(data);
+      return;
+    } catch (error) {
+      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+      logEvent();
+      res.status(500).send({ message: "Unable to delete role policy" });
     }
   },
 );
