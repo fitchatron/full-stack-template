@@ -7,6 +7,7 @@ import { eventLogger } from "@utils/logger";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { APP_CONFIG } from "@utils/config/app.config";
+import { userService } from "@services/user-service";
 
 export function authService() {
   const { generateSaltAndHash, compareValueToHash } = cryptoService();
@@ -48,6 +49,9 @@ export function authService() {
           .returning()
       ).at(0);
       if (!user) throw new Error("No user returned");
+
+      const { assignRoleTo } = userService();
+      await assignRoleTo(user.id, "public", user.id);
       const session = await createSession(req, user.id);
       // Set cookie
       res.cookie("session", session.token, {
@@ -69,9 +73,6 @@ export function authService() {
 
   async function signInUser(req: Request, res: Response) {
     try {
-      console.log("the request is");
-      console.log(req);
-
       const result = signInUserSchema.safeParse({
         ...req.body,
       });

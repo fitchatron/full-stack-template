@@ -1,7 +1,7 @@
 import { Request } from "express";
 import { db } from "@db/db";
 import { withPagination } from "@db/utils";
-import { users } from "@db/schema";
+import { roles, userRoles, users } from "@db/schema";
 import { updateUserSchema } from "@validators/user";
 import { asc, eq } from "drizzle-orm";
 import { eventLogger } from "@utils/logger";
@@ -141,5 +141,46 @@ export function userService() {
     }
   }
 
-  return { getUsers, getUserById, updateUserById, deleteUserById };
+  async function assignRoleTo(
+    userId: string,
+    roleName: string,
+    createdBy: string,
+  ) {
+    const roleToAssign = await db.query.roles.findFirst({
+      where: eq(roles.name, roleName),
+    });
+    if (!roleToAssign) {
+      const { logEvent } = eventLogger({
+        type: "error",
+        message: `Attempted to add ${roleName} but not found`,
+      });
+      logEvent();
+      return {
+        data: undefined,
+        error: { code: 500, message: "Unable to assign role. Role not found." },
+      };
+    }
+
+    const userRole = await db
+      .insert(userRoles)
+      .values({
+        roleId: roleToAssign.id,
+        userId: userId,
+        createdBy,
+        updatedBy: createdBy,
+      })
+      .returning();
+
+    return {
+      data: userRole,
+      error: undefined,
+    };
+  }
+  return {
+    getUsers,
+    getUserById,
+    updateUserById,
+    deleteUserById,
+    assignRoleTo,
+  };
 }
