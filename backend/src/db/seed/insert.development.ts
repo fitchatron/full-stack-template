@@ -8,6 +8,7 @@ import { roles, sessions, userRoles, users } from "@db/schema";
 import { NewSession, NewUser, NewUserRole } from "@models/orm-model";
 import { randomBytes } from "crypto";
 import { eq } from "drizzle-orm";
+import { seedResources } from "./resources";
 
 faker.seed(4);
 const { generateSaltAndHash } = cryptoService();
@@ -122,6 +123,9 @@ const main = async () => {
 
     await createSystemUser();
     console.log("🦸 Admin user created...\n");
+
+    await seedResources();
+    console.log(`📋 resources created...\n`);
 
     await seedPolicies();
     console.log("🕵️‍♀️ Roles and policies created...\n");

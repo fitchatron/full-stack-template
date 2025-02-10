@@ -1,6 +1,7 @@
 import {
   permissions,
   policies,
+  resources,
   rolePermissions,
   rolePolicies,
   roles,
@@ -33,3 +34,6 @@ export type NewUserRole = InferInsertModel<typeof userRoles>;
 
 export type Session = InferSelectModel<typeof sessions>;
 export type NewSession = InferInsertModel<typeof sessions>;
+
+export type Resource = InferSelectModel<typeof resources>;
+export type NewResource = InferInsertModel<typeof resources>;
