@@ -6,6 +6,8 @@ import { addUserRoleSchema } from "@validators/user-roles";
 import { and, eq } from "drizzle-orm";
 
 export function userRoleService() {
+  const { logEvent } = eventLogger();
+
   async function createUserRole(
     userId: string,
     payload: Record<string, string>,
@@ -22,8 +24,7 @@ export function userRoleService() {
         .returning();
       return { data: userRole, error: undefined };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to create user role" },
@@ -42,8 +43,7 @@ export function userRoleService() {
         error: undefined,
       };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to delete user role" },

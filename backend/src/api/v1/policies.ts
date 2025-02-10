@@ -4,6 +4,7 @@ import { policyService } from "@services/policy-service";
 
 const router = Router();
 const service = policyService();
+const { logEvent } = eventLogger();
 
 /**
  * @openapi
@@ -137,8 +138,7 @@ router.get("/:policyId", async (req: Request, res: Response) => {
     res.status(200).send(data);
     return;
   } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
+    logEvent({ type: "error", message: `${error}` });
     res.status(500).send({ message: "Unable to get policy" });
   }
 });
@@ -203,8 +203,7 @@ router.put("/:policyId", async (req: Request, res: Response) => {
     res.status(200).send(data);
     return;
   } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
+    logEvent({ type: "error", message: `${error}` });
     res.status(500).send({ message: "Unable to update policy" });
   }
 });
@@ -246,8 +245,7 @@ router.delete("/:policyId", async (req: Request, res: Response) => {
     res.status(200).send(data);
     return;
   } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
+    logEvent({ type: "error", message: `${error}` });
     res.status(500).send({ message: "Unable to delete policy" });
   }
 });

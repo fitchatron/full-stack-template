@@ -6,6 +6,7 @@ import { userRoleService } from "@services/user-role-service";
 
 const router = Router();
 const service = userService();
+const { logEvent } = eventLogger();
 
 /**
  * @openapi
@@ -95,8 +96,7 @@ router.get(
       res.status(200).send(data);
       return;
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       res.status(500).send({ message: "Unable to get user" });
     }
   },
@@ -170,8 +170,7 @@ router.put(
       res.status(200).send(data);
       return;
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       res.status(500).send({ message: "Unable to update user" });
     }
   },
@@ -214,8 +213,7 @@ router.delete("/:userId", async (req: Request, res: Response) => {
     res.status(200).send(data);
     return;
   } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
+    logEvent({ type: "error", message: `${error}` });
     res.status(500).send({ message: "Unable to delete user" });
   }
 });
@@ -343,8 +341,7 @@ router.delete(
       res.status(200).send(data);
       return;
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       res.status(500).send({ message: "Unable to delete user role" });
     }
   },

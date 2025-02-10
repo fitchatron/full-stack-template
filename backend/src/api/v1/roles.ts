@@ -5,6 +5,7 @@ import { rolePolicyService } from "@services/role-policy-service";
 
 const router = Router();
 const service = roleService();
+const { logEvent } = eventLogger();
 
 /**
  * @openapi
@@ -138,8 +139,7 @@ router.get("/:roleId", async (req: Request, res: Response) => {
     res.status(200).send(data);
     return;
   } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
+    logEvent({ type: "error", message: `${error}` });
     res.status(500).send({ message: "Unable to get role" });
   }
 });
@@ -204,8 +204,7 @@ router.put("/:roleId", async (req: Request, res: Response) => {
     res.status(200).send(data);
     return;
   } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
+    logEvent({ type: "error", message: `${error}` });
     res.status(500).send({ message: "Unable to update role" });
   }
 });
@@ -247,8 +246,7 @@ router.delete("/:roleId", async (req: Request, res: Response) => {
     res.status(200).send(data);
     return;
   } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
+    logEvent({ type: "error", message: `${error}` });
     res.status(500).send({ message: "Unable to delete role" });
   }
 });
@@ -371,8 +369,7 @@ router.delete(
       res.status(200).send(data);
       return;
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       res.status(500).send({ message: "Unable to delete role policy" });
     }
   },

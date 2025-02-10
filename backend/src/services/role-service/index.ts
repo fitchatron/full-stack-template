@@ -8,6 +8,8 @@ import { parseZodErrorToResponse } from "@utils/error";
 import { addRoleSchema, updateRoleSchema } from "@validators/role";
 
 export function roleService() {
+  const { logEvent } = eventLogger();
+
   async function getRoles(req: Request) {
     try {
       const page = parseInt(req.query.page?.toString() ?? "1");
@@ -25,11 +27,7 @@ export function roleService() {
 
       return { data: payload, error: undefined };
     } catch (error) {
-      const { logEvent } = eventLogger({
-        type: "error",
-        message: `${error}`,
-      });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to fetch users" },
@@ -47,11 +45,7 @@ export function roleService() {
 
       return { data: role, error: undefined };
     } catch (error) {
-      const { logEvent } = eventLogger({
-        type: "error",
-        message: `${error}`,
-      });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to create role" },
@@ -61,7 +55,7 @@ export function roleService() {
 
   async function getRoleById(id: string) {
     try {
-      const role = await db.query.permissions.findFirst({
+      const role = await db.query.roles.findFirst({
         where: eq(roles.id, id),
       });
 
@@ -77,11 +71,7 @@ export function roleService() {
         error: undefined,
       };
     } catch (error) {
-      const { logEvent } = eventLogger({
-        type: "error",
-        message: `${error}`,
-      });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to get role" },
@@ -142,11 +132,7 @@ export function roleService() {
       if (!updated) throw new Error("No role returned");
       return { data: updated, error: undefined };
     } catch (error) {
-      const { logEvent } = eventLogger({
-        type: "error",
-        message: `${error}`,
-      });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to update role" },
@@ -162,11 +148,7 @@ export function roleService() {
         error: undefined,
       };
     } catch (error) {
-      const { logEvent } = eventLogger({
-        type: "error",
-        message: `${error}`,
-      });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to delete role" },

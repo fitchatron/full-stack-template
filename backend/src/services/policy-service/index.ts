@@ -8,6 +8,8 @@ import { addPolicySchema, updatePolicySchema } from "@validators/policy";
 import { parseZodErrorToResponse } from "@utils/error";
 
 export function policyService() {
+  const { logEvent } = eventLogger();
+
   async function getPolicies(req: Request) {
     try {
       const page = parseInt(req.query.page?.toString() ?? "1");
@@ -25,8 +27,7 @@ export function policyService() {
 
       return { data: payload, error: undefined };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to fetch policies" },
@@ -44,8 +45,7 @@ export function policyService() {
 
       return { data: policy, error: undefined };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to create policy" },
@@ -71,8 +71,7 @@ export function policyService() {
         error: undefined,
       };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to get policy" },
@@ -141,8 +140,7 @@ export function policyService() {
       if (!updated) throw new Error("No policy returned");
       return { data: updated, error: undefined };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to update policy" },
@@ -158,8 +156,7 @@ export function policyService() {
         error: undefined,
       };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to delete policy" },

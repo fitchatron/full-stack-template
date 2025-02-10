@@ -11,6 +11,7 @@ import { userService } from "@services/user-service";
 
 export function authService() {
   const { generateSaltAndHash, compareValueToHash } = cryptoService();
+  const { logEvent } = eventLogger();
 
   async function signUpUser(req: Request, res: Response) {
     try {
@@ -62,8 +63,7 @@ export function authService() {
       });
       return { data: user, error: undefined };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to create user" },
@@ -103,11 +103,10 @@ export function authService() {
       });
       return { data: user, error: undefined };
     } catch (error) {
-      const { logEvent } = eventLogger({
+      logEvent({
         type: "error",
         message: `${error}`,
       });
-      logEvent();
       return failedSignInHelper();
     }
   }

@@ -7,6 +7,8 @@ import { asc, eq } from "drizzle-orm";
 import { eventLogger } from "@utils/logger";
 
 export function userService() {
+  const { logEvent } = eventLogger();
+
   async function getUsers(req: Request) {
     try {
       const page = parseInt(req.query.page?.toString() ?? "1");
@@ -24,8 +26,7 @@ export function userService() {
 
       return { data: payload, error: undefined };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to fetch users" },
@@ -51,8 +52,7 @@ export function userService() {
         error: undefined,
       };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to get user" },
@@ -115,8 +115,7 @@ export function userService() {
       if (!updated) throw new Error("No user returned");
       return { data: updated, error: undefined };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to update user" },
@@ -132,8 +131,7 @@ export function userService() {
         error: undefined,
       };
     } catch (error) {
-      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-      logEvent();
+      logEvent({ type: "error", message: `${error}` });
       return {
         data: undefined,
         error: { code: 500, message: "Unable to delete user" },
@@ -150,11 +148,10 @@ export function userService() {
       where: eq(roles.name, roleName),
     });
     if (!roleToAssign) {
-      const { logEvent } = eventLogger({
+      logEvent({
         type: "error",
         message: `Attempted to add ${roleName} but not found`,
       });
-      logEvent();
       return {
         data: undefined,
         error: { code: 500, message: "Unable to assign role. Role not found." },

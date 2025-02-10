@@ -3,8 +3,8 @@ type Event = {
   message: string;
 };
 
-export function eventLogger(event: Event) {
-  function logEvent() {
+export function eventLogger() {
+  function logEvent(event: Event) {
     switch (event.type) {
       case "error":
         console.log("LOGGING>>>");
