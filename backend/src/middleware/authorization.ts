@@ -1,10 +1,13 @@
 import { db } from "@db/db";
-import { rolePermissions, userRoles, permissions, roles } from "@db/schema";
+import { userRoles, roles, rolePolicies, policies } from "@db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { Request, Response, NextFunction } from "express";
 
 // middleware for doing role-based permissions
-export default function permit(permissionName: string) {
+export default function permit(
+  resource: string,
+  action: "view" | "create" | "edit" | "delete",
+) {
   // return a middleware
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -19,34 +22,53 @@ export default function permit(permissionName: string) {
         .select({
           roleId: roles.id,
           roleName: sql`${roles.name}`.as("roleName"),
-          permissionName: sql`${permissions.name}`.as("permissionName"),
+          resource: policies.resource,
+          action: policies.action,
+          condition: policies.condition,
+          decision: policies.decision,
         })
-        .from(rolePermissions)
-        .innerJoin(
-          permissions,
-          eq(permissions.id, rolePermissions.permissionId),
+        .from(rolePolicies)
+        .innerJoin(policies, eq(policies.id, rolePolicies.policyId))
+        .innerJoin(roles, eq(roles.id, rolePolicies.roleId))
+        .where(
+          and(eq(policies.resource, resource), eq(policies.action, action)),
         )
-        .innerJoin(roles, eq(roles.id, rolePermissions.roleId))
         .as("sq");
 
-      const currentUserRoles = await db
+      const currentUserPolicies = await db
         .select({
           userId: userRoles.userId,
           roleId: sq.roleId,
           roleName: sq.roleName,
-          permissionName: sq.permissionName,
+          resource: sq.resource,
+          action: sq.action,
+          condition: sq.condition,
+          decision: sq.decision,
         })
         .from(userRoles)
         .innerJoin(sq, eq(sq.roleId, userRoles.roleId))
-        .where(
-          and(
-            eq(userRoles.userId, user.id),
-            eq(sq.permissionName, permissionName),
-          ),
-        );
+        .where(and(eq(userRoles.userId, user.id)));
 
-      if (!currentUserRoles || currentUserRoles.length === 0) {
-        res.status(403).json({ error: "Unauthorized" });
+      if (!currentUserPolicies || currentUserPolicies.length === 0) {
+        res.status(403).json({ error: "Forbidden" });
+      }
+
+      const decisions: ("allow" | "deny")[] = [];
+      //TODO: check on conditions and decisions
+      for (const row of currentUserPolicies) {
+        // If there is no condition, just push the decision
+        if (!row.condition) {
+          decisions.push(row.decision);
+          continue;
+        }
+
+        //TODO: check conditions
+        decisions.push(row.decision);
+        continue;
+      }
+
+      if (decisions.find((decision) => decision === "deny") !== undefined) {
+        res.status(403).json({ error: "Forbidden" });
       }
       next();
     } catch (error) {
@@ -55,3 +77,5 @@ export default function permit(permissionName: string) {
     }
   };
 }
+
+// async function isOwner() {}

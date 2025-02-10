@@ -35,16 +35,20 @@ const service = userService();
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.get("/", permit("superuser"), async (req: Request, res: Response) => {
-  const { data, error } = await service.getUsers(req);
+router.get(
+  "/",
+  permit("users", "view"),
+  async (req: Request, res: Response) => {
+    const { data, error } = await service.getUsers(req);
 
-  if (error) {
-    res.status(error.code).send(error.message);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
-  }
-  res.status(200).send(data);
-  return;
-});
+  },
+);
 
 /**
  * @openapi
@@ -75,24 +79,28 @@ router.get("/", permit("superuser"), async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-router.get("/:userId", async (req: Request, res: Response) => {
-  try {
-    const userId = req.params.userId;
+router.get(
+  "/:userId",
+  permit("users", "view"),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.userId;
 
-    const { data, error } = await service.getUserById(userId);
+      const { data, error } = await service.getUserById(userId);
 
-    if (error) {
-      res.status(error.code).send(error.message);
+      if (error) {
+        res.status(error.code).send(error.message);
+        return;
+      }
+      res.status(200).send(data);
       return;
+    } catch (error) {
+      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+      logEvent();
+      res.status(500).send({ message: "Unable to get user" });
     }
-    res.status(200).send(data);
-    return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to get user" });
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -148,22 +156,26 @@ router.get("/:userId", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-router.put("/:userId", async (req: Request, res: Response) => {
-  try {
-    const userId = req.params.userId;
-    const { data, error } = await service.updateUserById(userId, req.body);
-    if (error) {
-      res.status(error.code).send(error.message);
+router.put(
+  "/:userId",
+  permit("users", "edit"),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.userId;
+      const { data, error } = await service.updateUserById(userId, req.body);
+      if (error) {
+        res.status(error.code).send(error.message);
+        return;
+      }
+      res.status(200).send(data);
       return;
+    } catch (error) {
+      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+      logEvent();
+      res.status(500).send({ message: "Unable to update user" });
     }
-    res.status(200).send(data);
-    return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to update user" });
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -265,18 +277,22 @@ router.delete("/:userId", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/Forbidden'
  *
  */
-router.post("/:userId/roles", async (req: Request, res: Response) => {
-  const userId = req.params.userId;
-  const { createUserRole } = userRoleService();
+router.post(
+  "/:userId/roles",
+  permit("user_roless", "create"),
+  async (req: Request, res: Response) => {
+    const userId = req.params.userId;
+    const { createUserRole } = userRoleService();
 
-  const { data, error } = await createUserRole(userId, req.body);
-  if (error) {
-    res.status(error.code).send(error.message);
+    const { data, error } = await createUserRole(userId, req.body);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
-  }
-  res.status(200).send(data);
-  return;
-});
+  },
+);
 
 /**
  * @openapi
@@ -310,24 +326,28 @@ router.post("/:userId/roles", async (req: Request, res: Response) => {
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
-router.delete("/:userId/roles/:roleId", async (req: Request, res: Response) => {
-  try {
-    const userId = req.params.userId;
-    const roleId = req.params.roleId;
-    const { deleteUserRole } = userRoleService();
+router.delete(
+  "/:userId/roles/:roleId",
+  permit("user_roless", "delete"),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.userId;
+      const roleId = req.params.roleId;
+      const { deleteUserRole } = userRoleService();
 
-    const { data, error } = await deleteUserRole(userId, roleId);
-    if (error) {
-      res.status(error.code).send(error.message);
+      const { data, error } = await deleteUserRole(userId, roleId);
+      if (error) {
+        res.status(error.code).send(error.message);
+        return;
+      }
+      res.status(200).send(data);
       return;
+    } catch (error) {
+      const { logEvent } = eventLogger({ type: "error", message: `${error}` });
+      logEvent();
+      res.status(500).send({ message: "Unable to delete user role" });
     }
-    res.status(200).send(data);
-    return;
-  } catch (error) {
-    const { logEvent } = eventLogger({ type: "error", message: `${error}` });
-    logEvent();
-    res.status(500).send({ message: "Unable to delete user role" });
-  }
-});
+  },
+);
 
 export default router;

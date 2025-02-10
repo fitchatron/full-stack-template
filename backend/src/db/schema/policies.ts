@@ -1,12 +1,18 @@
 import { jsonb, pgTable, uuid, varchar } from "drizzle-orm/pg-core";
 import { timestamps, userMetadata } from "@db/columns.helpers";
-import { rolePolicies } from "@db/schema/role-policies";
+import {
+  rolePolicies,
+  resources,
+  policyActionEnum,
+  policyDecisionEnum,
+} from "@db/schema";
 import { relations } from "drizzle-orm";
-import { policyActionEnum, policyDecisionEnum } from "@db/schema/enums";
 
 export const policies = pgTable("policies", {
   id: uuid().notNull().primaryKey().defaultRandom(),
-  resource: varchar().notNull(),
+  resource: varchar()
+    .notNull()
+    .references(() => resources.id),
   action: policyActionEnum().notNull(),
   condition: jsonb(),
   decision: policyDecisionEnum().notNull().default("allow"),
@@ -15,8 +21,9 @@ export const policies = pgTable("policies", {
 });
 
 //MARK: - RELATIONS
-export const policiesRelations = relations(policies, ({ many }) => {
+export const policiesRelations = relations(policies, ({ many, one }) => {
   return {
     rolePolicies: many(rolePolicies),
+    resource: one(resources),
   };
 });

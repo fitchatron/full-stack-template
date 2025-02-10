@@ -41,6 +41,12 @@ export async function seedPolicies() {
       decision: "allow",
     },
     {
+      resource: "users",
+      action: "delete",
+      condition: { self: true },
+      decision: "deny",
+    },
+    {
       resource: "roles",
       action: "view",
       condition: undefined,
@@ -182,6 +188,30 @@ export async function seedPolicies() {
       resource: "user_roles",
       action: "delete",
       condition: undefined,
+      decision: "allow",
+    },
+    {
+      resource: "user_roles",
+      action: "view",
+      condition: { self: true },
+      decision: "allow",
+    },
+    {
+      resource: "user_roles",
+      action: "create",
+      condition: { self: true },
+      decision: "allow",
+    },
+    {
+      resource: "user_roles",
+      action: "edit",
+      condition: { self: true },
+      decision: "allow",
+    },
+    {
+      resource: "user_roles",
+      action: "delete",
+      condition: { self: true },
       decision: "allow",
     },
   ];
@@ -227,7 +257,9 @@ export async function seedPolicies() {
   });
 
   const userAdminPolicies: Policy[] = seededPolicies.filter(
-    (policy) => policy.resource === "users" && !policy.condition,
+    (policy) =>
+      (policy.resource === "users" && !policy.condition) ||
+      policy.resource === "user_roles",
   );
   const userAdminRole: Role | undefined = seededRoles.find(
     (role) => role.name === "user-admin",

@@ -1,5 +1,7 @@
+export * from "@db/schema/enums";
 export * from "@db/schema/permissions";
 export * from "@db/schema/policies";
+export * from "@db/schema/resources";
 export * from "@db/schema/roles";
 export * from "@db/schema/role-permissions";
 export * from "@db/schema/role-policies";
