@@ -1,9 +1,7 @@
 import { relations } from "drizzle-orm";
 import { index, pgTable, unique, uuid, varchar } from "drizzle-orm/pg-core";
 import { timestamps, userMetadata } from "@db/columns.helpers";
-import { userRoles } from "@db/schema/user-roles";
-import { rolePermissions } from "@db/schema/role-permissions";
-import { rolePolicies } from "@db/schema/role-policies";
+import { rolePolicies, userRoles } from "@db/schema";
 
 export const roles = pgTable(
   "roles",
@@ -24,7 +22,6 @@ export const roles = pgTable(
 export const rolesRelations = relations(roles, ({ many }) => {
   return {
     userRoles: many(userRoles),
-    rolePermissions: many(rolePermissions),
     rolePolicies: many(rolePolicies),
   };
 });

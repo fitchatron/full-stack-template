@@ -16,8 +16,8 @@ const swaggerOptions: Options = {
     tags: [
       { name: "Auth", description: "Authentication" },
       {
-        name: "Permissions",
-        description: "Permission management and retrieval",
+        name: "Policies",
+        description: "Policy management and retrieval",
       },
       { name: "Roles", description: "Role management and retrieval" },
       { name: "Status", description: "Server status" },
