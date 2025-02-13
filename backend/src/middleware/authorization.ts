@@ -3,7 +3,7 @@ import { userRoles, roles, rolePolicies, policies } from "@db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { Request, Response, NextFunction } from "express";
 
-// middleware for doing role-based permissions
+// middleware for doing ABAC
 export default function permit(
   resource: string,
   action: "view" | "create" | "edit" | "delete",

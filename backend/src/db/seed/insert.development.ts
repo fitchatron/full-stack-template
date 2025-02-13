@@ -1,6 +1,5 @@
 import { faker } from "@faker-js/faker";
 import { db } from "@db/db";
-// import { seedPermissions } from "@db/seed/permissions";
 import { seedPolicies } from "@db/seed/policies";
 import { createSystemUser, truncateTables } from "@db/seed/system";
 import { cryptoService } from "@utils/crypto";

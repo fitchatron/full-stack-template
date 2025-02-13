@@ -24,6 +24,9 @@ export const policies = pgTable("policies", {
 export const policiesRelations = relations(policies, ({ many, one }) => {
   return {
     rolePolicies: many(rolePolicies),
-    resource: one(resources),
+    resource: one(resources, {
+      fields: [policies.resource],
+      references: [resources.id],
+    }),
   };
 });

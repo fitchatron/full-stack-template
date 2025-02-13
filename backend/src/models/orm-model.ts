@@ -1,8 +1,6 @@
 import {
-  permissions,
   policies,
   resources,
-  rolePermissions,
   rolePolicies,
   roles,
   sessions,
@@ -13,12 +11,6 @@ import { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
 export type Role = InferSelectModel<typeof roles>;
 export type NewRole = InferInsertModel<typeof roles>;
-
-export type Permission = InferSelectModel<typeof permissions>;
-export type NewPermission = InferInsertModel<typeof permissions>;
-
-export type RolePermission = InferSelectModel<typeof rolePermissions>;
-export type NewRolePermission = InferInsertModel<typeof rolePermissions>;
 
 export type Policy = InferSelectModel<typeof policies>;
 export type NewPolicy = InferInsertModel<typeof policies>;

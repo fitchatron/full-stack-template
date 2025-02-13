@@ -30,7 +30,7 @@ export const rolePoliciesRelations = relations(rolePolicies, ({ one }) => ({
     fields: [rolePolicies.roleId],
     references: [roles.id],
   }),
-  permission: one(policies, {
+  policy: one(policies, {
     fields: [rolePolicies.policyId],
     references: [policies.id],
   }),
