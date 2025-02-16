@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import v1 from "@api/v1/index";
+import router from "@api/routes";
 
 const app = express();
 app.use(express.json());
@@ -15,6 +15,6 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Hello, TypeScript + Node.js + Express!");
   return;
 });
-app.use(`/api`, v1);
+app.use(`/api`, router);
 
 export default app;
