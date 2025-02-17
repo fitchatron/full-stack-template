@@ -11,3 +11,7 @@ export const db = drizzle(client, {
   logger: true,
   casing: "snake_case",
 });
+
+export function closeConnection() {
+  client.end();
+}

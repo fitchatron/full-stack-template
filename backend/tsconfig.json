@@ -113,6 +113,7 @@
       "@middleware/*": ["./src/middleware/*"],
       "@models/*": ["./src/models/*"],
       "@services/*": ["./src/services/*"],
+      "@test/*": ["./__test__/*"],
       "@utils/*": ["./src/utils/*"],
       "@validators/*": ["./src/validators/*"]
     }

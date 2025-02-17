@@ -8,7 +8,7 @@
     "start": "node dist/main.js",
     "build": "tsc",
     "dev": "tsx watch src/main.ts",
-    "test": "jest",
+    "test": "jest --runInBand",
     "lint": "eslint .",
     "prettier-check": "npx prettier --check .",
     "prettier-write": "npx prettier --write .",
