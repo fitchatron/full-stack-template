@@ -13,7 +13,7 @@ type RequestSession = {
   token: string;
 };
 
-const adminUser: RequestUser = {
+export const adminUser: RequestUser = {
   id: "2192b68f-8128-48a6-9a69-c268a489e5a3",
   email: "Haylee57@hotmail.com",
   firstName: "Chris",
@@ -26,6 +26,7 @@ const userAdminUser: RequestUser = {
   firstName: "Malika",
   lastName: "Murazik",
 };
+
 export const publicUser: RequestUser = {
   id: "7c8ea25d-5376-4964-966e-f91bad5091cc",
   email: "Norbert_Wunsch4@yahoo.com",
@@ -57,22 +58,35 @@ jest.mock("../src/middleware/authentication", () => ({
     const { user, session } = mockUserSessionFactory();
 
     if (!user) {
-      res.status(401).json({ error: "Authentication required" });
+      console.log("Mock auth: No user, sending 401");
+
+      if (!res.headersSent) {
+        res.status(401).json({ error: "Authentication required" });
+      }
       return;
     }
     if (!session) {
-      res.status(401).json({ error: "Invalid session" });
+      console.log("Mock auth: Invalid session, sending 401");
+      if (!res.headersSent) {
+        res.status(401).json({ error: "Invalid session" });
+      }
       return;
     }
 
     if (session.token === "expired") {
-      res.status(401).json({ error: "Invalid session" });
+      console.log("Mock auth: Session Expired, sending 401");
+      if (!res.headersSent) {
+        res.status(401).json({ error: "Invalid session" });
+      }
       return;
     }
 
-    req.user = user;
-    req.session = session;
-    next();
+    console.log("Mock auth: Setting user");
+    if (!res.headersSent) {
+      req.user = user;
+      req.session = session;
+      next();
+    }
   },
 }));
 

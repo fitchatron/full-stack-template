@@ -1,7 +1,8 @@
-import { Request, Response, Router } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import { eventLogger } from "@utils/logger";
 import { roleService } from "@services/role-service";
 import { rolePolicyService } from "@services/role-policy-service";
+import permit from "@middleware/authorization";
 
 const router = Router();
 const service = roleService();
@@ -35,16 +36,20 @@ const { logEvent } = eventLogger();
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.get("/", async (req: Request, res: Response) => {
-  const { data, error } = await service.getRoles(req);
+router.get(
+  "/",
+  permit("roles", "view"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { data, error } = await service.getRoles(req);
 
-  if (error) {
-    res.status(error.code).send(error.message);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
-  }
-  res.status(200).send(data);
-  return;
-});
+  },
+);
 
 /**
  * @openapi
@@ -86,16 +91,20 @@ router.get("/", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/Forbidden'
  *
  */
-router.post("/", async (req: Request, res: Response) => {
-  const { data, error } = await service.createRole(req);
+router.post(
+  "/",
+  permit("roles", "create"),
+  async (req: Request, res: Response) => {
+    const { data, error } = await service.createRole(req);
 
-  if (error) {
-    res.status(error.code).send(error.message);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
-  }
-  res.status(200).send(data);
-  return;
-});
+  },
+);
 
 /**
  * @openapi
@@ -126,23 +135,27 @@ router.post("/", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-router.get("/:roleId", async (req: Request, res: Response) => {
-  try {
-    const roleId = req.params.roleId;
+router.get(
+  "/:roleId",
+  permit("roles", "view"),
+  async (req: Request, res: Response) => {
+    try {
+      const roleId = req.params.roleId;
 
-    const { data, error } = await service.getRoleById(roleId);
+      const { data, error } = await service.getRoleById(roleId);
 
-    if (error) {
-      res.status(error.code).send(error.message);
+      if (error) {
+        res.status(error.code).send(error.message);
+        return;
+      }
+      res.status(200).send(data);
       return;
+    } catch (error) {
+      logEvent({ type: "error", message: `${error}` });
+      res.status(500).send({ message: "Unable to get role" });
     }
-    res.status(200).send(data);
-    return;
-  } catch (error) {
-    logEvent({ type: "error", message: `${error}` });
-    res.status(500).send({ message: "Unable to get role" });
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -193,21 +206,25 @@ router.get("/:roleId", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-router.put("/:roleId", async (req: Request, res: Response) => {
-  try {
-    const roleId = req.params.roleId;
-    const { data, error } = await service.updateRoleById(roleId, req.body);
-    if (error) {
-      res.status(error.code).send(error.message);
+router.put(
+  "/:roleId",
+  permit("roles", "edit"),
+  async (req: Request, res: Response) => {
+    try {
+      const roleId = req.params.roleId;
+      const { data, error } = await service.updateRoleById(roleId, req.body);
+      if (error) {
+        res.status(error.code).send(error.message);
+        return;
+      }
+      res.status(200).send(data);
       return;
+    } catch (error) {
+      logEvent({ type: "error", message: `${error}` });
+      res.status(500).send({ message: "Unable to update role" });
     }
-    res.status(200).send(data);
-    return;
-  } catch (error) {
-    logEvent({ type: "error", message: `${error}` });
-    res.status(500).send({ message: "Unable to update role" });
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -235,21 +252,25 @@ router.put("/:roleId", async (req: Request, res: Response) => {
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
-router.delete("/:roleId", async (req: Request, res: Response) => {
-  try {
-    const roleId = req.params.roleId;
-    const { data, error } = await service.deleteRoleById(roleId);
-    if (error) {
-      res.status(error.code).send(error.message);
+router.delete(
+  "/:roleId",
+  permit("roles", "delete"),
+  async (req: Request, res: Response) => {
+    try {
+      const roleId = req.params.roleId;
+      const { data, error } = await service.deleteRoleById(roleId);
+      if (error) {
+        res.status(error.code).send(error.message);
+        return;
+      }
+      res.status(200).send(data);
       return;
+    } catch (error) {
+      logEvent({ type: "error", message: `${error}` });
+      res.status(500).send({ message: "Unable to delete role" });
     }
-    res.status(200).send(data);
-    return;
-  } catch (error) {
-    logEvent({ type: "error", message: `${error}` });
-    res.status(500).send({ message: "Unable to delete role" });
-  }
-});
+  },
+);
 
 /**
  *
@@ -308,18 +329,22 @@ router.delete("/:roleId", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/Forbidden'
  *
  */
-router.post("/:roleId/policies", async (req: Request, res: Response) => {
-  const roleId = req.params.roleId;
-  const { createRolePolicy } = rolePolicyService();
+router.post(
+  "/:roleId/policies",
+  permit("role_policies", "create"),
+  async (req: Request, res: Response) => {
+    const roleId = req.params.roleId;
+    const { createRolePolicy } = rolePolicyService();
 
-  const { data, error } = await createRolePolicy(roleId, req.body);
-  if (error) {
-    res.status(error.code).send(error.message);
+    const { data, error } = await createRolePolicy(roleId, req.body);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
-  }
-  res.status(200).send(data);
-  return;
-});
+  },
+);
 
 /**
  * @openapi
@@ -355,6 +380,7 @@ router.post("/:roleId/policies", async (req: Request, res: Response) => {
  */
 router.delete(
   "/:roleId/policies/:policyId",
+  permit("role_policies", "delete"),
   async (req: Request, res: Response) => {
     try {
       const roleId = req.params.roleId;

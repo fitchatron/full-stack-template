@@ -1,6 +1,7 @@
 import { Request, Response, Router } from "express";
 import { eventLogger } from "@utils/logger";
 import { policyService } from "@services/policy-service";
+import permit from "@middleware/authorization";
 
 const router = Router();
 const service = policyService();
@@ -34,16 +35,20 @@ const { logEvent } = eventLogger();
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.get("/", async (req: Request, res: Response) => {
-  const { data, error } = await service.getPolicies(req);
+router.get(
+  "/",
+  permit("policies", "view"),
+  async (req: Request, res: Response) => {
+    const { data, error } = await service.getPolicies(req);
 
-  if (error) {
-    res.status(error.code).send(error.message);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
-  }
-  res.status(200).send(data);
-  return;
-});
+  },
+);
 
 /**
  * @openapi
@@ -85,16 +90,20 @@ router.get("/", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/Forbidden'
  *
  */
-router.post("/", async (req: Request, res: Response) => {
-  const { data, error } = await service.createPolicy(req);
+router.post(
+  "/",
+  permit("policies", "create"),
+  async (req: Request, res: Response) => {
+    const { data, error } = await service.createPolicy(req);
 
-  if (error) {
-    res.status(error.code).send(error.message);
+    if (error) {
+      res.status(error.code).send(error.message);
+      return;
+    }
+    res.status(200).send(data);
     return;
-  }
-  res.status(200).send(data);
-  return;
-});
+  },
+);
 
 /**
  * @openapi
@@ -125,23 +134,27 @@ router.post("/", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-router.get("/:policyId", async (req: Request, res: Response) => {
-  try {
-    const policyId = req.params.policyId;
+router.get(
+  "/:policyId",
+  permit("policies", "view"),
+  async (req: Request, res: Response) => {
+    try {
+      const policyId = req.params.policyId;
 
-    const { data, error } = await service.getPolicyById(policyId);
+      const { data, error } = await service.getPolicyById(policyId);
 
-    if (error) {
-      res.status(error.code).send(error.message);
+      if (error) {
+        res.status(error.code).send(error.message);
+        return;
+      }
+      res.status(200).send(data);
       return;
+    } catch (error) {
+      logEvent({ type: "error", message: `${error}` });
+      res.status(500).send({ message: "Unable to get policy" });
     }
-    res.status(200).send(data);
-    return;
-  } catch (error) {
-    logEvent({ type: "error", message: `${error}` });
-    res.status(500).send({ message: "Unable to get policy" });
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -192,21 +205,28 @@ router.get("/:policyId", async (req: Request, res: Response) => {
  *         $ref: '#/components/responses/NotFound'
  *
  */
-router.put("/:policyId", async (req: Request, res: Response) => {
-  try {
-    const policyId = req.params.policyId;
-    const { data, error } = await service.updatePolicyById(policyId, req.body);
-    if (error) {
-      res.status(error.code).send(error.message);
+router.put(
+  "/:policyId",
+  permit("policies", "edit"),
+  async (req: Request, res: Response) => {
+    try {
+      const policyId = req.params.policyId;
+      const { data, error } = await service.updatePolicyById(
+        policyId,
+        req.body,
+      );
+      if (error) {
+        res.status(error.code).send(error.message);
+        return;
+      }
+      res.status(200).send(data);
       return;
+    } catch (error) {
+      logEvent({ type: "error", message: `${error}` });
+      res.status(500).send({ message: "Unable to update policy" });
     }
-    res.status(200).send(data);
-    return;
-  } catch (error) {
-    logEvent({ type: "error", message: `${error}` });
-    res.status(500).send({ message: "Unable to update policy" });
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -234,20 +254,24 @@ router.put("/:policyId", async (req: Request, res: Response) => {
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
-router.delete("/:policyId", async (req: Request, res: Response) => {
-  try {
-    const policyId = req.params.policyId;
-    const { data, error } = await service.deletePolicyById(policyId);
-    if (error) {
-      res.status(error.code).send(error.message);
+router.delete(
+  "/:policyId",
+  permit("policies", "delete"),
+  async (req: Request, res: Response) => {
+    try {
+      const policyId = req.params.policyId;
+      const { data, error } = await service.deletePolicyById(policyId);
+      if (error) {
+        res.status(error.code).send(error.message);
+        return;
+      }
+      res.status(200).send(data);
       return;
+    } catch (error) {
+      logEvent({ type: "error", message: `${error}` });
+      res.status(500).send({ message: "Unable to delete policy" });
     }
-    res.status(200).send(data);
-    return;
-  } catch (error) {
-    logEvent({ type: "error", message: `${error}` });
-    res.status(500).send({ message: "Unable to delete policy" });
-  }
-});
+  },
+);
 
 export default router;
