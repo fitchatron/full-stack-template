@@ -244,13 +244,11 @@ router.put(
  *         description: Role ID
  *     responses:
  *       "200":
- *         description: Number of rows deleted
+ *         $ref: '#/components/responses/DeleteResponse'
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
  *       "403":
  *         $ref: '#/components/responses/Forbidden'
- *       "404":
- *         $ref: '#/components/responses/NotFound'
  */
 router.delete(
   "/:roleId",
@@ -370,13 +368,11 @@ router.post(
  *         description: Policy ID
  *     responses:
  *       "200":
- *         description: Number of rows deleted
+ *         $ref: '#/components/responses/DeleteResponse'
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
  *       "403":
  *         $ref: '#/components/responses/Forbidden'
- *       "404":
- *         $ref: '#/components/responses/NotFound'
  */
 router.delete(
   "/:roleId/policies/:policyId",

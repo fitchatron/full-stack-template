@@ -127,7 +127,7 @@ export function userService() {
     try {
       const rows = await db.delete(users).where(eq(users.id, id));
       return {
-        data: rows.count,
+        data: { rows: rows.count },
         error: undefined,
       };
     } catch (error) {

@@ -246,7 +246,7 @@ router.put(
  *         description: policy ID
  *     responses:
  *       "200":
- *         description: Number of rows deleted
+ *         $ref: '#/components/responses/DeleteResponse'
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
  *       "403":

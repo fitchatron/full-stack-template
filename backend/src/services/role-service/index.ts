@@ -144,7 +144,7 @@ export function roleService() {
     try {
       const rows = await db.delete(roles).where(eq(roles.id, id));
       return {
-        data: rows.count,
+        data: { rows: rows.count },
         error: undefined,
       };
     } catch (error) {

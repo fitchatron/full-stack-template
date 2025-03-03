@@ -14,24 +14,24 @@ type RequestSession = {
 };
 
 export const adminUser: RequestUser = {
-  id: "2192b68f-8128-48a6-9a69-c268a489e5a3",
-  email: "Haylee57@hotmail.com",
-  firstName: "Chris",
-  lastName: "Kemmer",
+  id: "f8fbb3f0-46c3-4df2-a906-0f6fcd2192b6",
+  email: "Karli.Nienow@gmail.com",
+  firstName: "Tressie",
+  lastName: "Brekke",
 };
 
 const userAdminUser: RequestUser = {
-  id: "e680d30b-6131-48a8-8905-1661d29ee433",
-  email: "Hans17@gmail.com",
-  firstName: "Malika",
-  lastName: "Murazik",
+  id: "aa09a4a3-89d0-4560-9d26-36936fceb222",
+  email: "Chase30@gmail.com",
+  firstName: "Shanon",
+  lastName: "Herman",
 };
 
 export const publicUser: RequestUser = {
-  id: "7c8ea25d-5376-4964-966e-f91bad5091cc",
-  email: "Norbert_Wunsch4@yahoo.com",
-  firstName: "Tyree",
-  lastName: "Weissnat",
+  id: "9c268a48-9e5a-4372-be6d-6e659dd9193b",
+  email: "Braxton_Hickle4@yahoo.com",
+  firstName: "Jordi",
+  lastName: "Bergnaum",
 };
 
 // Default user factory

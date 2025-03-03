@@ -152,7 +152,7 @@ export function policyService() {
     try {
       const rows = await db.delete(policies).where(eq(policies.id, id));
       return {
-        data: rows.count,
+        data: { rows: rows.count },
         error: undefined,
       };
     } catch (error) {

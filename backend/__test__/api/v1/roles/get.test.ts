@@ -4,7 +4,7 @@ import { setMockUserFactory, publicUser, adminUser } from "@test/jest.setup";
 import { Role } from "@models/orm-model";
 import { PaginatedResponse } from "@models/pagination";
 import { db } from "@db/db";
-import { count } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { roles } from "@db/schema";
 
 describe("Roles GET API routes.", () => {
@@ -61,7 +61,14 @@ describe("Roles GET API routes.", () => {
         session: { id: "sessionId", token: "tokenId" },
       }));
 
-      const roleId = "b60c051d-f474-4af3-856a-2673e3d6bdf6";
+      const roleName = "public";
+      const queryRole = await db.query.roles.findFirst({
+        where: eq(roles.name, roleName),
+      });
+
+      expect(queryRole).not.toBeUndefined();
+      const roleId = queryRole!.id;
+
       const { status, body } = await request(api).get(
         `/api/v1/roles/${roleId}`,
       );
@@ -87,13 +94,25 @@ describe("Roles GET API routes.", () => {
         session: { id: "sessionId", token: "tokenId" },
       }));
 
-      const roleId = "b60c051d-f474-4af3-856a-2673e3d6bdf6";
+      const roleName = "public";
+      const queryRole = await db.query.roles.findFirst({
+        where: eq(roles.name, roleName),
+      });
+
+      expect(queryRole).not.toBeUndefined();
+      const roleId = queryRole!.id;
       const { status } = await request(api).get(`/api/v1/roles/${roleId}`);
       expect(status).toEqual(403);
     });
 
     test("No user and a valid Role ID. Responds with 401 status code", async () => {
-      const roleId = "b60c051d-f474-4af3-856a-2673e3d6bdf6";
+      const roleName = "public";
+      const queryRole = await db.query.roles.findFirst({
+        where: eq(roles.name, roleName),
+      });
+
+      expect(queryRole).not.toBeUndefined();
+      const roleId = queryRole!.id;
       const { status } = await request(api).get(`/api/v1/roles/${roleId}`);
       expect(status).toEqual(401);
     });
