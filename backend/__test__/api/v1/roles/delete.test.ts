@@ -1,8 +1,6 @@
 import request from "supertest";
 import api from "@utils/config/api";
 import { setMockUserFactory, publicUser, adminUser } from "@test/jest.setup";
-import { Role } from "@models/orm-model";
-import { PaginatedResponse } from "@models/pagination";
 import { db } from "@db/db";
 import { and, count, eq } from "drizzle-orm";
 import { rolePolicies, roles } from "@db/schema";

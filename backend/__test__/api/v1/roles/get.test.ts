@@ -9,7 +9,7 @@ import { roles } from "@db/schema";
 
 describe("Roles GET API routes.", () => {
   describe("Get all roles.", () => {
-    test("Authenticated user with the read roles policy. Responds with 200 status code", async () => {
+    test("Authenticated user with the view:role policy. Responds with 200 status code", async () => {
       setMockUserFactory(() => ({
         user: adminUser,
         session: { id: "sessionId", token: "tokenId" },
@@ -38,7 +38,7 @@ describe("Roles GET API routes.", () => {
       expect(links.prev).toBeNull();
     });
 
-    test("Authenticated user without the read roles policy. Responds with 403 status code", async () => {
+    test("Authenticated user without the view:role policy. Responds with 403 status code", async () => {
       setMockUserFactory(() => ({
         user: publicUser,
         session: { id: "sessionId", token: "tokenId" },
@@ -55,7 +55,7 @@ describe("Roles GET API routes.", () => {
   });
 
   describe("Get role by ID", () => {
-    test("Authenticated user with the read roles policy and a valid Role ID. Responds with 200 status code", async () => {
+    test("Authenticated user with the view:role policy and a valid Role ID. Responds with 200 status code", async () => {
       setMockUserFactory(() => ({
         user: adminUser,
         session: { id: "sessionId", token: "tokenId" },
@@ -77,7 +77,7 @@ describe("Roles GET API routes.", () => {
       expect((body as Role).id).toEqual(roleId);
     });
 
-    test("Authenticated user with the read roles policy and an invalid Role ID. Responds with 404 status code", async () => {
+    test("Authenticated user with the view:role policy and an invalid Role ID. Responds with 404 status code", async () => {
       setMockUserFactory(() => ({
         user: adminUser,
         session: { id: "sessionId", token: "tokenId" },
@@ -88,7 +88,7 @@ describe("Roles GET API routes.", () => {
       expect(status).toEqual(404);
     });
 
-    test("Authenticated user without the read roles policy and a valid Role ID. Responds with 403 status code", async () => {
+    test("Authenticated user without the view:role policy and a valid Role ID. Responds with 403 status code", async () => {
       setMockUserFactory(() => ({
         user: publicUser,
         session: { id: "sessionId", token: "tokenId" },

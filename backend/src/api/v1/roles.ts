@@ -196,8 +196,6 @@ router.get(
  *           application/json:
  *             schema:
  *              $ref: '#/components/schemas/User'
- *       400:
- *         $ref: '#/components/responses/DuplicateEmail'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  *       403:
