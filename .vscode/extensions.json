@@ -1,7 +1,0 @@
-{
-  "recommendations": [
-    "esbenp.prettier-vscode",
-    "rangav.vscode-thunder-client",
-    "ms-azuretools.vscode-docker"
-  ]
-}
