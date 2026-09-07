@@ -8,8 +8,9 @@ authors = [
 ]
 requires-python = ">=3.14,<4.0"
 dependencies = [
+    "alembic>=1.19.2,<1.20.0",
     "fastapi[standard]>=0.141.1,<1.0.0",
-    "psycopg[binary]>=3.3.5",
+    "psycopg[binary]>=3.3.5,<3.4.0",
     "sqlalchemy>=2.0.52,<2.1.0",
 ]
 
@@ -45,6 +46,9 @@ ignore = [
 [tool.ruff.lint.pyupgrade]
 # Preserve types, even if a file imports `from __future__ import annotations`.
 keep-runtime-typing = true
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["T201"]  # CLI scripts are expected to print to the console
 
 [tool.fastapi]
 entrypoint = "app.main:app"
