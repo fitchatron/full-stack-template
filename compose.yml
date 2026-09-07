@@ -1,0 +1,26 @@
+name: full-stack-template
+services:
+  db:
+    image: postgres:18
+    # restart: always vs unless-stopped
+    # always will also restart the container after a manual docker stop
+    # unless-stopped is usually what's wanted for a dev db.
+    restart: unless-stopped
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - app-db-data:/var/lib/postgresql
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Variable not set}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+
+volumes:
+  app-db-data:
