@@ -19,5 +19,13 @@ class Settings(BaseSettings):
     FASTAPI_ENV: Literal["development"] | None = None
     PROJECT_NAME: str
 
+    DATABASE_URL: str
+
+    # sql alchemy database pool size
+    SQLALCHEMY_DATABASE_POOL_SIZE: int = 15
+
+    # sql alchemy pessimistic disconnect handling using pool pre ping
+    SQLALCHEMY_POOL_PRE_PING: bool = True
+
 
 settings = Settings()  # type: ignore # ty: ignore[unused-ignore-comment]
