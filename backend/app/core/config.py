@@ -16,9 +16,7 @@ class Settings(BaseSettings):
     )
 
     API_V1_STR: str = "/api/v1"
-    # Not FASTAPI_ENV: `fastapi dev` calls os.environ.setdefault("FASTAPI_ENV", "development")
-    # on startup, which as a real env var always wins over the .env file value.
-    ENVIRONMENT: Literal["development", "production"] | None = "development"
+    FASTAPI_ENV: Literal["development"] | None = None
     PROJECT_NAME: str
 
 
