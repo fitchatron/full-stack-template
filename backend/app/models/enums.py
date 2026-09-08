@@ -1,0 +1,17 @@
+from enum import StrEnum
+from sqlalchemy import Enum
+
+
+class AuthorizationAction(StrEnum):
+    all = "*"
+    select = "select"
+    update = "update"
+    insert = "insert"
+    delete = "delete"
+
+
+authorization_action_type = Enum(
+    AuthorizationAction,
+    name="authorization_action",
+    values_callable=lambda enum: [e.value for e in enum],
+)
