@@ -18,6 +18,7 @@ dependencies = [
 [dependency-groups]
 prod = []
 dev = [
+    "faker>=40.38.0",
     "ruff>=0.16.6,<0.17.0",
 ]
 
