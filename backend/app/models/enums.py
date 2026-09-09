@@ -4,9 +4,9 @@ from sqlalchemy import Enum
 
 class AuthorizationAction(StrEnum):
     all = "*"
-    select = "select"
+    create = "create"
+    read = "read"
     update = "update"
-    insert = "insert"
     delete = "delete"
 
 
