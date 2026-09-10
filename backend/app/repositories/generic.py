@@ -22,15 +22,17 @@ class CRUDRepository(Generic[ModelType, Schema]):
 
     def __init__(self, session: Session, model: Type[ModelType]) -> None:
         """
-        CRUDRepository constructor
+        CRUD Repository constructor
         """
 
         self.session = session
         self.model = model
 
-    def create(self, values: dict, commit: bool = True) -> Optional[ModelType]:
+    def create_single_item(
+        self, values: dict, commit: bool = True
+    ) -> Optional[ModelType]:
         """
-        Create a single row
+        Create a single item in the database and return a the Schema instance if successful.
         """
 
         sql = insert(self.model).values(**values)
@@ -49,11 +51,11 @@ class CRUDRepository(Generic[ModelType, Schema]):
 
         return result
 
-    def create_all(
+    def create_multiple_items(
         self, data: list[dict], commit: bool = True
     ) -> Optional[Sequence[ModelType]]:
         """
-        Create a all row
+        Create many items in the database and return a list if successful.
         """
         sql = insert(self.model).values(data)
 
@@ -68,14 +70,14 @@ class CRUDRepository(Generic[ModelType, Schema]):
 
         return result
 
-    def read(
+    def read_single_item(
         self,
         filters: FilterPayload,
         sort_by: list[OrderByCondition] | None = None,
         joins: Sequence[InstrumentedAttribute] | None = None,
     ) -> Optional[ModelType]:
         """
-        Read single row by specifying filters
+        Read a single item by specifying filters
         """
 
         sql = select(self.model)
@@ -97,7 +99,7 @@ class CRUDRepository(Generic[ModelType, Schema]):
 
         return self.session.scalars(sql).first()
 
-    def read_all(
+    def read_multiple_items(
         self,
         filters: FilterPayload | None = None,
         sort_by: list[OrderByCondition] | None = None,
@@ -105,7 +107,8 @@ class CRUDRepository(Generic[ModelType, Schema]):
         joins: Sequence[InstrumentedAttribute] | None = None,
     ) -> Page[Schema] | Sequence[ModelType]:
         """
-        Read many rows by specifying filters. Results is paginated.
+        Read many items by specifying filters.
+        Results can be paginated.
         """
 
         # ensure order by column is specified for pagination
@@ -138,7 +141,7 @@ class CRUDRepository(Generic[ModelType, Schema]):
             else self.session.scalars(sql).all()
         )
 
-    def update(
+    def update_multiple_items_with_same_values(
         self,
         filters: FilterPayload,
         values: dict,
@@ -146,7 +149,8 @@ class CRUDRepository(Generic[ModelType, Schema]):
         joins: Sequence[InstrumentedAttribute] | None = None,
     ) -> Sequence[ModelType]:
         """
-        Update multiple rows. When updating multiple rows, the updated rows are returned.
+        Update multiple items with the same values.
+        When updating multiple rows, the updated rows are returned.
         """
 
         sql = update(self.model).values(**values)
@@ -187,14 +191,15 @@ class CRUDRepository(Generic[ModelType, Schema]):
 
         return results
 
-    def update_all(
+    def update_multiple_items_with_different_values(
         self,
         filters: FilterPayload | None,
         parameters: list[dict],
         commit: bool = True,
     ) -> None:
         """
-        Update multiple rows. When updating multiple rows, the updated rows are not returned.
+        Update multiple items with different values.
+        When updating multiple rows, the updated rows are not returned.
         Limitation from SQLAlchemy.
         Parameters should be a list of dictionaries, where each dictionary contains the
         primary key and the fields to be updated.
@@ -216,7 +221,7 @@ class CRUDRepository(Generic[ModelType, Schema]):
         if commit:
             self.session.commit()
 
-    def delete(
+    def delete_multiple_items(
         self,
         filters: FilterPayload,
         commit: bool = True,
