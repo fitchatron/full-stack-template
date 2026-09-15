@@ -8,13 +8,7 @@ from pwdlib.hashers.bcrypt import BcryptHasher
 
 from app.core.config import settings
 
-password_hash = PasswordHash(
-    (
-        Argon2Hasher(),
-        BcryptHasher(),
-    )
-)
-
+password_hash = PasswordHash((Argon2Hasher(),))
 
 ALGORITHM = "HS256"
 
@@ -26,10 +20,8 @@ def create_access_token(subject: str | Any, expires_delta: timedelta) -> str:
     return encoded_jwt
 
 
-def verify_password(
-    plain_password: str, hashed_password: str
-) -> tuple[bool, str | None]:
-    return password_hash.verify_and_update(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return password_hash.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:

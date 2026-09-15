@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from typing import Type
 from app.repositories.generic import CRUDRepository
-from app.models.model import Role, Permission
+from app.models.model import Role, Permission, UserRole
 from app.schemas.permission import PermissionSchema
 
 
@@ -17,7 +17,7 @@ class PermissionRepository(CRUDRepository[Permission, PermissionSchema]):
         """
         super().__init__(session, model)
 
-    def read_all_permissions_for_user_id(self, user_id: int):
+    def read_all_permissions_for_user_id(self, user_id: str):
         """
         Read user permissions at app level
         """
@@ -29,7 +29,7 @@ class PermissionRepository(CRUDRepository[Permission, PermissionSchema]):
             .join(Role)
             .join(Role.role_permissions)
             .join(Permission)
-            .where(self.model.user_id == user_id)
+            .where(UserRole.user_id == user_id)
             .distinct()
         )
 

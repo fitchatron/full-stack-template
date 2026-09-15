@@ -1,12 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import (
-    Text,
-    DateTime,
-    ForeignKey,
-    UniqueConstraint,
-    text,
-)
+from sqlalchemy import Text, DateTime, ForeignKey, UniqueConstraint, text, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,10 +22,14 @@ class User(Base):
         primary_key=True,
         index=True,
     )
-    email: Mapped[str] = mapped_column(Text)
     username: Mapped[str] = mapped_column(Text)
+    email: Mapped[str] = mapped_column(Text)
+    hashed_password: Mapped[str] = mapped_column(Text)
+    salt: Mapped[str] = mapped_column(Text)
     given_name: Mapped[Optional[str]] = mapped_column(Text)
     family_name: Mapped[Optional[str]] = mapped_column(Text)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
