@@ -12,7 +12,7 @@ from app.schemas.filter_generator import (
     FilterCondition,
     FilterPayload,
 )
-from app.utils.model import ModelAttributeUtils
+from app.utils.column_path_resolver import ColumnPathResolver
 
 ModelType = TypeVar("ModelType")
 Schema = TypeVar("Schema")
@@ -215,7 +215,7 @@ class FilterGenerator(Generic[ModelType, Schema]):
         column_mapping: dict[str, KeyedColumnElement] = {},
     ) -> None:
         self.model = model
-        self.model_attribute_utils = ModelAttributeUtils(model=model)
+        self.column_path_resolver = ColumnPathResolver(model=model)
         self.column_mapping = column_mapping
 
     def generate_filter(
@@ -225,7 +225,7 @@ class FilterGenerator(Generic[ModelType, Schema]):
             attr = (
                 self.column_mapping.get(condition.column, None)
                 if self.column_mapping.get(condition.column, None) is not None
-                else self.model_attribute_utils.parse_column_to_attribute(
+                else self.column_path_resolver.parse_column_to_attribute(
                     condition.column
                 )
             )
