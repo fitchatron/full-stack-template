@@ -16,9 +16,7 @@ from app.services.user import UserService
 from app.schemas.auth import TokenPayload
 from app.core import security
 
-reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/login/access-token"
-)
+reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
 
 # FastAPI dependency: yields a session per request, closing it afterwards
