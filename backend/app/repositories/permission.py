@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from typing import Type
@@ -17,7 +19,7 @@ class PermissionRepository(CRUDRepository[Permission, PermissionSchema]):
         """
         super().__init__(session, model)
 
-    def read_all_permissions_for_user_id(self, user_id: str):
+    def read_all_permissions_for_user_id(self, user_id: uuid.UUID):
         """
         Read user permissions at app level
         """
