@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from pydantic import TypeAdapter
@@ -20,7 +22,7 @@ class UserService:
         self.user_role_repository = CRUDRepository(session, UserRole)
         self.permission_repository = PermissionRepository(session, Permission)
 
-    def read_by_id(self, user_id: str) -> User | None:
+    def read_by_id(self, user_id: UUID) -> User | None:
         """
         Function to get user by ID.
         """
@@ -32,7 +34,7 @@ class UserService:
             raise HTTPException(status_code=500, detail=str(exception))
 
     def read_active_permissions_for_user_id(
-        self, user_id: str
+        self, user_id: UUID
     ) -> list[PermissionSchema]:
         """
         Function to get user permissions at app level.

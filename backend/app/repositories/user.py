@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session, contains_eager
 from typing import Type
@@ -18,7 +20,7 @@ class UserRepository(CRUDRepository[User, UserSchema]):
 
         super().__init__(session, model)
 
-    def read_user_by_id(self, user_id: str) -> User | None:
+    def read_user_by_id(self, user_id: uuid.UUID) -> User | None:
         """
         Read user by user_id
         """

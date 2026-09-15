@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy.orm import Session
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
@@ -53,7 +55,7 @@ class AuthorizeUser:
         # return user
         return user
 
-    def _is_authorized(self, session: Session, user_id: int) -> bool:
+    def _is_authorized(self, session: Session, user_id: UUID) -> bool:
         """
         Checks if the user has the required permissions.
 
