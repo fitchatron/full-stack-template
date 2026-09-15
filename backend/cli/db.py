@@ -68,7 +68,7 @@ def create_local_db(
             "--seed-users",
             help="Number of random users to seed after recreating tables. Pass 0 to skip seeding.",
         ),
-    ] = 20,
+    ] = 0,
 ):
     """
     Drop and recreate all tables from the current models. Local dev only.
@@ -76,7 +76,10 @@ def create_local_db(
     After creating tables directly (bypassing Alembic), we stamp the DB as
     being at Alembic's "head" revision -- otherwise `alembic upgrade head`
     will later try to (re)create tables that already exist and fail.
+
+    usage: uv run -m cli.main db create-local-db
     """
+
     _assert_local_host()
 
     typer.confirm(f"Drop and recreate all tables on {engine.url!r}?", abort=True)
