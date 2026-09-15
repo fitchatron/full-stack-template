@@ -5,9 +5,9 @@ from sqlalchemy.orm.attributes import InstrumentedAttribute
 ModelType = TypeVar("ModelType")
 
 
-class ModelAttributeUtils:
+class ColumnPathResolver:
 
-    FILTER_SYNTAX = {
+    PATH_SYNTAX = {
         "join_delimiter": ".",  # denotes how joined tables are defined and split from column names e.g. roles.name
         "json_delimiter": "->",  # denotes how a column splits to a JSON key e.g. user.email == user["email"]
     }
@@ -18,7 +18,7 @@ class ModelAttributeUtils:
     def resolve_attr_path(self, column: str) -> InstrumentedAttribute:
         obj = self.model
 
-        path = column.split(self.FILTER_SYNTAX["join_delimiter"])
+        path = column.split(self.PATH_SYNTAX["join_delimiter"])
         # prediction.prediction_value name
         for part in path[:-1]:  # loop through path minus last value
             attr: InstrumentedAttribute = getattr(obj, part)
@@ -30,19 +30,19 @@ class ModelAttributeUtils:
         self, column: str
     ) -> Function[Any] | InstrumentedAttribute:
         # should be a JSON column
-        if self.FILTER_SYNTAX["json_delimiter"] in column:
-            parts = column.split(self.FILTER_SYNTAX["json_delimiter"])
+        if self.PATH_SYNTAX["json_delimiter"] in column:
+            parts = column.split(self.PATH_SYNTAX["json_delimiter"])
 
             # should be a join column
             attr: InstrumentedAttribute = (
                 self.resolve_attr_path(column)
-                if self.FILTER_SYNTAX["join_delimiter"] in parts[0]
+                if self.PATH_SYNTAX["join_delimiter"] in parts[0]
                 else getattr(self.model, parts[0])
             )
             return func.JSON_VALUE(attr, f"$.{parts[1]}")
 
         # referencing a mapped relationship
-        if self.FILTER_SYNTAX["join_delimiter"] in column:
+        if self.PATH_SYNTAX["join_delimiter"] in column:
             return self.resolve_attr_path(column)
 
         # should be a standard column

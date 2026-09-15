@@ -1,6 +1,6 @@
 from typing import Any, Generic, Type, TypeVar
 from sqlalchemy import UnaryExpression
-from app.utils.model import ModelAttributeUtils
+from app.utils.column_path_resolver import ColumnPathResolver
 from app.schemas.order_by_generator import OrderByCondition, OrderOperator
 from sqlalchemy.sql.elements import KeyedColumnElement
 
@@ -47,7 +47,7 @@ class OrderByGenerator(Generic[ModelType, Schema]):
         column_mapping: dict[str, KeyedColumnElement] = {},
     ) -> None:
         self.model = model
-        self.model_attribute_utils = ModelAttributeUtils(model=model)
+        self.column_path_resolver = ColumnPathResolver(model=model)
         self.column_mapping = column_mapping
 
     def build_order_conditional(self, conditions: list[OrderByCondition]):
@@ -56,7 +56,7 @@ class OrderByGenerator(Generic[ModelType, Schema]):
             attr = (
                 self.column_mapping.get(condition.column, None)
                 if self.column_mapping.get(condition.column, None) is not None
-                else self.model_attribute_utils.parse_column_to_attribute(
+                else self.column_path_resolver.parse_column_to_attribute(
                     condition.column
                 )
             )
