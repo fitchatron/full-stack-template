@@ -1,11 +1,10 @@
-from datetime import timedelta
 from typing import Annotated, Any
 from fastapi import APIRouter, Body, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
-from app.api.deps import SessionDep
+from app.api.deps import AuthorizeUser, SessionDep
 from app.core.config import settings
 from app.schemas.auth import Token
-from app.schemas.user import RegisterUserPOSTRequest
+from app.schemas.user import RegisterUserPOSTRequest, UserSchema
 from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -44,9 +43,14 @@ def login_access_token(
     )
 
 
-# @router.post("/test-token", response_model=UserPublic)
-# def test_token(current_user: CurrentUser) -> Any:
-#     """
-#     Test access token
-#     """
-#     return current_user
+@router.post("/test-token")
+def test_token(
+    current_user: Annotated[
+        UserSchema,
+        Depends(AuthorizeUser(required_permissions=[])),
+    ],
+) -> Any:
+    """
+    Test access token
+    """
+    return current_user
