@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "fitchatron", email = "53107122+fitchatron@users.noreply.github.com" }
 ]
-requires-python = ">=3.14,<4.0"
+requires-python = ">=3.14.7,<4.0"
 dependencies = [
     "alembic>=1.19.2,<1.20.0",
     "fastapi-pagination>=0.15.16,<0.16.0",
