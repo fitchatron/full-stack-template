@@ -5,6 +5,10 @@ from typing import Optional
 from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql import func
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from app.models.model import User
 
 
 class AuditMixin:
@@ -28,9 +32,11 @@ class AuditMixin:
         return mapped_column(ForeignKey("users.user_id"))
 
     @declared_attr
-    def created_by_user(cls) -> Mapped[Optional["User"]]:  # noqa: F821
+    @classmethod
+    def created_by_user(cls) -> Mapped[Optional["User"]]:
         return relationship("User", foreign_keys=[cls.created_by])
 
     @declared_attr
-    def modified_by_user(cls) -> Mapped[Optional["User"]]:  # noqa: F821
+    @classmethod
+    def modified_by_user(cls) -> Mapped[Optional["User"]]:
         return relationship("User", foreign_keys=[cls.modified_by])
