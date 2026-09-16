@@ -1,3 +1,4 @@
+import email
 from typing import Annotated, Any
 from fastapi import APIRouter, Body, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -54,3 +55,19 @@ def test_token(
     Test access token
     """
     return current_user
+
+
+@router.post("/password-recovery/{email}")
+def recover_password(session: SessionDep, email: str):
+    """
+    Password Recovery
+    """
+    raise NotImplementedError("Method not implemented")
+
+
+@router.post("/reset-password/")
+def reset_password(session: SessionDep):
+    """
+    Password Recovery
+    """
+    raise NotImplementedError("Method not implemented")
