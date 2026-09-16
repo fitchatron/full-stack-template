@@ -10,6 +10,7 @@ from app.models.enums import AuthorizationAction, authorization_action_type
 from app.models.mixins import AuditMixin
 
 
+# TODO: add relationships
 class User(Base):
     """
     User database model
@@ -44,14 +45,31 @@ class User(Base):
         UniqueConstraint(username),
     )
 
+    # MARK: Relationships
+    # user roles
+    user_roles: Mapped[list["UserRole"]] = relationship(
+        "UserRole",
+        foreign_keys="[UserRole.user_id]",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    # roles
+    roles: Mapped[list["Role"]] = relationship(
+        "Role",
+        secondary="user_roles",
+        primaryjoin="User.user_id == UserRole.user_id",
+        secondaryjoin="UserRole.role_id == Role.role_id",
+        viewonly=True,
+    )
+
     # audit
-    created_by_user: Mapped["User"] = relationship(
+    created_by_user: Mapped[Optional["User"]] = relationship(
         "User",
         foreign_keys=[created_by],
         remote_side="[User.user_id]",
     )
 
-    modified_by_user: Mapped["User"] = relationship(
+    modified_by_user: Mapped[Optional["User"]] = relationship(
         "User",
         foreign_keys=[modified_by],
         remote_side="[User.user_id]",
@@ -74,6 +92,12 @@ class Permission(AuditMixin, Base):
     action: Mapped[AuthorizationAction] = mapped_column(authorization_action_type)
     resource: Mapped[str] = mapped_column(Text)
 
+    # MARK: Relationships
+    role_permissions: Mapped[list["RolePermission"]] = relationship(
+        "RolePermission",
+        back_populates="permission",
+        cascade="all, delete-orphan",
+    )
     __table_args__ = (UniqueConstraint(action, resource),)
 
 
@@ -90,6 +114,18 @@ class Role(AuditMixin, Base):
     )
     name: Mapped[str] = mapped_column(Text, index=True)
     description: Mapped[str] = mapped_column(Text)
+
+    # MARK: Relationships
+    role_permissions: Mapped[list["RolePermission"]] = relationship(
+        "RolePermission",
+        back_populates="role",
+        cascade="all, delete-orphan",
+    )
+    user_roles: Mapped[list["UserRole"]] = relationship(
+        "UserRole",
+        back_populates="role",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (UniqueConstraint(name),)
 
@@ -109,6 +145,19 @@ class RolePermission(AuditMixin, Base):
         ForeignKey(Permission.permission_id, ondelete="CASCADE"),
         primary_key=True,
         index=True,
+    )
+
+    # MARK: Relationships
+    role: Mapped["Role"] = relationship(
+        "Role",
+        back_populates="role_permissions",
+        primaryjoin="RolePermission.role_id == Role.role_id",
+    )
+
+    permission: Mapped["Permission"] = relationship(
+        "Permission",
+        back_populates="role_permissions",
+        primaryjoin="RolePermission.permission_id == Permission.permission_id",
     )
 
 
@@ -140,4 +189,17 @@ class UserRole(AuditMixin, Base):
         server_default=func.now() + text("interval '1 year'"),
     )
 
+    # MARK: Relationships
+    role: Mapped["Role"] = relationship(
+        "Role",
+        back_populates="user_roles",
+        primaryjoin="UserRole.role_id == Role.role_id",
+    )
+
+    user: Mapped["User"] = relationship(
+        "User",
+        foreign_keys="[UserRole.user_id]",
+        back_populates="user_roles",
+        primaryjoin="UserRole.user_id == User.user_id",
+    )
     __table_args__ = (UniqueConstraint(user_id, role_id),)
