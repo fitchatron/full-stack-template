@@ -9,7 +9,7 @@ from alembic.config import main as alembic_main
 
 from app import models  # noqa: F401 -- registers all models on Base.metadata
 from app.core.db import Base, SessionLocal, engine
-from cli.seed import DatabaseSeeder
+from seeding import DatabaseSeeder, SeedPlan
 
 app = typer.Typer()
 
@@ -48,13 +48,14 @@ def seed(
     _assert_local_host()
 
     with SessionLocal() as db:
-        roles, users = DatabaseSeeder(db).seed(user_count)
+        result = DatabaseSeeder(db).seed(SeedPlan(user_count=user_count))
         db.commit()
 
-    typer.secho(
-        f"Seeded {len(roles)} roles/permissions and {len(users)} users.",
-        fg=typer.colors.GREEN,
-    )
+        typer.secho(
+            f"Seeded {len(result.roles)} roles, {len(result.permissions)} permissions, "
+            f"1 admin user ({result.admin_user.email}), and {len(result.users)} random users.",
+            fg=typer.colors.GREEN,
+        )
 
 
 @app.command("create-local-db")
@@ -103,13 +104,14 @@ def create_local_db(
 
     if seed_users_count > 0:
         with SessionLocal() as db:
-            roles, users = DatabaseSeeder(db).seed(seed_users_count)
+            result = DatabaseSeeder(db).seed(SeedPlan(user_count=seed_users_count))
             db.commit()
 
-        typer.secho(
-            f"Seeded {len(roles)} roles/permissions and {len(users)} users.",
-            fg=typer.colors.GREEN,
-        )
+            typer.secho(
+                f"Seeded {len(result.roles)} roles, {len(result.permissions)} permissions, "
+                f"1 admin user ({result.admin_user.email}), and {len(result.users)} random users.",
+                fg=typer.colors.GREEN,
+            )
 
 
 if __name__ == "__main__":
