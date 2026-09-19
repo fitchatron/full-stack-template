@@ -49,12 +49,13 @@ def roles_fixture(
 ) -> dict[str, Role]:
     """Get-or-create the fixed roles and their permission grants."""
     roles: dict[str, Role] = {}
-    for role_name, members in FIXED_ROLE_PERMISSIONS.items():
+    for role_id, members in FIXED_ROLE_PERMISSIONS.items():
+        display_name = role_id.replace("_", " ").title()
         role, _ = get_or_create(
             db,
             Role,
-            name=role_name,
-            defaults={"description": f"{role_name.title()} role"},
+            role_id=role_id,
+            defaults={"name": display_name, "description": f"{display_name} role"},
         )
         for member in members:
             action_str, resource = member.get_action_resource()
@@ -65,7 +66,7 @@ def roles_fixture(
                 role_id=role.role_id,
                 permission_id=permission.permission_id,
             )
-        roles[role_name] = role
+        roles[role_id] = role
     return roles
 
 

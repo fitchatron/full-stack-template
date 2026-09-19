@@ -19,7 +19,7 @@ class User(Base):
     __tablename__ = "users"
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
         primary_key=True,
         index=True,
     )
@@ -84,7 +84,7 @@ class Permission(AuditMixin, Base):
     __tablename__ = "permissions"
     permission_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
         primary_key=True,
         index=True,
     )
@@ -107,11 +107,7 @@ class Role(AuditMixin, Base):
     """
 
     __tablename__ = "roles"
-    role_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        default=uuid.uuid4,
-        primary_key=True,
-    )
+    role_id: Mapped[str] = mapped_column(Text, primary_key=True)
     name: Mapped[str] = mapped_column(Text, index=True)
     description: Mapped[str] = mapped_column(Text)
 
@@ -136,7 +132,7 @@ class RolePermission(AuditMixin, Base):
     """
 
     __tablename__ = "role_permissions"
-    role_id: Mapped[uuid.UUID] = mapped_column(
+    role_id: Mapped[str] = mapped_column(
         ForeignKey(Role.role_id, ondelete="CASCADE"),
         primary_key=True,
         index=True,
@@ -169,7 +165,7 @@ class UserRole(AuditMixin, Base):
     __tablename__ = "user_roles"
     user_role_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
         primary_key=True,
         index=True,
     )
@@ -177,7 +173,7 @@ class UserRole(AuditMixin, Base):
         ForeignKey(User.user_id, ondelete="CASCADE"),
         index=True,
     )
-    role_id: Mapped[uuid.UUID] = mapped_column(
+    role_id: Mapped[str] = mapped_column(
         ForeignKey(Role.role_id, ondelete="CASCADE"),
         index=True,
     )

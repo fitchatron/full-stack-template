@@ -66,7 +66,8 @@ class RoleFactory(BaseFactory):
     class Meta:
         model = Role
 
-    name = Sequence(lambda n: f"role-{n}")
+    role_id = Sequence(lambda n: f"role_{n}")
+    name = Sequence(lambda n: f"Role {n}")
     description = LazyAttribute(lambda o: f"{o.name} role")
 
 
