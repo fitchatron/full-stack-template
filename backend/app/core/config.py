@@ -1,6 +1,7 @@
 from enum import StrEnum, auto
 from pathlib import Path
 from typing import Literal
+from pydantic import EmailStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.schemas.api import HTTPExceptionSchema
 
@@ -30,6 +31,9 @@ class Settings(BaseSettings):
     SQLALCHEMY_POOL_PRE_PING: bool = True
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+
+    FIRST_SUPERUSER: EmailStr
+    FIRST_SUPERUSER_PASSWORD: str
 
     HTTP_EXCEPTION_RESPONSES_SET: dict = {
         "get": {

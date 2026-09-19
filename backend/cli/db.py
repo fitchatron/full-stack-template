@@ -33,66 +33,34 @@ def _assert_local_host() -> None:
         raise typer.Exit(code=1)
 
 
-@app.command("seed")
-def seed(
-    user_count: Annotated[
-        int, typer.Option(help="Number of random users to create")
-    ] = 20,
-):
-    """
-    Populate the fixed roles/permissions and create random fake users. Local dev only.
-
-    Roles and permissions are fixed (not randomly generated) since app
-    authorization logic is written against their names.
-    """
-    _assert_local_host()
-
-    with SessionLocal() as db:
-        result = DatabaseSeeder(db).seed(SeedPlan(user_count=user_count))
-        db.commit()
-
-        typer.secho(
-            f"Seeded {len(result.roles)} roles, {len(result.permissions)} permissions, "
-            f"1 admin user ({result.admin_user.email}), and {len(result.users)} random users.",
-            fg=typer.colors.GREEN,
-        )
-
-
 @app.command("create-local-db")
 def create_local_db(
     mode: Annotated[
         TestDataMode, typer.Option(case_sensitive=False)
     ] = TestDataMode.mock,
-    seed_users_count: Annotated[
-        int,
+    mock_data: Annotated[
+        bool,
         typer.Option(
-            "--seed-users",
-            help="Number of random users to seed after recreating tables. Pass 0 to skip seeding.",
+            "--mock-data/--no-mock-data",
+            help="Also seed random mock users on top of the required core data.",
         ),
-    ] = 0,
+    ] = False,
 ):
     """
-    Drop and recreate all tables from the current models. Local dev only.
-
-    After creating tables directly (bypassing Alembic), we stamp the DB as
-    being at Alembic's "head" revision -- otherwise `alembic upgrade head`
-    will later try to (re)create tables that already exist and fail.
+    Drop and recreate all tables, then seed the required core app data
+    (roles, permissions, first superuser) and optionally random mock data.
+    Local dev only -- always resets the schema, no confirmation prompt.
 
     usage: uv run -m cli.main db create-local-db
     """
 
     _assert_local_host()
 
-    typer.confirm(f"Drop and recreate all tables on {engine.url!r}?", abort=True)
-
-    # drop all tables
     Base.metadata.drop_all(bind=engine)
 
     if mode == TestDataMode.alembic:
-        # run migration scripts
         alembic_main(argv=["--raiseerr", "upgrade", "head"])
     else:
-        # create all tables then stamp head
         Base.metadata.create_all(bind=engine)
 
         alembic_cfg = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
@@ -102,16 +70,18 @@ def create_local_db(
         f"Done: tables recreated via {mode.value!r} mode.", fg=typer.colors.GREEN
     )
 
-    if seed_users_count > 0:
-        with SessionLocal() as db:
-            result = DatabaseSeeder(db).seed(SeedPlan(user_count=seed_users_count))
-            db.commit()
+    # Keep `session` referenced until after we print `result.admin_user.email`
+    # below -- otherwise nothing holds it alive post-commit and the ORM
+    # objects in `result` become detached before their attributes are read.
+    session = SessionLocal()
+    result = DatabaseSeeder(session).seed(SeedPlan(include_mock_data=mock_data))
 
-            typer.secho(
-                f"Seeded {len(result.roles)} roles, {len(result.permissions)} permissions, "
-                f"1 admin user ({result.admin_user.email}), and {len(result.users)} random users.",
-                fg=typer.colors.GREEN,
-            )
+    message = (
+        f"Seeded {len(result.roles)} roles, {len(result.permissions)} permissions, "
+        f"1 admin user ({result.admin_user.email})"
+    )
+    message += f", and {len(result.users)} mock users." if result.users else "."
+    typer.secho(message, fg=typer.colors.GREEN)
 
 
 if __name__ == "__main__":
