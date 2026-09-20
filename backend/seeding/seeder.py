@@ -18,10 +18,7 @@ from app.models import (
 from seeding.factories import PermissionFactory, UserFactory
 from seeding.plan import SeedPlan, SeedResult
 
-# Fixed, concrete reference data -- see authZ-seed.sql for the original
-# authorization design this was derived from ("accounts" there maps to our
-# "users" resource). admin is granted every permission in the catalog,
-# rather than just the wildcard, to mirror that reference directly.
+# Fixed role <-> permission mapping
 FIXED_ROLES: dict[str, tuple[str, str]] = {
     "admin": ("Admin", "admin role for the application"),
     "user_admin": ("User Admin", "Role that can assign users to roles."),
@@ -92,7 +89,9 @@ class DatabaseSeeder:
         permissions = self._seed_permissions()
         roles = self._seed_roles(permissions)
         admin_user = self._seed_admin_user(roles)
-        return CoreSeedResult(roles=roles, permissions=permissions, admin_user=admin_user)
+        return CoreSeedResult(
+            roles=roles, permissions=permissions, admin_user=admin_user
+        )
 
     def seed_mock_data(self, roles: dict[str, Role], plan: SeedPlan) -> list[User]:
         factory.random.reseed_random(plan.faker_seed)
@@ -116,7 +115,9 @@ class DatabaseSeeder:
             permissions[(action, resource)] = permission
         return permissions
 
-    def _seed_roles(self, permissions: dict[tuple[str, str], Permission]) -> dict[str, Role]:
+    def _seed_roles(
+        self, permissions: dict[tuple[str, str], Permission]
+    ) -> dict[str, Role]:
         roles: dict[str, Role] = {}
         for role_id, (name, description) in FIXED_ROLES.items():
             role = Role(role_id=role_id, name=name, description=description)
