@@ -67,19 +67,18 @@ def create_local_db(
             alembic_cfg = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
             command.stamp(alembic_cfg, "head")
 
-        typer.secho(f"SUCCESS ✅", fg=typer.colors.GREEN)
+        typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
 
-        # Keep `session` referenced until after we print `result.admin_user.email`
-        # below -- otherwise nothing holds it alive post-commit and the ORM
-        # objects in `result` become detached before their attributes are read.
-        session = SessionLocal()
-        result = DatabaseSeeder(session).seed(SeedPlan(include_mock_data=mock_data))
+        with SessionLocal() as session:
+            result = DatabaseSeeder(session).seed(
+                SeedPlan(include_mock_data=mock_data)
+            )
 
-        message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
-        typer.secho(message, fg=typer.colors.YELLOW)
-        typer.secho(
-            f"Admin user email: {result.admin_user.email}", fg=typer.colors.CYAN
-        )
+            message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
+            typer.secho(message, fg=typer.colors.YELLOW)
+            typer.secho(
+                f"Admin user email: {result.admin_user.email}", fg=typer.colors.CYAN
+            )
     except Exception as e:
         typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1)

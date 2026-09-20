@@ -101,7 +101,7 @@ class DatabaseSeeder:
             plan.user_count, salt=salt, hashed_password=hashed_password
         )
         self.session.add_all(users)
-        self._assign_random_roles(users, roles, plan.rng)
+        self._assign_random_roles(users, roles, random.Random(plan.faker_seed))
         return users
 
     def _seed_permissions(self) -> dict[tuple[str, str], Permission]:

@@ -1,5 +1,4 @@
-import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from app.models import Permission, Role, User
 
@@ -13,7 +12,6 @@ class SeedPlan:
     include_mock_data: bool = False
     user_count: int = 20
     faker_seed: int = DEFAULT_SEED
-    rng: random.Random = field(default_factory=lambda: random.Random(DEFAULT_SEED))
     bulk_user_password: str = "Password123!"
 
 
