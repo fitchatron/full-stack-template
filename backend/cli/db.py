@@ -9,7 +9,7 @@ from alembic.config import main as alembic_main
 
 from app import models  # noqa: F401 -- registers all models on Base.metadata
 from app.core.db import Base, SessionLocal, engine
-from cli.seed import DatabaseSeeder
+from seeding import DatabaseSeeder, SeedPlan
 
 app = typer.Typer()
 
@@ -33,83 +33,57 @@ def _assert_local_host() -> None:
         raise typer.Exit(code=1)
 
 
-@app.command("seed")
-def seed(
-    user_count: Annotated[
-        int, typer.Option(help="Number of random users to create")
-    ] = 20,
-):
-    """
-    Populate the fixed roles/permissions and create random fake users. Local dev only.
-
-    Roles and permissions are fixed (not randomly generated) since app
-    authorization logic is written against their names.
-    """
-    _assert_local_host()
-
-    with SessionLocal() as db:
-        roles, users = DatabaseSeeder(db).seed(user_count)
-        db.commit()
-
-    typer.secho(
-        f"Seeded {len(roles)} roles/permissions and {len(users)} users.",
-        fg=typer.colors.GREEN,
-    )
-
-
 @app.command("create-local-db")
 def create_local_db(
     mode: Annotated[
         TestDataMode, typer.Option(case_sensitive=False)
     ] = TestDataMode.mock,
-    seed_users_count: Annotated[
-        int,
+    mock_data: Annotated[
+        bool,
         typer.Option(
-            "--seed-users",
-            help="Number of random users to seed after recreating tables. Pass 0 to skip seeding.",
+            "--mock-data/--no-mock-data",
+            help="Also seed random mock users on top of the required core data.",
         ),
-    ] = 0,
+    ] = False,
 ):
     """
-    Drop and recreate all tables from the current models. Local dev only.
+    Drop and recreate all tables, then seed the required core app data
+    (roles, permissions, first superuser) and optionally random mock data.
+    Local dev only -- always resets the schema, no confirmation prompt.
 
-    After creating tables directly (bypassing Alembic), we stamp the DB as
-    being at Alembic's "head" revision -- otherwise `alembic upgrade head`
-    will later try to (re)create tables that already exist and fail.
-
-    usage: uv run -m cli.main db create-local-db
+    usage: uv run -m cli.main db create-local-db --mock-data/--no-mock-data
     """
 
-    _assert_local_host()
+    try:
+        _assert_local_host()
 
-    typer.confirm(f"Drop and recreate all tables on {engine.url!r}?", abort=True)
+        Base.metadata.drop_all(bind=engine)
 
-    # drop all tables
-    Base.metadata.drop_all(bind=engine)
+        if mode == TestDataMode.alembic:
+            alembic_main(argv=["--raiseerr", "upgrade", "head"])
+        else:
+            Base.metadata.create_all(bind=engine)
 
-    if mode == TestDataMode.alembic:
-        # run migration scripts
-        alembic_main(argv=["--raiseerr", "upgrade", "head"])
-    else:
-        # create all tables then stamp head
-        Base.metadata.create_all(bind=engine)
+            alembic_cfg = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
+            command.stamp(alembic_cfg, "head")
 
-        alembic_cfg = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
-        command.stamp(alembic_cfg, "head")
+        typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
 
-    typer.secho(
-        f"Done: tables recreated via {mode.value!r} mode.", fg=typer.colors.GREEN
-    )
+        with SessionLocal() as session:
+            result = DatabaseSeeder(session).seed(SeedPlan(include_mock_data=mock_data))
 
-    if seed_users_count > 0:
-        with SessionLocal() as db:
-            roles, users = DatabaseSeeder(db).seed(seed_users_count)
-            db.commit()
-
-        typer.secho(
-            f"Seeded {len(roles)} roles/permissions and {len(users)} users.",
-            fg=typer.colors.GREEN,
-        )
+            message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
+            typer.secho(message, fg=typer.colors.YELLOW)
+            typer.secho(
+                f"Admin user email: {result.admin_user.email}", fg=typer.colors.CYAN
+            )
+    except typer.Exit:
+        raise
+    except SystemExit:
+        raise
+    except Exception as e:
+        typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":
