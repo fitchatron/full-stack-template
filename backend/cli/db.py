@@ -70,15 +70,17 @@ def create_local_db(
         typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
 
         with SessionLocal() as session:
-            result = DatabaseSeeder(session).seed(
-                SeedPlan(include_mock_data=mock_data)
-            )
+            result = DatabaseSeeder(session).seed(SeedPlan(include_mock_data=mock_data))
 
             message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
             typer.secho(message, fg=typer.colors.YELLOW)
             typer.secho(
                 f"Admin user email: {result.admin_user.email}", fg=typer.colors.CYAN
             )
+    except typer.Exit:
+        raise
+    except SystemExit:
+        raise
     except Exception as e:
         typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1)
