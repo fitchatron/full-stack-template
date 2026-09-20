@@ -51,37 +51,38 @@ def create_local_db(
     (roles, permissions, first superuser) and optionally random mock data.
     Local dev only -- always resets the schema, no confirmation prompt.
 
-    usage: uv run -m cli.main db create-local-db
+    usage: uv run -m cli.main db create-local-db --mock-data/--no-mock-data
     """
 
-    _assert_local_host()
+    try:
+        _assert_local_host()
 
-    Base.metadata.drop_all(bind=engine)
+        Base.metadata.drop_all(bind=engine)
 
-    if mode == TestDataMode.alembic:
-        alembic_main(argv=["--raiseerr", "upgrade", "head"])
-    else:
-        Base.metadata.create_all(bind=engine)
+        if mode == TestDataMode.alembic:
+            alembic_main(argv=["--raiseerr", "upgrade", "head"])
+        else:
+            Base.metadata.create_all(bind=engine)
 
-        alembic_cfg = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
-        command.stamp(alembic_cfg, "head")
+            alembic_cfg = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
+            command.stamp(alembic_cfg, "head")
 
-    typer.secho(
-        f"Done: tables recreated via {mode.value!r} mode.", fg=typer.colors.GREEN
-    )
+        typer.secho(f"SUCCESS ✅", fg=typer.colors.GREEN)
 
-    # Keep `session` referenced until after we print `result.admin_user.email`
-    # below -- otherwise nothing holds it alive post-commit and the ORM
-    # objects in `result` become detached before their attributes are read.
-    session = SessionLocal()
-    result = DatabaseSeeder(session).seed(SeedPlan(include_mock_data=mock_data))
+        # Keep `session` referenced until after we print `result.admin_user.email`
+        # below -- otherwise nothing holds it alive post-commit and the ORM
+        # objects in `result` become detached before their attributes are read.
+        session = SessionLocal()
+        result = DatabaseSeeder(session).seed(SeedPlan(include_mock_data=mock_data))
 
-    message = (
-        f"Seeded {len(result.roles)} roles, {len(result.permissions)} permissions, "
-        f"1 admin user ({result.admin_user.email})"
-    )
-    message += f", and {len(result.users)} mock users." if result.users else "."
-    typer.secho(message, fg=typer.colors.GREEN)
+        message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
+        typer.secho(message, fg=typer.colors.YELLOW)
+        typer.secho(
+            f"Admin user email: {result.admin_user.email}", fg=typer.colors.CYAN
+        )
+    except Exception as e:
+        typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":
