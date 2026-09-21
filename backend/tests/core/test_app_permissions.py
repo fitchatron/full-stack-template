@@ -1,0 +1,180 @@
+import pytest
+from app.core.app_permissions import AppPermissions
+
+
+@pytest.mark.parametrize(
+    "app_permission, expected_value",
+    [
+        pytest.param(
+            AppPermissions.ASTERISK__ASTERISK,
+            "*:*",
+            id="asterisk_asterisk",
+        ),
+        pytest.param(
+            AppPermissions.CREATE__ASTERISK,
+            "create:*",
+            id="create_asterisk",
+        ),
+        pytest.param(
+            AppPermissions.ASTERISK__USERS,
+            "*:users",
+            id="asterisk_users",
+        ),
+        pytest.param(
+            AppPermissions.CREATE__USERS,
+            "create:users",
+            id="create_users",
+        ),
+        pytest.param(
+            AppPermissions.READ__USERS,
+            "read:users",
+            id="read_users",
+        ),
+        pytest.param(
+            AppPermissions.UPDATE__USERS,
+            "update:users",
+            id="update_users",
+        ),
+        pytest.param(
+            AppPermissions.DELETE__USERS,
+            "delete:users",
+            id="delete_users",
+        ),
+        pytest.param(
+            AppPermissions.CREATE__PERMISSIONS,
+            "create:permissions",
+            id="create_permissions",
+        ),
+        pytest.param(
+            AppPermissions.READ__PERMISSIONS,
+            "read:permissions",
+            id="read_permissions",
+        ),
+        pytest.param(
+            AppPermissions.UPDATE__PERMISSIONS,
+            "update:permissions",
+            id="update_permissions",
+        ),
+        pytest.param(
+            AppPermissions.DELETE__PERMISSIONS,
+            "delete:permissions",
+            id="delete_permissions",
+        ),
+        pytest.param(
+            AppPermissions.CREATE__ROLES,
+            "create:roles",
+            id="create_roles",
+        ),
+        pytest.param(
+            AppPermissions.READ__ROLES,
+            "read:roles",
+            id="read_roles",
+        ),
+        pytest.param(
+            AppPermissions.UPDATE__ROLES,
+            "update:roles",
+            id="update_roles",
+        ),
+        pytest.param(
+            AppPermissions.DELETE__ROLES,
+            "delete:roles",
+            id="delete_roles",
+        ),
+        pytest.param(
+            AppPermissions.CREATE__ROLE_PERMISSIONS,
+            "create:role_permissions",
+            id="create_role_permissions",
+        ),
+        pytest.param(
+            AppPermissions.READ__ROLE_PERMISSIONS,
+            "read:role_permissions",
+            id="read_role_permissions",
+        ),
+        pytest.param(
+            AppPermissions.UPDATE__ROLE_PERMISSIONS,
+            "update:role_permissions",
+            id="update_role_permissions",
+        ),
+        pytest.param(
+            AppPermissions.DELETE__ROLE_PERMISSIONS,
+            "delete:role_permissions",
+            id="delete_role_permissions",
+        ),
+        pytest.param(
+            AppPermissions.CREATE__USER_ROLES,
+            "create:user_roles",
+            id="create_user_roles",
+        ),
+        pytest.param(
+            AppPermissions.READ__USER_ROLES,
+            "read:user_roles",
+            id="read_user_roles",
+        ),
+        pytest.param(
+            AppPermissions.UPDATE__USER_ROLES,
+            "update:user_roles",
+            id="update_user_roles",
+        ),
+        pytest.param(
+            AppPermissions.DELETE__USER_ROLES,
+            "delete:user_roles",
+            id="delete_user_roles",
+        ),
+    ],
+)
+def test_get_app_permission_value(app_permission, expected_value):
+    assert app_permission.value == expected_value
+
+
+@pytest.mark.parametrize(
+    "app_permission, expected_action, expected_resource",
+    [
+        # 1. Filter by Department, Order ASC
+        pytest.param(
+            AppPermissions.ASTERISK__ASTERISK,
+            "*",
+            "*",
+            id="asterisk_asterisk",
+        ),
+        pytest.param(
+            AppPermissions.CREATE__ASTERISK,
+            "create",
+            "*",
+            id="create_asterisk",
+        ),
+        pytest.param(
+            AppPermissions.ASTERISK__USERS,
+            "*",
+            "users",
+            id="asterisk_users",
+        ),
+        pytest.param(
+            AppPermissions.CREATE__USERS,
+            "create",
+            "users",
+            id="create_users",
+        ),
+        pytest.param(
+            AppPermissions.READ__USERS,
+            "read",
+            "users",
+            id="read_users",
+        ),
+        pytest.param(
+            AppPermissions.UPDATE__USERS,
+            "update",
+            "users",
+            id="update_users",
+        ),
+        pytest.param(
+            AppPermissions.DELETE__USERS,
+            "delete",
+            "users",
+            id="delete_users",
+        ),
+    ],
+)
+def test_get_action_resource(app_permission, expected_action, expected_resource):
+    action, resource = app_permission.get_action_resource()
+    assert action == expected_action
+    assert resource == expected_resource

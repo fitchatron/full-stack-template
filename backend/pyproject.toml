@@ -6,15 +6,15 @@ readme = "README.md"
 authors = [
     { name = "fitchatron", email = "53107122+fitchatron@users.noreply.github.com" }
 ]
-requires-python = ">=3.14.7,<4.0"
+requires-python = ">=3.14.7,<3.15.0"
 dependencies = [
     "alembic>=1.19.2,<1.20.0",
-    "factory-boy>=3.3.3",
+    "factory-boy>=3.3.3,<3.4.0",
     "fastapi-pagination>=0.15.16,<0.16.0",
     "fastapi[standard]>=0.141.1,<1.0.0",
     "psycopg[binary]>=3.3.5,<3.4.0",
     "pwdlib[argon2,bcrypt]>=0.3.1,<0.4.0",
-    "pyjwt>=2.13.0",
+    "pyjwt>=2.13.0,<2.14.0",
     "sqlalchemy>=2.0.52,<2.1.0",
     "typer>=0.27.2,<0.28.0",
 ]
@@ -22,7 +22,7 @@ dependencies = [
 [dependency-groups]
 prod = []
 dev = [
-    "faker>=40.38.0",
+    "pytest>=9.1.1,<9.2.0",
     "ruff>=0.16.6,<0.17.0",
 ]
 
@@ -55,3 +55,7 @@ keep-runtime-typing = true
 
 [tool.fastapi]
 entrypoint = "app.main:app"
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+pythonpath = ["."]
