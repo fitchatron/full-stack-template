@@ -1,9 +1,12 @@
 import random
 from dataclasses import dataclass
-
+from pathlib import Path
+from cli.types import TestDataMode
 import factory.random
 from sqlalchemy.orm import Session
-
+from alembic.config import Config, main as alembic_main
+from alembic import command
+from app.core.db import Base, engine
 from app.core.app_permissions import AppPermissions
 from app.core.config import settings
 from app.core.security import hash_password
@@ -56,24 +59,42 @@ class CoreSeedResult:
 
 
 class DatabaseSeeder:
-    """
-    Seeds a freshly reset database. Always assumes an empty schema: every
-    insert is unconditional, there is no get-or-create/idempotency here.
 
-    `seed_core_data()` creates everything the app requires to function --
-    roles, the full permission catalog, role grants, and the first
-    superuser -- so it's the place for any future critical data too.
-    `seed_mock_data()` adds random local-dev-only filler on top. `seed()`
-    runs the former always, the latter only if requested, and commits once
-    at the end.
-    """
+    LOCAL_HOSTS = {"localhost", "127.0.0.1"}
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, mode: TestDataMode | None = None) -> None:
         self.session = session
+        self.mode = mode if mode is not None else TestDataMode.mock
+
+    def is_local_host(self):
+        host = engine.url.host
+        return host in self.LOCAL_HOSTS
+
+    def drop_database_tables(self):
+        if not self.is_local_host():
+            raise Exception("target database is not local db")
+
+        Base.metadata.drop_all(bind=engine)
+
+    def create_database_tables(self):
+        if not self.is_local_host():
+            raise Exception("target database is not local db")
+
+        if self.mode == TestDataMode.alembic:
+            alembic_main(argv=["--raiseerr", "upgrade", "head"])
+        else:
+            Base.metadata.create_all(bind=engine)
+
+            alembic_cfg = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
+            command.stamp(alembic_cfg, "head")
+
+    def drop_and_create_database_tables(self):
+        self.drop_database_tables()
+        self.create_database_tables()
 
     def seed(self, plan: SeedPlan | None = None) -> SeedResult:
         plan = plan or SeedPlan()
-
+        self.drop_and_create_database_tables()
         core = self.seed_core_data()
         users = self.seed_mock_data(core.roles, plan) if plan.include_mock_data else []
 

@@ -1,4 +1,3 @@
-from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
@@ -8,29 +7,11 @@ from alembic.config import Config
 from alembic.config import main as alembic_main
 
 from app import models  # noqa: F401 -- registers all models on Base.metadata
-from app.core.db import Base, SessionLocal, engine
+from app.core.db import SessionLocal, engine
+from cli.types import TestDataMode
 from seeding import DatabaseSeeder, SeedPlan
 
 app = typer.Typer()
-
-LOCAL_HOSTS = {"localhost", "127.0.0.1"}
-
-
-class TestDataMode(StrEnum):
-    alembic = "alembic"
-    mock = "mock"
-
-
-def _assert_local_host() -> None:
-    host = engine.url.host
-    if host not in LOCAL_HOSTS:
-        typer.secho(
-            f"Refusing to run against host {host!r} -- "
-            f"this command only runs against {sorted(LOCAL_HOSTS)}.",
-            fg=typer.colors.RED,
-            err=True,
-        )
-        raise typer.Exit(code=1)
 
 
 @app.command("create-local-db")
@@ -55,23 +36,21 @@ def create_local_db(
     """
 
     try:
-        _assert_local_host()
-
-        Base.metadata.drop_all(bind=engine)
-
-        if mode == TestDataMode.alembic:
-            alembic_main(argv=["--raiseerr", "upgrade", "head"])
-        else:
-            Base.metadata.create_all(bind=engine)
-
-            alembic_cfg = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
-            command.stamp(alembic_cfg, "head")
-
-        typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
-
         with SessionLocal() as session:
-            result = DatabaseSeeder(session).seed(SeedPlan(include_mock_data=mock_data))
+            seeder = DatabaseSeeder(session=session, mode=mode)
 
+            if not seeder.is_local_host():
+                typer.secho(
+                    f"Refusing to run against host {engine.url.host!r} -- "
+                    f"this command only runs against a local host.",
+                    fg=typer.colors.RED,
+                    err=True,
+                )
+                raise typer.Exit(code=1)
+
+            result = seeder.seed(SeedPlan(include_mock_data=mock_data))
+
+            typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
             message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
             typer.secho(message, fg=typer.colors.YELLOW)
             typer.secho(
