@@ -28,3 +28,7 @@ def db_session():
     session.close()
     transaction.rollback()
     connection.close()
+
+
+# TODO: add fixture to act as user
+# TODO: start tests from cli
