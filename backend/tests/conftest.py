@@ -1,11 +1,12 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.core.config import settings
 from app.core.app_permissions import AppPermissions
 from sqlalchemy import select, or_, and_
 from sqlalchemy.orm import Session
 from app.core.db import engine
-from app.models.model import User, UserRole, Permission
+from app.models.model import Role, User, UserRole, Permission
+from app.core.security import create_access_token
 from seeding.factories import (
     RoleFactory,
     RolePermissionFactory,
@@ -42,52 +43,43 @@ def db_session():
 
 
 @pytest.fixture
-def user_role_fixture(db_session):
+def grant_permissions(db_session):
     """
-    Fixture for granting a user a role, looked up by name
+    Give a user a new role with exactly the given permissions.
 
-    usage: user_role_factory(user, settings.ROLES.ADMIN)
+    usage: grant_permissions(user, [AppPermissions.READ__USERS])
     """
 
-    def _create(
+    def _grant(
         user: User,
         permissions: list[AppPermissions],
-        role_name: str | None = None,
-        start_datetime: datetime | None = None,
-        end_datetime: datetime | None = None,
+        **user_role_kwargs,
     ) -> UserRole:
+        wanted = set(permissions)
+        db_permissions = (
+            db_session.scalars(
+                select(Permission).where(or_(*(p.to_filter_clause() for p in wanted)))
+            ).all()
+            if wanted
+            else []
+        )
 
-        # get permissions
-        filter = [permission.to_filter_clause() for permission in permissions]
-        db_permissions = db_session.scalars(
-            select(Permission).where(or_(*filter))
-        ).all()
-        if len(db_permissions) != len(permissions):
-            raise ValueError(
-                "No permissions found matching the provided AppPermissions"
+        if len(db_permissions) != len(wanted):
+            found = {(p.action, p.resource) for p in db_permissions}
+            missing = [p for p in wanted if p.get_action_resource() not in found]
+            raise ValueError(f"Permissions not seeded: {missing}")
+
+        role = RoleFactory.build()
+        for permission in db_permissions:
+            db_session.add(
+                RolePermissionFactory.build(role=role, permission=permission)
             )
-
-        # create role with those permissions
-        role = RoleFactory.build(name=role_name)
-        role_permissions = RolePermissionFactory.build_batch(
-            size=len(db_permissions),
-            role=role,
-            permission=db_permissions,
-        )
-
-        # create user role with the role
-        user_role = UserRoleFactory.build(
-            user=user,
-            role=role,
-            start_datetime=start_datetime,
-            end_datetime=end_datetime,
-        )
-        db_session.add_all(role_permissions)
+        user_role = UserRoleFactory.build(user=user, role=role, **user_role_kwargs)
+        db_session.add(user_role)
         db_session.flush()
-
         return user_role
 
-    return _create
+    return _grant
 
 
 @pytest.fixture
@@ -104,11 +96,15 @@ def act_as_user(db_session):
     yield user
 
 
-# TODO: start tests from cli
 @pytest.fixture
-def act_as_admin(act_as_user, user_role_fixture):
-    """
-    Fixture to act as an admin user in tests.
-    """
-    user_role_fixture(act_as_user, permissions=[AppPermissions.ASTERISK__ASTERISK])
+def act_as_admin(act_as_user, db_session):
+    admin_role = db_session.get(Role, "admin")
+    db_session.add(UserRoleFactory.build(user=act_as_user, role=admin_role))
+    db_session.flush()
     return act_as_user
+
+
+@pytest.fixture
+def auth_headers(act_as_user):
+    token = create_access_token(str(act_as_user.user_id), timedelta(minutes=5))
+    return {"Authorization": f"Bearer {token}"}
