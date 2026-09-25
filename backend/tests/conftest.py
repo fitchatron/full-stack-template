@@ -1,3 +1,4 @@
+import re
 import pytest
 from datetime import datetime, timedelta
 from app.core.config import settings
@@ -83,13 +84,14 @@ def grant_permissions(db_session):
 
 
 @pytest.fixture
-def act_as_user(db_session):
+def act_as_user(db_session, request):
     """
     Fixture to act as a user in tests.
     """
 
+    slug = re.sub(r"[^a-z0-9]+", "-", request.node.name.lower()).strip("-")
     user = UserFactory.build(
-        email=settings.EMAIL_TEST_USER, password=settings.EMAIL_TEST_USER_PASSWORD
+        email=f"{slug}@test.example.com", password=settings.EMAIL_TEST_USER_PASSWORD
     )
     db_session.add(user)
     db_session.flush()

@@ -29,7 +29,9 @@ def get_user_roles(db_session, user: User) -> list[UserRole]:
 # MARK: act_as_user
 def test_act_as_user_is_persisted(db_session, act_as_user):
     user = db_session.scalars(
-        select(User).where(User.email == settings.EMAIL_TEST_USER)
+        select(User).where(
+            User.email == "test-act-as-user-is-persisted@test.example.com"
+        )
     ).one()
     assert user.user_id == act_as_user.user_id
 
