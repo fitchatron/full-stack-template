@@ -32,6 +32,8 @@ class Settings(BaseSettings):
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
+    EMAIL_TEST_USER: EmailStr = "test@example.com"
+    EMAIL_TEST_USER_PASSWORD: str = "password"
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 
