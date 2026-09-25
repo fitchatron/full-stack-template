@@ -86,7 +86,7 @@ class RoleFactory(SQLAlchemyModelFactory[Role]):
     class Meta:
         model = Role
 
-    role_id = Faker("word", locale="en_AU")
+    role_id = Sequence(lambda n: f"role-{n}")
     name = LazyAttribute(lambda o: o.role_id.capitalize())
     description = LazyAttribute(lambda o: f"Description for role {o.name}")
 
