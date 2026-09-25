@@ -34,6 +34,9 @@ class Settings(BaseSettings):
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"
     EMAIL_TEST_USER_PASSWORD: str = "password"
+
+    DEFAULT_FAKER_SEED: int = 1234
+
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 

@@ -99,7 +99,10 @@ class UserRoleFactory(SQLAlchemyModelFactory[UserRole]):
     user = SubFactory(UserFactory)
     role = SubFactory(RoleFactory)
 
-    start_at = LazyFunction(lambda: datetime.now(UTC))
+    # A minute in the past, not now: Postgres' now() is frozen at transaction
+    # start, so a role created later in the same transaction (as in tests)
+    # would otherwise not yet count as active.
+    start_at = LazyFunction(lambda: datetime.now(UTC) - timedelta(minutes=1))
     end_at = LazyAttribute(lambda o: o.start_at + timedelta(days=365))
 
 

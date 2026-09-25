@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 from typing import Annotated
+from app.core.app_permissions import AppPermissions
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from app.core.config import settings
@@ -34,12 +35,13 @@ TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 class AuthorizeUser:
     """
-    Dependency class to authorize user by verifying token and checking user permission at application level
+    Dependency class to authorize user by verifying token and checking user permission at application level.
+    Where multiple permissions are passed to required_permissions, all must be granted to the user to pass.
     """
 
     def __init__(
         self,
-        required_permissions: list[str] | None = None,
+        required_permissions: list[AppPermissions] | None = None,
     ):
         self.required_permissions = required_permissions
 
@@ -65,10 +67,8 @@ class AuthorizeUser:
             return True
 
         # get all permissions attached to the user
-        permissions = UserService(session).read_active_permissions_for_user_id(user_id)
-        authorized = any(
-            permission.permission_id in self.required_permissions
-            for permission in permissions
+        authorized = UserService(session).has_all_permissions(
+            user_id, required_permissions=self.required_permissions
         )
 
         return authorized
