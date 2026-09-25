@@ -1,5 +1,7 @@
 import pytest
+from sqlalchemy import and_
 from app.core.app_permissions import AppPermissions
+from app.models.model import Permission
 
 
 @pytest.mark.parametrize(
@@ -178,3 +180,47 @@ def test_get_action_resource(app_permission, expected_action, expected_resource)
     action, resource = app_permission.get_action_resource()
     assert action == expected_action
     assert resource == expected_resource
+
+
+@pytest.mark.parametrize(
+    "app_permission, expected_action, expected_resource",
+    [
+        pytest.param(
+            AppPermissions.ASTERISK__ASTERISK,
+            "*",
+            "*",
+            id="asterisk_asterisk",
+        ),
+        pytest.param(
+            AppPermissions.CREATE__ASTERISK,
+            "create",
+            "*",
+            id="create_asterisk",
+        ),
+        pytest.param(
+            AppPermissions.ASTERISK__USERS,
+            "*",
+            "users",
+            id="asterisk_users",
+        ),
+        pytest.param(
+            AppPermissions.READ__USERS,
+            "read",
+            "users",
+            id="read_users",
+        ),
+        pytest.param(
+            AppPermissions.DELETE__ROLE_PERMISSIONS,
+            "delete",
+            "role_permissions",
+            id="delete_role_permissions",
+        ),
+    ],
+)
+def test_convert_to_filter_clause(app_permission, expected_action, expected_resource):
+    db_filter = app_permission.to_filter_clause()
+    expected_filter = and_(
+        Permission.action == expected_action,
+        Permission.resource == expected_resource,
+    )
+    assert db_filter.compare(expected_filter)
