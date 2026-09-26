@@ -10,7 +10,6 @@ from app.models.enums import AuthorizationAction, authorization_action_type
 from app.models.mixins import AuditMixin
 
 
-# TODO: add relationships
 class User(Base):
     """
     User database model
