@@ -34,16 +34,12 @@ class UserService:
             # LOG.exception("Exception")
             raise HTTPException(status_code=500, detail=str(exception))
 
-    def read_active_permissions_for_user_id(
-        self, user_id: UUID
-    ) -> list[PermissionSchema]:
+    def read_active_for_user(self, user_id: UUID) -> list[PermissionSchema]:
         """
         Function to get user permissions at app level.
         """
         try:
-            permissions = (
-                self.permission_repository.read_active_permissions_for_user_id(user_id)
-            )
+            permissions = self.permission_repository.read_active_for_user(user_id)
             return TypeAdapter(list[PermissionSchema]).validate_python(permissions)
 
         except Exception as exception:
@@ -60,7 +56,7 @@ class UserService:
             return True
 
         try:
-            permissions = self.permission_repository.read_active_permissions_for_user_id_and_required_permissions(
+            permissions = self.permission_repository.read_active_for_user_and_required_permissions(
                 user_id=user_id, required_permissions=required_permissions
             )
             return all(

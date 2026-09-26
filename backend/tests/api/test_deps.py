@@ -242,10 +242,6 @@ def test_authorize_user_is_authorized(
     )
 
 
-# def test_authN():
-#     assert True == False
-
-
 # MARK: _get_current_user
 def test_get_current_user_returns_user_for_valid_token(db_session, act_as_user):
     token = create_access_token(act_as_user.user_id, timedelta(minutes=5))
