@@ -1,7 +1,7 @@
 from enum import StrEnum, auto
 from pathlib import Path
 from typing import Literal
-from pydantic import EmailStr
+from pydantic import EmailStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.schemas.api import HTTPExceptionSchema
 
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     )
 
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str
+    SECRET_KEY: str = Field(min_length=32, max_length=128)
     FASTAPI_ENV: Literal["development"] | None = None
     PROJECT_NAME: str
 
