@@ -32,7 +32,7 @@ class SeparatorConfig:
         self.array_separator = array_separator
 
 
-def value_to_primitive(value: Optional[str]) -> Any:
+def val_to_primitive(value: Optional[str]) -> Any:
     """Convert a string value to its primitive type."""
     if not value:
         return None
@@ -73,7 +73,7 @@ def value_to_primitive(value: Optional[str]) -> Any:
     return value.replace('"', "")
 
 
-def type_column_value(value: str, operator: str) -> Any:
+def type_col_val(value: str, operator: str) -> Any:
     """Convert a string value to the appropriate type based on the operator."""
     if operator in ("between", "in", "not_in"):
         try:
@@ -81,10 +81,10 @@ def type_column_value(value: str, operator: str) -> Any:
         except Exception:
             raise ValueError("Error parsing JSON filter value")
 
-    return value_to_primitive(value)
+    return val_to_primitive(value)
 
 
-def parse_filter_string_to_filter_condition(
+def arse_filter_str_to_filter_condition(
     filter_string: str,
     config: SeparatorConfig = SeparatorConfig(),
 ) -> FilterCondition:
@@ -102,11 +102,11 @@ def parse_filter_string_to_filter_condition(
     return FilterCondition(
         column=column,
         operator=ComparisonOperator(operator_str),
-        value=type_column_value(value, operator_str),
+        value=type_col_val(value, operator_str),
     )
 
 
-def parse_filter_string_to_filter_compound_condition(
+def parse_filter_str_to_filter_compound_condition(
     filter_string: str,
     config: SeparatorConfig = SeparatorConfig(),
 ) -> FilterCompoundCondition:
@@ -152,10 +152,10 @@ def parse_filter_string_to_filter_compound_condition(
     conditions: list[FilterCondition | FilterCompoundCondition] = []
     for item in condition_items:
         if not item.startswith("and(") and not item.startswith("or("):
-            conditions.append(parse_filter_string_to_filter_condition(item, config))
+            conditions.append(arse_filter_str_to_filter_condition(item, config))
         else:
             conditions.append(
-                parse_filter_string_to_filter_compound_condition(item, config)
+                parse_filter_str_to_filter_compound_condition(item, config)
             )
 
     return FilterCompoundCondition(
@@ -181,12 +181,10 @@ def parse_param_to_filter_payload(
         return None
 
     if not filter_string.startswith("and(") and not filter_string.startswith("or("):
-        filter_condition = parse_filter_string_to_filter_condition(
-            filter_string, config
-        )
+        filter_condition = arse_filter_str_to_filter_condition(filter_string, config)
         return FilterPayload(where=filter_condition)
 
-    filter_condition = parse_filter_string_to_filter_compound_condition(
+    filter_condition = parse_filter_str_to_filter_compound_condition(
         filter_string, config
     )
     return FilterPayload(where=filter_condition)
@@ -225,9 +223,7 @@ class FilterGenerator(Generic[ModelType, Schema]):
             attr = (
                 self.column_mapping.get(condition.column, None)
                 if self.column_mapping.get(condition.column, None) is not None
-                else self.column_path_resolver.parse_column_to_attribute(
-                    condition.column
-                )
+                else self.column_path_resolver.parse_col_to_attr(condition.column)
             )
             op = condition.operator
             value = condition.value

@@ -26,9 +26,7 @@ class ColumnPathResolver:
 
         return getattr(obj, path[-1])
 
-    def parse_column_to_attribute(
-        self, column: str
-    ) -> Function[Any] | InstrumentedAttribute:
+    def parse_col_to_attr(self, column: str) -> Function[Any] | InstrumentedAttribute:
         # should be a JSON column
         if self.PATH_SYNTAX["json_delimiter"] in column:
             parts = column.split(self.PATH_SYNTAX["json_delimiter"])

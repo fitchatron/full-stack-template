@@ -56,9 +56,7 @@ class OrderByGenerator(Generic[ModelType, Schema]):
             attr = (
                 self.column_mapping.get(condition.column, None)
                 if self.column_mapping.get(condition.column, None) is not None
-                else self.column_path_resolver.parse_column_to_attribute(
-                    condition.column
-                )
+                else self.column_path_resolver.parse_col_to_attr(condition.column)
             )
             if attr is None:
                 raise Exception("Attribute could not be mapped")

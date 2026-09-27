@@ -1,5 +1,4 @@
-import email
-from typing import Annotated, Any
+from typing import Annotated
 from fastapi import APIRouter, Body, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.api.deps import AuthorizeUser, SessionDep
@@ -7,6 +6,7 @@ from app.core.config import settings
 from app.schemas.auth import Token
 from app.schemas.user import RegisterUserPOSTRequest, UserSchema
 from app.services.auth import AuthService
+from app.core.app_permissions import AppPermissions
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -48,9 +48,11 @@ def login_access_token(
 def test_token(
     current_user: Annotated[
         UserSchema,
-        Depends(AuthorizeUser(required_permissions=[])),
+        Depends(
+            AuthorizeUser(required_permissions=[AppPermissions.ASTERISK__ASTERISK])
+        ),
     ],
-) -> Any:
+) -> UserSchema:
     """
     Test access token
     """
