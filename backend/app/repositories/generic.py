@@ -1,7 +1,7 @@
 from sqlalchemy import select, update, insert, delete, inspect, tuple_
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import Type, Generic, TypeVar, Optional, Sequence
+from typing import Any, Type, Generic, TypeVar, Optional, Sequence
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination.links import Page
 
@@ -98,6 +98,9 @@ class CRUDRepository(Generic[ModelType, Schema]):
             sql = sql.order_by(*order)
 
         return self.session.scalars(sql).first()
+
+    def read_by_pk(self, pk: Any) -> Optional[ModelType]:
+        return self.session.get(self.model, pk)
 
     def read_multiple_items(
         self,
