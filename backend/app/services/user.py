@@ -28,7 +28,7 @@ class UserService:
         Function to get user by ID.
         """
         try:
-            return self.repository.read_user_by_id(user_id)
+            return self.repository.read_by_pk(user_id)
 
         except Exception as exception:
             # LOG.exception("Exception")

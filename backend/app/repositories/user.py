@@ -20,15 +20,6 @@ class UserRepository(CRUDRepository[User, UserSchema]):
 
         super().__init__(session, model)
 
-    def read_user_by_id(self, user_id: uuid.UUID) -> User | None:
-        """
-        Read user by user_id
-        """
-
-        sql = select(self.model).where(self.model.user_id == user_id)
-        result = self.session.scalars(sql).first()
-        return result
-
     def read_user_by_email(self, email: str) -> User | None:
         """
         Read a single user by email
