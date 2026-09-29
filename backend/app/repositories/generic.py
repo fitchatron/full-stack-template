@@ -1,15 +1,17 @@
-from sqlalchemy import select, update, insert, delete, inspect, tuple_
-from sqlalchemy.orm import Session
-from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import Any, Type, Generic, TypeVar, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any, Generic, TypeVar
+
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination.links import Page
+from sqlalchemy import delete, insert, inspect, select, tuple_, update
+from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 
-from app.utils.exception import NoOrderByColumnsSpecified
-from app.schemas.order_by_generator import OrderByCondition
-from app.utils.order_by_generator import OrderByGenerator
 from app.schemas.filter_generator import FilterPayload
+from app.schemas.order_by_generator import OrderByCondition
+from app.utils.exception import NoOrderByColumnsSpecified
 from app.utils.filter_generator import FilterGenerator
+from app.utils.order_by_generator import OrderByGenerator
 
 ModelType = TypeVar("ModelType")
 Schema = TypeVar("Schema")
@@ -20,7 +22,7 @@ class CRUDRepository(Generic[ModelType, Schema]):
     CRUD repository base. Comes with all CRUD method that can be performed on a basic model.
     """
 
-    def __init__(self, session: Session, model: Type[ModelType]) -> None:
+    def __init__(self, session: Session, model: type[ModelType]) -> None:
         """
         CRUD Repository constructor
         """
@@ -30,7 +32,7 @@ class CRUDRepository(Generic[ModelType, Schema]):
 
     def create_single_item(
         self, values: dict, commit: bool = True
-    ) -> Optional[ModelType]:
+    ) -> ModelType | None:
         """
         Create a single item in the database and return a the Schema instance if successful.
         """
@@ -53,7 +55,7 @@ class CRUDRepository(Generic[ModelType, Schema]):
 
     def create_multiple_items(
         self, data: list[dict], commit: bool = True
-    ) -> Optional[Sequence[ModelType]]:
+    ) -> Sequence[ModelType] | None:
         """
         Create many items in the database and return a list if successful.
         """
@@ -75,7 +77,7 @@ class CRUDRepository(Generic[ModelType, Schema]):
         filters: FilterPayload,
         sort_by: list[OrderByCondition] | None = None,
         joins: Sequence[InstrumentedAttribute] | None = None,
-    ) -> Optional[ModelType]:
+    ) -> ModelType | None:
         """
         Read a single item by specifying filters
         """
@@ -99,7 +101,7 @@ class CRUDRepository(Generic[ModelType, Schema]):
 
         return self.session.scalars(sql).first()
 
-    def read_by_pk(self, pk: Any) -> Optional[ModelType]:
+    def read_by_pk(self, pk: Any) -> ModelType | None:
         return self.session.get(self.model, pk)
 
     def read_multiple_items(

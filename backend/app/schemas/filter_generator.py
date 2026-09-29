@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 from enum import Enum
-from typing import Any, Optional, Annotated
+from typing import Annotated, Any
+
 from pydantic import Field, field_validator
 from pydantic_core.core_schema import FieldValidationInfo
+
 from app.schemas.base import BaseSchemaModel
 
 
@@ -58,7 +61,7 @@ class FilterCondition(BaseSchemaModel):
         ),
     ]
     value: Annotated[
-        Optional[str | int | float | bool | list[Any] | bytes],
+        str | int | float | bool | list[Any] | bytes | None,
         Field(
             description="The value that you want to filter on",
             examples=["will", 2, True, [1, 45, 23]],

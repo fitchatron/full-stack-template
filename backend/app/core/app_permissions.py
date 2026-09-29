@@ -1,5 +1,7 @@
 from enum import StrEnum, auto
+
 from sqlalchemy import and_
+
 from app.models.model import Permission
 
 

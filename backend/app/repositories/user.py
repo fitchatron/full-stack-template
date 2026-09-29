@@ -1,11 +1,11 @@
-import uuid
+
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session, contains_eager
-from typing import Type
-from app.repositories.generic import CRUDRepository
+from sqlalchemy.orm import Session
+
 from app.models.model import User
-from app.schemas.user import UserSchema, RegisterUserSchema
+from app.repositories.generic import CRUDRepository
+from app.schemas.user import RegisterUserSchema, UserSchema
 
 
 class UserRepository(CRUDRepository[User, UserSchema]):
@@ -13,7 +13,7 @@ class UserRepository(CRUDRepository[User, UserSchema]):
     User repository
     """
 
-    def __init__(self, session: Session, model: Type[User]) -> None:
+    def __init__(self, session: Session, model: type[User]) -> None:
         """
         User Repository constructor
         """

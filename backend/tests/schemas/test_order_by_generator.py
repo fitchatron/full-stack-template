@@ -1,8 +1,8 @@
 import pytest
+
 from app.schemas.order_by_generator import OrderByCondition, OrderOperator
 
 
-@pytest.mark.static
 @pytest.mark.parametrize(
     "enum, operator",
     [
@@ -22,7 +22,6 @@ def test_order_operator(enum, operator):
     assert enum == operator
 
 
-@pytest.mark.static
 @pytest.mark.parametrize(
     "data",
     [

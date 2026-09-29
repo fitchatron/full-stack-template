@@ -1,4 +1,5 @@
-from typing import Any, Type, TypeVar
+from typing import Any, TypeVar
+
 from sqlalchemy import Function, func
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
@@ -12,7 +13,7 @@ class ColumnPathResolver:
         "json_delimiter": "->",  # denotes how a column splits to a JSON key e.g. user.email == user["email"]
     }
 
-    def __init__(self, model: Type[ModelType]) -> None:
+    def __init__(self, model: type[ModelType]) -> None:
         self.model = model
 
     def resolve_attr_path(self, column: str) -> InstrumentedAttribute:

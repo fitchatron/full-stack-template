@@ -1,8 +1,9 @@
-from enum import StrEnum, auto
 from pathlib import Path
 from typing import Literal
+
 from pydantic import EmailStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from app.schemas.api import HTTPExceptionSchema
 
 # backend/app/core/config.py -> repo root is two levels up from backend/

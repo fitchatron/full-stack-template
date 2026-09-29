@@ -1,8 +1,10 @@
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Generic, TypeVar
+
 from sqlalchemy import UnaryExpression
-from app.utils.column_path_resolver import ColumnPathResolver
-from app.schemas.order_by_generator import OrderByCondition, OrderOperator
 from sqlalchemy.sql.elements import KeyedColumnElement
+
+from app.schemas.order_by_generator import OrderByCondition, OrderOperator
+from app.utils.column_path_resolver import ColumnPathResolver
 
 ModelType = TypeVar("ModelType")
 Schema = TypeVar("Schema")
@@ -43,7 +45,7 @@ class OrderByGenerator(Generic[ModelType, Schema]):
 
     def __init__(
         self,
-        model: Type[ModelType],
+        model: type[ModelType],
         column_mapping: dict[str, KeyedColumnElement] = {},
     ) -> None:
         self.model = model

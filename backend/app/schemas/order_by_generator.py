@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Annotated
+
 from pydantic import Field
+
 from app.schemas.base import BaseSchemaModel
 
 

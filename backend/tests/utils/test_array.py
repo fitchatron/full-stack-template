@@ -1,4 +1,5 @@
 import pytest
+
 from app.utils.array import chunk_list
 
 

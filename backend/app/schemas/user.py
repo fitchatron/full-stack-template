@@ -1,6 +1,8 @@
-from pydantic import Field, EmailStr, SecretStr, field_validator, model_validator
-from typing import Optional, Self
 from datetime import datetime
+from typing import Self
+
+from pydantic import EmailStr, Field, SecretStr, model_validator
+
 from app.schemas.base import BaseSchemaModel
 
 
@@ -14,16 +16,16 @@ class UserSchema(BaseSchemaModel):
     email: EmailStr = Field(description="Email of the user")
     hashed_password: str = Field(description="Hashed password of the user")
     salt: str = Field(description="Salt used for hashing the password")
-    given_name: Optional[str] = Field(description="Given name of the user")
-    family_name: Optional[str] = Field(description="Family name of the user")
+    given_name: str | None = Field(description="Given name of the user")
+    family_name: str | None = Field(description="Family name of the user")
     email_verified: bool = Field(description="Email verification status of the user")
     is_active: bool = Field(description="Active status of the user")
     created_at: datetime = Field(description="Time of user details creation")
     modified_at: datetime = Field(description="Time of user details modification")
-    created_by: Optional[int] = Field(
+    created_by: int | None = Field(
         description="User ID that creates the user details"
     )
-    modified_by: Optional[int] = Field(
+    modified_by: int | None = Field(
         description="User ID that modified the user details"
     )
 
@@ -31,8 +33,8 @@ class UserSchema(BaseSchemaModel):
 class RegisterUserPOSTRequest(BaseSchemaModel):
     email: EmailStr = Field(description="Email of the user")
     username: str = Field(description="Username of the user")
-    given_name: Optional[str] = Field(description="Given name of the user")
-    family_name: Optional[str] = Field(description="Family name of the user")
+    given_name: str | None = Field(description="Given name of the user")
+    family_name: str | None = Field(description="Family name of the user")
     password: SecretStr = Field(description="Password of the user", min_length=8)
     password_confirm: SecretStr = Field(description="Confirm password of the user")
 
@@ -51,7 +53,7 @@ class RegisterUserPOSTRequest(BaseSchemaModel):
 class RegisterUserSchema(BaseSchemaModel):
     email: EmailStr = Field(description="Email of the user")
     username: str = Field(description="Username of the user")
-    given_name: Optional[str] = Field(description="Given name of the user")
-    family_name: Optional[str] = Field(description="Family name of the user")
+    given_name: str | None = Field(description="Given name of the user")
+    family_name: str | None = Field(description="Family name of the user")
     hashed_password: SecretStr = Field(..., description="Hashed password of the user")
     salt: str = Field(description="Salt used for hashing the password")

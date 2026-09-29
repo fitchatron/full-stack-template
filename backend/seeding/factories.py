@@ -16,10 +16,10 @@ from app.core.security import create_salt, hash_with_salt
 from app.models import (
     AuthorizationAction,
     Permission,
-    User,
-    UserRole,
     Role,
     RolePermission,
+    User,
+    UserRole,
 )
 
 DEFAULT_USER_PASSWORD = "Password123!"  # local dev only, not a secret

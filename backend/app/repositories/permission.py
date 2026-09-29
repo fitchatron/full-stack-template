@@ -2,11 +2,11 @@ import uuid
 
 from sqlalchemy import Select, and_, func, or_, select
 from sqlalchemy.orm import Session
-from typing import Type
-from app.repositories.generic import CRUDRepository
-from app.models.model import Role, Permission, UserRole
-from app.schemas.permission import PermissionSchema
+
 from app.core.app_permissions import AppPermissions
+from app.models.model import Permission, Role, UserRole
+from app.repositories.generic import CRUDRepository
+from app.schemas.permission import PermissionSchema
 
 
 class PermissionRepository(CRUDRepository[Permission, PermissionSchema]):
@@ -14,7 +14,7 @@ class PermissionRepository(CRUDRepository[Permission, PermissionSchema]):
     Permission repository
     """
 
-    def __init__(self, session: Session, model: Type[Permission]) -> None:
+    def __init__(self, session: Session, model: type[Permission]) -> None:
         """
         Permission Repository constructor
         """

@@ -1,21 +1,17 @@
-from datetime import timedelta
 import os
+from datetime import timedelta
+
 from fastapi import HTTPException
 from pydantic import SecretStr
 from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.model import User
 from app.repositories.user import UserRepository
-from app.core.config import settings
 from app.schemas.auth import Token
 
-from app.core.security import create_access_token, verify_password, get_password_hash
-
 # from app.schemas.user import RegisterUserPOSTRequest
-from app.schemas.filter_generator import (
-    ComparisonOperator,
-    FilterCondition,
-    FilterPayload,
-)
 from app.schemas.user import RegisterUserPOSTRequest, RegisterUserSchema
 
 

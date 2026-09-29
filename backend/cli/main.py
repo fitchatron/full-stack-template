@@ -1,5 +1,6 @@
 import typer
-from cli import db, test, setup
+
+from cli import db, setup, test
 
 app = typer.Typer()
 

@@ -1,14 +1,16 @@
 import random
 from dataclasses import dataclass
 from pathlib import Path
-from cli.types import TestDataMode
+
 import factory.random
-from sqlalchemy.orm import Session
-from alembic.config import Config, main as alembic_main
 from alembic import command
-from app.core.db import Base, engine
+from alembic.config import Config
+from alembic.config import main as alembic_main
+from sqlalchemy.orm import Session
+
 from app.core.app_permissions import AppPermissions
 from app.core.config import settings
+from app.core.db import Base, engine
 from app.core.security import hash_password
 from app.models import (
     AuthorizationAction,
@@ -18,6 +20,7 @@ from app.models import (
     User,
     UserRole,
 )
+from cli.types import TestDataMode
 from seeding.factories import PermissionFactory, UserFactory
 from seeding.plan import SeedPlan, SeedResult
 

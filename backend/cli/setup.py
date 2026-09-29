@@ -1,19 +1,10 @@
 # python -c "import secrets; print(secrets.token_urlsafe(32))"
-from email import message
-from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
-from alembic import command
-from alembic.config import Config
-from alembic.config import main as alembic_main
 
 from app import models  # noqa: F401 -- registers all models on Base.metadata
-from app.core.db import Base, SessionLocal, engine
-from app.core.config import settings
-from app.core.app_permissions import AppPermissions
-from subprocess import call, STDOUT
 
 app = typer.Typer()
 

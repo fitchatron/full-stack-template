@@ -1,13 +1,13 @@
 import pytest
+
 from app.schemas.filter_generator import (
     ComparisonOperator,
-    FilterCondition,
     FilterCompoundCondition,
+    FilterCondition,
     FilterPayload,
 )
 
 
-@pytest.mark.static
 @pytest.mark.parametrize(
     "enum, operator",
     [
@@ -36,7 +36,6 @@ def test_comparision_operator(enum, operator):
     assert enum == operator
 
 
-@pytest.mark.static
 @pytest.mark.parametrize(
     "data",
     [
@@ -70,7 +69,6 @@ def test_valid_filter_condition(data):
     FilterCondition(**data)
 
 
-@pytest.mark.static
 @pytest.mark.parametrize(
     "data, expected_message",
     [
@@ -128,7 +126,6 @@ def test_invalid_filter_compo_condition(data, expected_message):
         FilterCondition(**data)
 
 
-@pytest.mark.static
 @pytest.mark.parametrize(
     "data",
     [
@@ -249,7 +246,6 @@ def test_valid_filter_compound_condition(data):
     FilterCompoundCondition(**data)
 
 
-@pytest.mark.static
 @pytest.mark.parametrize(
     "data",
     [
@@ -325,7 +321,6 @@ def test_invalid_filter_compound_condition(data):
         FilterCompoundCondition(**data)
 
 
-@pytest.mark.static
 @pytest.mark.parametrize(
     "data",
     [
@@ -381,7 +376,6 @@ def test_valid_filter_payload(data):
     FilterPayload(**data)
 
 
-@pytest.mark.static
 @pytest.mark.parametrize(
     "data",
     [

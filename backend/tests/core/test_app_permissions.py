@@ -1,5 +1,6 @@
 import pytest
 from sqlalchemy import and_, select
+
 from app.core.app_permissions import AppPermissions
 from app.models.model import Permission
 

@@ -1,27 +1,27 @@
+from collections.abc import Generator
+from typing import Annotated
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-from typing import Annotated
-from app.core.app_permissions import AppPermissions
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from app.core.config import settings
-from collections.abc import Generator
-from app.core.db import SessionLocal
-import jwt
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
-from app.models import User
-from app.services.user import UserService
-from app.schemas.auth import TokenPayload
+
 from app.core import security
+from app.core.app_permissions import AppPermissions
+from app.core.config import settings
+from app.core.db import SessionLocal
+from app.models import User
+from app.schemas.auth import TokenPayload
+from app.services.user import UserService
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
 
 # FastAPI dependency: yields a session per request, closing it afterwards
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:
     db = SessionLocal()
     try:
         yield db

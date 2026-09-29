@@ -1,13 +1,15 @@
 import re
+from datetime import timedelta
+
 import pytest
-from datetime import datetime, timedelta
-from app.core.config import settings
-from app.core.app_permissions import AppPermissions
-from sqlalchemy import select, or_, and_
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
+
+from app.core.app_permissions import AppPermissions
+from app.core.config import settings
 from app.core.db import engine
-from app.models.model import Role, User, UserRole, Permission
 from app.core.security import create_access_token
+from app.models.model import Permission, Role, User, UserRole
 from seeding.factories import (
     RoleFactory,
     RolePermissionFactory,

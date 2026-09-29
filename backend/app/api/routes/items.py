@@ -1,6 +1,6 @@
-import uuid
 
 from fastapi import APIRouter, HTTPException
+
 from app.core.config import settings
 
 router = APIRouter(prefix="/items", tags=["items"])

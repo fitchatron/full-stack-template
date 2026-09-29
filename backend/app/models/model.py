@@ -1,10 +1,11 @@
-from datetime import datetime
-from typing import Optional
-from sqlalchemy import Text, DateTime, ForeignKey, UniqueConstraint, text, Boolean
-from sqlalchemy.dialects.postgresql import UUID
 import uuid
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Text, UniqueConstraint, text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
+
 from app.core.db import Base
 from app.models.enums import AuthorizationAction, authorization_action_type
 from app.models.mixins import AuditMixin
@@ -26,8 +27,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(Text)
     hashed_password: Mapped[str] = mapped_column(Text)
     salt: Mapped[str] = mapped_column(Text)
-    given_name: Mapped[Optional[str]] = mapped_column(Text)
-    family_name: Mapped[Optional[str]] = mapped_column(Text)
+    given_name: Mapped[str | None] = mapped_column(Text)
+    family_name: Mapped[str | None] = mapped_column(Text)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -36,8 +37,8 @@ class User(Base):
     modified_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey(user_id))
-    modified_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey(user_id))
+    created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey(user_id))
+    modified_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey(user_id))
 
     __table_args__ = (
         UniqueConstraint(email),
@@ -46,14 +47,14 @@ class User(Base):
 
     # MARK: Relationships
     # user roles
-    user_roles: Mapped[list["UserRole"]] = relationship(
+    user_roles: Mapped[list[UserRole]] = relationship(
         "UserRole",
         foreign_keys="[UserRole.user_id]",
         back_populates="user",
         cascade="all, delete-orphan",
     )
     # roles
-    roles: Mapped[list["Role"]] = relationship(
+    roles: Mapped[list[Role]] = relationship(
         "Role",
         secondary="user_roles",
         primaryjoin="User.user_id == UserRole.user_id",
@@ -62,13 +63,13 @@ class User(Base):
     )
 
     # audit
-    created_by_user: Mapped[Optional["User"]] = relationship(
+    created_by_user: Mapped[User | None] = relationship(
         "User",
         foreign_keys=[created_by],
         remote_side="[User.user_id]",
     )
 
-    modified_by_user: Mapped[Optional["User"]] = relationship(
+    modified_by_user: Mapped[User | None] = relationship(
         "User",
         foreign_keys=[modified_by],
         remote_side="[User.user_id]",
@@ -92,7 +93,7 @@ class Permission(AuditMixin, Base):
     resource: Mapped[str] = mapped_column(Text)
 
     # MARK: Relationships
-    role_permissions: Mapped[list["RolePermission"]] = relationship(
+    role_permissions: Mapped[list[RolePermission]] = relationship(
         "RolePermission",
         back_populates="permission",
         cascade="all, delete-orphan",
@@ -111,12 +112,12 @@ class Role(AuditMixin, Base):
     description: Mapped[str] = mapped_column(Text)
 
     # MARK: Relationships
-    role_permissions: Mapped[list["RolePermission"]] = relationship(
+    role_permissions: Mapped[list[RolePermission]] = relationship(
         "RolePermission",
         back_populates="role",
         cascade="all, delete-orphan",
     )
-    user_roles: Mapped[list["UserRole"]] = relationship(
+    user_roles: Mapped[list[UserRole]] = relationship(
         "UserRole",
         back_populates="role",
         cascade="all, delete-orphan",
@@ -143,13 +144,13 @@ class RolePermission(AuditMixin, Base):
     )
 
     # MARK: Relationships
-    role: Mapped["Role"] = relationship(
+    role: Mapped[Role] = relationship(
         "Role",
         back_populates="role_permissions",
         primaryjoin="RolePermission.role_id == Role.role_id",
     )
 
-    permission: Mapped["Permission"] = relationship(
+    permission: Mapped[Permission] = relationship(
         "Permission",
         back_populates="role_permissions",
         primaryjoin="RolePermission.permission_id == Permission.permission_id",
@@ -185,13 +186,13 @@ class UserRole(AuditMixin, Base):
     )
 
     # MARK: Relationships
-    role: Mapped["Role"] = relationship(
+    role: Mapped[Role] = relationship(
         "Role",
         back_populates="user_roles",
         primaryjoin="UserRole.role_id == Role.role_id",
     )
 
-    user: Mapped["User"] = relationship(
+    user: Mapped[User] = relationship(
         "User",
         foreign_keys="[UserRole.user_id]",
         back_populates="user_roles",

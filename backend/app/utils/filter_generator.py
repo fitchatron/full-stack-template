@@ -1,10 +1,12 @@
 from __future__ import annotations
-from typing import Any, Generic, Optional, Type, TypeVar
+
 import json
-from sqlalchemy import and_, or_, between
+from typing import Any, Generic, TypeVar
+
+from sqlalchemy import and_, between, or_
 from sqlalchemy.sql import operators
-from sqlalchemy.sql.elements import ColumnElement
-from sqlalchemy.sql.elements import KeyedColumnElement
+from sqlalchemy.sql.elements import ColumnElement, KeyedColumnElement
+
 from app.schemas.filter_generator import (
     ComparisonOperator,
     CompoundOperator,
@@ -32,7 +34,7 @@ class SeparatorConfig:
         self.array_separator = array_separator
 
 
-def val_to_primitive(value: Optional[str]) -> Any:
+def val_to_primitive(value: str | None) -> Any:
     """Convert a string value to its primitive type."""
     if not value:
         return None
@@ -165,9 +167,9 @@ def parse_filter_str_to_filter_compound_condition(
 
 
 def parse_param_to_filter_payload(
-    filter_string: Optional[str] = None,
+    filter_string: str | None = None,
     config: SeparatorConfig = SeparatorConfig(),
-) -> Optional[FilterPayload]:
+) -> FilterPayload | None:
     """Parse a filter string parameter to a FilterPayload.
 
     Args:
@@ -209,7 +211,7 @@ class FilterGenerator(Generic[ModelType, Schema]):
 
     def __init__(
         self,
-        model: Type[ModelType],
+        model: type[ModelType],
         column_mapping: dict[str, KeyedColumnElement] = {},
     ) -> None:
         self.model = model

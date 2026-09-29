@@ -3,11 +3,12 @@ from datetime import UTC, timedelta
 
 import jwt
 import pytest
-from fastapi import HTTPException
 from faker import Faker
+from fastapi import HTTPException
+
+from app.api.deps import AuthorizeUser
 from app.core.app_permissions import AppPermissions
 from app.core.config import settings
-from app.api.deps import AuthorizeUser
 from app.core.security import ALGORITHM, create_access_token
 
 Faker.seed(settings.DEFAULT_FAKER_SEED)

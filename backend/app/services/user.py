@@ -1,16 +1,17 @@
 from uuid import UUID
 
-from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from pydantic import TypeAdapter
-from app.models.model import User, Role, Permission, UserRole
+from sqlalchemy.orm import Session
+
+from app.core.app_permissions import AppPermissions
+from app.models.model import Permission, User, UserRole
+from app.repositories.generic import CRUDRepository
+from app.repositories.permission import PermissionRepository
+from app.repositories.user import UserRepository
 from app.schemas.permission import (
     PermissionSchema,
 )
-from app.repositories.user import UserRepository
-from app.repositories.generic import CRUDRepository
-from app.repositories.permission import PermissionRepository
-from app.core.app_permissions import AppPermissions
 
 
 class UserService:
