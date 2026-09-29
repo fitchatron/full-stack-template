@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Annotated, Any
 
 from pydantic import Field, field_validator
-from pydantic_core.core_schema import FieldValidationInfo
+from pydantic_core.core_schema import ValidationInfo
 
 from app.schemas.base import BaseSchemaModel
 
@@ -70,7 +70,7 @@ class FilterCondition(BaseSchemaModel):
 
     @field_validator("value")
     @classmethod
-    def validate_value_for_operator(cls, v, info: FieldValidationInfo):
+    def validate_value_for_operator(cls, v, info: ValidationInfo):
         op: ComparisonOperator | None = info.data.get("operator")
         if not op:
             raise ValueError("no operator")
@@ -123,7 +123,7 @@ class FilterCompoundCondition(BaseSchemaModel):
 
     @field_validator("conditions")
     @classmethod
-    def validate_conditions(cls, v, info: FieldValidationInfo):
+    def validate_conditions(cls, v, info: ValidationInfo):
         if len(v) < 2:
             raise ValueError("provide at least 2 conditions")
 
