@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     FASTAPI_ENV: Literal["development"] | None = None
     PROJECT_NAME: str
 
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
     DATABASE_URL: str
 
     # sql alchemy database pool size
