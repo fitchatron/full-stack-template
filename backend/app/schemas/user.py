@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Self
+import uuid
 
 from pydantic import EmailStr, Field, SecretStr, model_validator
 
@@ -11,7 +12,7 @@ class UserSchema(BaseSchemaModel):
     Base users schema
     """
 
-    user_id: int = Field(description="ID of the user")
+    user_id: uuid.UUID = Field(description="ID of the user")
     username: str = Field(description="Username of the user")
     email: EmailStr = Field(description="Email of the user")
     hashed_password: str = Field(description="Hashed password of the user")
