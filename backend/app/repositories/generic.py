@@ -3,7 +3,7 @@ from typing import Any, Generic, TypeVar
 
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination.links import Page
-from sqlalchemy import delete, insert, inspect, select, tuple_, update
+from sqlalchemy import Select, delete, insert, inspect, select, tuple_, update
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
@@ -30,9 +30,7 @@ class CRUDRepository(Generic[ModelType, Schema]):
         self.session = session
         self.model = model
 
-    def create_single_item(
-        self, values: dict, commit: bool = True
-    ) -> ModelType | None:
+    def create_single_item(self, values: dict, commit: bool = True) -> ModelType | None:
         """
         Create a single item in the database and return a the Schema instance if successful.
         """
@@ -72,55 +70,15 @@ class CRUDRepository(Generic[ModelType, Schema]):
 
         return result
 
-    def read_single_item(
-        self,
-        filters: FilterPayload,
-        sort_by: list[OrderByCondition] | None = None,
-        joins: Sequence[InstrumentedAttribute] | None = None,
-    ) -> ModelType | None:
-        """
-        Read a single item by specifying filters
-        """
-
-        sql = select(self.model)
-
-        if joins:
-            for join in joins:
-                sql = sql.join(join)
-
-        # construct where clause
-        filter_generator = FilterGenerator(model=self.model)
-        filter_clause = filter_generator.build_filter(filters)
-        sql = sql.where(filter_clause)
-
-        # construct order by
-        if sort_by:
-            generator = OrderByGenerator(model=self.model)
-            order = generator.build_order_conditional(sort_by)
-            sql = sql.order_by(*order)
-
-        return self.session.scalars(sql).first()
-
-    def read_by_pk(self, pk: Any) -> ModelType | None:
-        return self.session.get(self.model, pk)
-
-    def read_multiple_items(
+    def _build_select(
         self,
         filters: FilterPayload | None = None,
         sort_by: list[OrderByCondition] | None = None,
-        paginate_results: bool = True,
         joins: Sequence[InstrumentedAttribute] | None = None,
-    ) -> Page[Schema] | Sequence[ModelType]:
+    ) -> Select[tuple[ModelType]]:
         """
-        Read many items by specifying filters.
-        Results can be paginated.
+        Build a select statement with optional joins, filters and order by
         """
-
-        # ensure order by column is specified for pagination
-        if paginate_results and sort_by is None:
-            raise NoOrderByColumnsSpecified(
-                "At least 1 order by column must be specified."
-            )
 
         sql = select(self.model)
 
@@ -140,11 +98,55 @@ class CRUDRepository(Generic[ModelType, Schema]):
             order = generator.build_order_conditional(sort_by)
             sql = sql.order_by(*order)
 
-        return (
-            paginate(self.session, sql)
-            if paginate_results
-            else self.session.scalars(sql).all()
-        )
+        return sql
+
+    def read_single_item(
+        self,
+        filters: FilterPayload,
+        sort_by: list[OrderByCondition] | None = None,
+        joins: Sequence[InstrumentedAttribute] | None = None,
+    ) -> ModelType | None:
+        """
+        Read a single item by specifying filters
+        """
+
+        sql = self._build_select(filters, sort_by, joins)
+        return self.session.scalars(sql).first()
+
+    def read_by_pk(self, pk: Any) -> ModelType | None:
+        return self.session.get(self.model, pk)
+
+    def read_multiple_items(
+        self,
+        filters: FilterPayload | None = None,
+        sort_by: list[OrderByCondition] | None = None,
+        joins: Sequence[InstrumentedAttribute] | None = None,
+    ) -> Sequence[ModelType]:
+        """
+        Read many items by specifying filters.
+        """
+
+        sql = self._build_select(filters, sort_by, joins)
+        return self.session.scalars(sql).all()
+
+    def read_paginated_items(
+        self,
+        sort_by: list[OrderByCondition],
+        filters: FilterPayload | None = None,
+        joins: Sequence[InstrumentedAttribute] | None = None,
+    ) -> Page[Schema]:
+        """
+        Read a page of items by specifying filters.
+        At least 1 order by column is required so pages are stable.
+        """
+
+        if not sort_by:
+            raise NoOrderByColumnsSpecified(
+                "At least 1 order by column must be specified."
+            )
+
+        sql = self._build_select(filters, sort_by, joins)
+        return paginate(self.session, sql)
 
     def update_multiple_items_with_same_values(
         self,
