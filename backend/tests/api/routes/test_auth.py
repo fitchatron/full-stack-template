@@ -50,6 +50,9 @@ from app.core.security import create_access_token
     ],
 )
 def test_register(client, register_user_request, expected_status_code):
+    """
+    Test the registration functionality for a new user.
+    """
 
     response = client.post(
         "/api/v1/auth/register",
@@ -60,6 +63,9 @@ def test_register(client, register_user_request, expected_status_code):
 
 
 def test_register_existing_user(client, db_session):
+    """
+    Test that registering an existing user returns a 400 status code with the appropriate error message.
+    """
     existing_user = UserFactory.build(email="existing-user@test.example.com")
     db_session.add(existing_user)
     db_session.flush()
@@ -90,14 +96,26 @@ def test_register_existing_user(client, db_session):
 @pytest.mark.parametrize(
     "use_fixture_email, password, expected_status_code, expected_response_json",
     [
-        (
+        pytest.param(
             True,
             settings.TEST_USER_PASSWORD,
             200,
             {"access_token": "", "token_type": "bearer"},
         ),
-        (True, "wrong-password", 400, {"detail": "Incorrect email or password"}),
-        (False, "wrong-password", 400, {"detail": "Incorrect email or password"}),
+        pytest.param(
+            True,
+            "wrong-password",
+            400,
+            {"detail": "Incorrect email or password"},
+            id="wrong-password-using-fixture-email",
+        ),
+        pytest.param(
+            False,
+            "wrong-password",
+            400,
+            {"detail": "Incorrect email or password"},
+            id="wrong-password-not-using-fixture-email",
+        ),
     ],
 )
 def test_login_user(
@@ -108,6 +126,9 @@ def test_login_user(
     expected_status_code,
     expected_response_json,
 ):
+    """
+    Test the login functionality for a user.
+    """
     email = act_as_user.email if use_fixture_email else "non-existent@email.test.com"
     response = client.post(
         "/api/v1/auth/login", data={"username": email, "password": password}
@@ -125,6 +146,9 @@ def test_login_user(
 
 
 def test_test_token_valid_user(client, act_as_admin):
+    """
+    Test that a valid user with a valid token can validate the token.
+    """
     token = Token(
         access_token=create_access_token(
             act_as_admin.user_id, expires_delta=timedelta(minutes=5)
@@ -141,6 +165,9 @@ def test_test_token_valid_user(client, act_as_admin):
 
 
 def test_test_token_valid_user_expired_token(client, act_as_admin):
+    """
+    Test that a valid user with an expired token cannot validate the token.
+    """
     token = Token(
         access_token=create_access_token(
             act_as_admin.user_id, expires_delta=timedelta(minutes=-5)
@@ -157,6 +184,9 @@ def test_test_token_valid_user_expired_token(client, act_as_admin):
 
 
 def test_test_token_invalid_user(client):
+    """
+    Test that an invalid user with a non-existent UUID cannot validate the token.
+    """
     token = Token(
         access_token=create_access_token(
             uuid.uuid4(), expires_delta=timedelta(minutes=-5)
