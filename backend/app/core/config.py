@@ -36,8 +36,8 @@ class Settings(BaseSettings):
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
-    EMAIL_TEST_USER: EmailStr = "test@example.com"
-    EMAIL_TEST_USER_PASSWORD: str = "password"
+    TEST_USER_EMAIL: EmailStr = "test@example.com"
+    TEST_USER_PASSWORD: str = "password123"
 
     DEFAULT_FAKER_SEED: int = 1234
 

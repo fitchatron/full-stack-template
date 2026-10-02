@@ -118,7 +118,9 @@ def act_as_user(db_session, request):
 
     slug = re.sub(r"[^a-z0-9]+", "-", request.node.name.lower()).strip("-")
     user = UserFactory.build(
-        email=f"{slug}@test.example.com", password=settings.EMAIL_TEST_USER_PASSWORD
+        email=f"{slug}@test.example.com",
+        password=settings.TEST_USER_PASSWORD,
+        email_verified=True,
     )
     db_session.add(user)
     db_session.flush()

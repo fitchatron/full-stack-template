@@ -38,7 +38,7 @@ def test_act_as_user_is_persisted(db_session, act_as_user):
 
 def test_act_as_user_has_test_password(act_as_user):
     assert verify_password(
-        f"{settings.EMAIL_TEST_USER_PASSWORD}{act_as_user.salt}",
+        f"{settings.TEST_USER_PASSWORD}{act_as_user.salt}",
         act_as_user.hashed_password,
     )
 
