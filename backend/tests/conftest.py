@@ -1,50 +1,50 @@
 import re
 from datetime import timedelta
 
-from fastapi.testclient import TestClient
 import pytest
-from sqlalchemy import create_engine, or_, select, text
+from fastapi.testclient import TestClient
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
-import urllib.parse
-from app.main import app
+
+from app.api.deps import get_db
 from app.core.app_permissions import AppPermissions
 from app.core.config import settings
-
-# from app.core.db import engine
 from app.core.security import create_access_token
+from app.main import app
 from app.models.model import Permission, Role, User, UserRole
+from seeding import DatabaseManager, DatabaseSeeder, SeedPlan
 from seeding.factories import (
     RoleFactory,
     RolePermissionFactory,
     UserFactory,
     UserRoleFactory,
 )
-from seeding.plan import SeedPlan
-from seeding.seeder import DatabaseSeeder
-
-test_database_engine = create_engine(
-    f"postgresql+psycopg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@localhost:5432/test_{settings.POSTGRES_DB}",
-    connect_args={"autocommit": True},
-    pool_size=settings.SQLALCHEMY_DATABASE_POOL_SIZE,
-    pool_pre_ping=settings.SQLALCHEMY_POOL_PRE_PING,
-)
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _core_data():
-    """Reset the schema and seed required reference data once for the whole run."""
-    with Session(test_database_engine) as session:
-        DatabaseSeeder(
-            session=session,
-        ).seed(plan=SeedPlan(include_mock_data=False))
+def db_manager():
+    """
+    Recreate test_{POSTGRES_DB} and seed required reference data once for the
+    whole run.
+    """
+    manager = DatabaseManager.for_tests()
+    manager.reset(
+        seed=lambda session: DatabaseSeeder(session).seed(
+            SeedPlan(include_mock_data=False)
+        ),
+        recreate_db=True,
+    )
+    yield manager
+    manager.dispose()
 
 
 @pytest.fixture
-def db_session():
+def db_session(db_manager):
     """
-    Fixture to create SQLAlchemy session for talking to the database directly
+    Fixture to create SQLAlchemy session for talking to the database directly.
+    Everything a test does (including commits) is rolled back afterwards.
     """
-    connection = test_database_engine.connect()
+    connection = db_manager.engine.connect()
     transaction = connection.begin()
     session = Session(bind=connection, join_transaction_mode="create_savepoint")
 
@@ -55,55 +55,19 @@ def db_session():
     connection.close()
 
 
-@pytest.fixture(scope="session")
-def create_database():
+@pytest.fixture
+def client(db_session):
     """
-    Fixture to create database
+    Fixture to setup client. Requests share the test's db_session, so they hit
+    the test database and are rolled back with it.
     """
 
-    # ensure that the connection string is pointing to local database
+    def _get_db():
+        yield db_session
 
-    host = test_database_engine.url.host
-    if host not in ["localhost", "127.0.0.1"]:
-        raise ValueError("Database host is not local")
-
-    database_name = f"test_{settings.POSTGRES_DB}"
-
-    master_database_engine = create_engine(
-        f"postgresql+psycopg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@localhost:5432/postgres",
-        connect_args={"autocommit": True},
-        pool_size=settings.SQLALCHEMY_DATABASE_POOL_SIZE,
-        pool_pre_ping=settings.SQLALCHEMY_POOL_PRE_PING,
-    )
-
-    # create test database
-    with master_database_engine.connect() as connection:
-
-        # if database already exists then drop the database
-        if (
-            connection.scalars(
-                text(f"SELECT 1 FROM pg_database WHERE datname = '{database_name}'")
-            ).first()
-            is not None
-        ):
-            connection.execute(
-                text(f"ALTER DATABASE {database_name} WITH ALLOW_CONNECTIONS = false;")
-            )
-            connection.execute(text(f"DROP DATABASE IF EXISTS {database_name}"))
-
-        # create database
-        connection.execute(text(f"CREATE DATABASE {database_name}"))
-    yield
-
-
-@pytest.fixture(scope="session")
-def client(create_database):
-    """
-    Fixture to setup client
-    """
-    # create test client
-    client = TestClient(app)
-    yield client
+    app.dependency_overrides[get_db] = _get_db
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture

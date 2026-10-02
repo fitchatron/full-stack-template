@@ -2,10 +2,8 @@ from typing import Annotated
 
 import typer
 
-from app import models  # noqa: F401 -- registers all models on Base.metadata
-from app.core.db import SessionLocal, engine
 from cli.types import TestDataMode
-from seeding import DatabaseSeeder, SeedPlan
+from seeding import DatabaseManager, DatabaseSeeder, NonLocalDatabaseError, SeedPlan
 
 app = typer.Typer()
 
@@ -32,33 +30,30 @@ def create_local_db(
     """
 
     try:
-        with SessionLocal() as session:
-            seeder = DatabaseSeeder(session=session, mode=mode)
+        manager = DatabaseManager.from_settings(mode)
+    except NonLocalDatabaseError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
 
-            if not seeder.is_local_host():
-                typer.secho(
-                    f"Refusing to run against host {engine.url.host!r} -- "
-                    f"this command only runs against a local host.",
-                    fg=typer.colors.RED,
-                    err=True,
-                )
-                raise typer.Exit(code=1)
-
-            result = seeder.seed(SeedPlan(include_mock_data=mock_data))
-
-            typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
-            message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
-            typer.secho(message, fg=typer.colors.YELLOW)
-            typer.secho(
-                f"Admin user email: {result.admin_user.email}", fg=typer.colors.CYAN
+    try:
+        result = manager.reset(
+            seed=lambda session: DatabaseSeeder(session).seed(
+                SeedPlan(include_mock_data=mock_data)
             )
-    except typer.Exit:
-        raise
-    except SystemExit:
-        raise
+        )
+        assert result is not None
+
+        typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
+        message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
+        typer.secho(message, fg=typer.colors.YELLOW)
+        typer.secho(
+            f"Admin user email: {result.admin_user.email}", fg=typer.colors.CYAN
+        )
     except Exception as e:
         typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1)
+    finally:
+        manager.dispose()
 
 
 if __name__ == "__main__":

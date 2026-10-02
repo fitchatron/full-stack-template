@@ -1,16 +1,11 @@
 import random
 from dataclasses import dataclass
-from pathlib import Path
 
 import factory.random
-from alembic import command
-from alembic.config import Config
-from alembic.config import main as alembic_main
 from sqlalchemy.orm import Session
 
 from app.core.app_permissions import AppPermissions
 from app.core.config import settings
-from app.core.db import Base, engine
 from app.core.security import hash_password
 from app.models import (
     AuthorizationAction,
@@ -20,7 +15,6 @@ from app.models import (
     User,
     UserRole,
 )
-from cli.types import TestDataMode
 from seeding.factories import PermissionFactory, UserFactory
 from seeding.plan import SeedPlan, SeedResult
 
@@ -62,42 +56,16 @@ class CoreSeedResult:
 
 
 class DatabaseSeeder:
+    """
+    Inserts data into an existing schema. Schema lifecycle (create/drop) lives
+    in DatabaseManager.
+    """
 
-    LOCAL_HOSTS = {"localhost", "127.0.0.1"}
-
-    def __init__(self, session: Session, mode: TestDataMode | None = None) -> None:
+    def __init__(self, session: Session) -> None:
         self.session = session
-        self.mode = mode if mode is not None else TestDataMode.mock
-
-    def is_local_host(self):
-        host = engine.url.host
-        return host in self.LOCAL_HOSTS
-
-    def drop_database_tables(self):
-        if not self.is_local_host():
-            raise Exception("target database is not local db")
-
-        Base.metadata.drop_all(bind=engine)
-
-    def create_database_tables(self):
-        if not self.is_local_host():
-            raise Exception("target database is not local db")
-
-        if self.mode == TestDataMode.alembic:
-            alembic_main(argv=["--raiseerr", "upgrade", "head"])
-        else:
-            Base.metadata.create_all(bind=engine)
-
-            alembic_cfg = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
-            command.stamp(alembic_cfg, "head")
-
-    def drop_and_create_database_tables(self):
-        self.drop_database_tables()
-        self.create_database_tables()
 
     def seed(self, plan: SeedPlan | None = None) -> SeedResult:
         plan = plan or SeedPlan()
-        self.drop_and_create_database_tables()
         core = self.seed_core_data()
         users = self.seed_mock_data(core.roles, plan) if plan.include_mock_data else []
 
