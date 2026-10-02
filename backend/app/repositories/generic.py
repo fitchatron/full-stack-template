@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination.links import Page
@@ -17,7 +17,7 @@ ModelType = TypeVar("ModelType")
 Schema = TypeVar("Schema")
 
 
-class CRUDRepository(Generic[ModelType, Schema]):
+class CRUDRepository[ModelType, Schema]:
     """
     CRUD repository base. Comes with all CRUD method that can be performed on a basic model.
     """

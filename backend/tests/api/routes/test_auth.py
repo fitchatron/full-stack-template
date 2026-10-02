@@ -1,13 +1,14 @@
+import uuid
 from datetime import timedelta
 
 import pytest
 from sqlalchemy import select
-import uuid
-from app.models.model import User
+
 from app.core.config import settings
-from seeding.factories import UserFactory
-from app.schemas.auth import Token
 from app.core.security import create_access_token
+from app.models.model import User
+from app.schemas.auth import Token
+from seeding.factories import UserFactory
 
 
 @pytest.mark.parametrize(

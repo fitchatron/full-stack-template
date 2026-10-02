@@ -1,7 +1,7 @@
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, Self
+from typing import Self
 
 from alembic import command
 from alembic.config import Config

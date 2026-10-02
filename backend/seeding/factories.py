@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from factory.alchemy import SQLAlchemyModelFactory as _SQLAlchemyModelFactory
 from factory.declarations import (
@@ -27,7 +27,7 @@ DEFAULT_USER_PASSWORD = "Password123!"  # local dev only, not a secret
 ModelT = TypeVar("ModelT")
 
 
-class SQLAlchemyModelFactory(_SQLAlchemyModelFactory, Generic[ModelT]):
+class SQLAlchemyModelFactory[ModelT](_SQLAlchemyModelFactory):
     """Re-adds the Generic[T] param that factory_boy's own base drops.
 
     `factory.alchemy.SQLAlchemyModelFactory` subclasses `factory.Factory`

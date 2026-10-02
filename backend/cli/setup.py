@@ -39,7 +39,6 @@ def generate_secret_key(
         typer.secho("Generated secret key", fg=typer.colors.GREEN)
         typer.secho(f"Secret key saved to {env_file}", fg=typer.colors.YELLOW)
     else:
-        print(secret_key)
         typer.secho("Generated secret key", fg=typer.colors.GREEN)
         typer.secho(f"Secret key is {secret_key}", fg=typer.colors.YELLOW)
 

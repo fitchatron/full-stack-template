@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated, Any
 
 from pydantic import Field, field_validator
@@ -9,7 +9,7 @@ from pydantic_core.core_schema import ValidationInfo
 from app.schemas.base import BaseSchemaModel
 
 
-class ComparisonOperator(str, Enum):
+class ComparisonOperator(StrEnum):
     """
     Represents an operator that can be applied to a filter clause
     """
@@ -27,7 +27,7 @@ class ComparisonOperator(str, Enum):
     between_ = "between"
 
 
-class CompoundOperator(str, Enum):
+class CompoundOperator(StrEnum):
     """
     Represents an operator that can be applied to a compound clause e.g. and, or
     """

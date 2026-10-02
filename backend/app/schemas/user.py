@@ -1,6 +1,6 @@
+import uuid
 from datetime import datetime
 from typing import Self
-import uuid
 
 from pydantic import EmailStr, Field, SecretStr, model_validator
 

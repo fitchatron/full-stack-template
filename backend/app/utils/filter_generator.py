@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from sqlalchemy import and_, between, or_
 from sqlalchemy.sql import operators
@@ -192,7 +192,7 @@ def parse_param_to_filter_payload(
     return FilterPayload(where=filter_condition)
 
 
-class FilterGenerator(Generic[ModelType, Schema]):
+class FilterGenerator[ModelType, Schema]:
 
     # Map comparison operators to SQLAlchemy expressions
     COMPARISON_OPERATORS = {
@@ -212,11 +212,11 @@ class FilterGenerator(Generic[ModelType, Schema]):
     def __init__(
         self,
         model: type[ModelType],
-        column_mapping: dict[str, KeyedColumnElement] = {},
+        column_mapping: dict[str, KeyedColumnElement] | None = None,
     ) -> None:
         self.model = model
         self.column_path_resolver = ColumnPathResolver(model=model)
-        self.column_mapping = column_mapping
+        self.column_mapping = column_mapping or {}
 
     def generate_filter(
         self, condition: FilterCondition | FilterCompoundCondition
@@ -258,5 +258,5 @@ class FilterGenerator(Generic[ModelType, Schema]):
 
         raise ValueError(f"Unsupported logical operator: {op}")
 
-    def build_filter(self, payload: FilterPayload):
+    def build_filter(self, payload: FilterPayload) -> ColumnElement[bool]:
         return self.generate_filter(payload.where)

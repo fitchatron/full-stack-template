@@ -1,4 +1,4 @@
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from sqlalchemy import UnaryExpression
 from sqlalchemy.sql.elements import KeyedColumnElement
@@ -41,16 +41,16 @@ def parse_param_to_order_by_condition(
     return order_state
 
 
-class OrderByGenerator(Generic[ModelType, Schema]):
+class OrderByGenerator[ModelType, Schema]:
 
     def __init__(
         self,
         model: type[ModelType],
-        column_mapping: dict[str, KeyedColumnElement] = {},
+        column_mapping: dict[str, KeyedColumnElement] | None = None,
     ) -> None:
         self.model = model
         self.column_path_resolver = ColumnPathResolver(model=model)
-        self.column_mapping = column_mapping
+        self.column_mapping = column_mapping or {}
 
     def build_order_conditional(self, conditions: list[OrderByCondition]):
         operators: list[UnaryExpression[Any]] = []
