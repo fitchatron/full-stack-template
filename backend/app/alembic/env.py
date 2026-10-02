@@ -67,6 +67,16 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # a caller (e.g. DatabaseManager) can hand over its own connection so that
+    # migrations run against its database rather than settings.DATABASE_URL
+    connection = config.attributes.get("connection")
+    if connection is not None:
+        context.configure(connection=connection, target_metadata=target_metadata)
+
+        with context.begin_transaction():
+            context.run_migrations()
+        return
+
     configuration = config.get_section(config.config_ini_section)
     assert configuration is not None
     configuration["sqlalchemy.url"] = get_url()
