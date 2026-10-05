@@ -32,7 +32,7 @@ def order(column: str, orientation: str = "asc") -> list[OrderByCondition]:
     ]
 
 
-PREFIXED = where("role_id", "like", f"{PREFIX}-%")
+PREFIXED = Role.role_id.like(f"{PREFIX}-%")
 
 
 def role_values(suffix: str, **overrides) -> dict:
@@ -156,7 +156,7 @@ def test_create_multiple_items_without_commit_is_rolled_back(db_session, role_re
 def test_read_single_item_matches_filter(role_repo, roles):
     # GIVEN roles a, b, c
     # WHEN reading a single item filtered by role_id == c
-    role = role_repo.read_single_item(where("role_id", "eq", f"{PREFIX}-c"))
+    role = role_repo.read_single_item(filters=(Role.role_id == f"{PREFIX}-c"))
 
     # THEN the exact same ORM instance already in the session's identity map
     # is returned (roles[1] is role "c")
@@ -168,7 +168,9 @@ def test_read_single_item_returns_none_when_no_match(role_repo):
     # GIVEN roles a, b, c exist
     # WHEN reading a single item filtered by a role_id that doesn't exist
     # THEN None is returned rather than raising
-    assert role_repo.read_single_item(where("role_id", "eq", f"{PREFIX}-nope")) is None
+    assert (
+        role_repo.read_single_item(filters=(Role.role_id == f"{PREFIX}-nope")) is None
+    )
 
 
 @pytest.mark.parametrize(("orientation", "expected"), [("asc", "a"), ("desc", "b")])
@@ -178,7 +180,7 @@ def test_read_single_item_respects_sort_by(role_repo, orientation, expected):
     # WHEN reading a single item filtered on description == "shared", sorted
     # by role_id in the given orientation
     role = role_repo.read_single_item(
-        where("description", "eq", "shared"),
+        filters=(Role.description == "shared"),
         sort_by=order("role_id", orientation),
     )
 
@@ -198,7 +200,7 @@ def test_read_single_item_with_joins(db_session, roles):
     # WHEN reading a single User, filtering through the joined roles
     # relationship on roles.role_id
     found = user_repo.read_single_item(
-        where("roles.role_id", "eq", roles[1].role_id), joins=[User.roles]
+        filters=(Role.role_id == roles[1].role_id), joins=[User.roles]
     )
 
     # THEN the join correctly resolves back to that user
@@ -284,7 +286,7 @@ def test_read_multiple_items_with_joins(db_session, roles):
     # WHEN reading multiple Users, filtering through the joined roles
     # relationship on roles[0]'s role_id
     result = user_repo.read_multiple_items(
-        filters=where("roles.role_id", "eq", roles[0].role_id),
+        filters=(Role.role_id == roles[0].role_id),
         joins=[User.roles],
     )
 
@@ -336,7 +338,7 @@ def test_read_paginated_items_with_joins(db_session, roles):
     with set_params(Params(page=1, size=2)):
         page = user_repo.read_paginated_items(
             sort_by=order("email"),
-            filters=where("roles.role_id", "eq", roles[0].role_id),
+            filters=(Role.role_id == roles[0].role_id),
             joins=[User.roles],
         )
 
@@ -353,7 +355,7 @@ def test_update_same_values_updates_matching_rows(db_session, role_repo):
     # WHEN updating every row matching description == "shared" to the same
     # new value ("changed")
     updated = role_repo.update_multiple_items_with_same_values(
-        where("description", "eq", "shared"), {"description": "changed"}
+        Role.description == "shared", {"description": "changed"}
     )
 
     # THEN the two matching rows are returned and persisted with the new
@@ -371,7 +373,7 @@ def test_update_same_values_returns_empty_when_no_match(role_repo):
     # GIVEN roles a, b, c
     # WHEN updating with a filter that matches nothing
     updated = role_repo.update_multiple_items_with_same_values(
-        where("role_id", "eq", f"{PREFIX}-nope"), {"description": "changed"}
+        filters=(Role.role_id == f"{PREFIX}-nope"), values={"description": "changed"}
     )
 
     # THEN an empty list is returned -- no rows touched
@@ -384,7 +386,7 @@ def test_update_same_values_without_commit_is_rolled_back(db_session, role_repo)
     savepoint = db_session.begin_nested()
     # WHEN updating all prefixed rows with commit=False
     updated = role_repo.update_multiple_items_with_same_values(
-        PREFIXED, {"description": "changed"}, commit=False
+        filters=PREFIXED, values={"description": "changed"}, commit=False
     )
     assert len(updated) == 3
 
@@ -410,8 +412,8 @@ def test_update_same_values_with_joins_single_pk(db_session, roles):
 
     # WHEN updating Users joined through roles, filtered to roles[0]
     updated = user_repo.update_multiple_items_with_same_values(
-        where("roles.role_id", "eq", roles[0].role_id),
-        {"given_name": "after"},
+        filters=(Role.role_id == roles[0].role_id),
+        values={"given_name": "after"},
         joins=[User.roles],
     )
 
@@ -433,8 +435,8 @@ def test_update_same_values_with_joins_composite_pk(db_session):
     # WHEN updating RolePermissions joined through role, filtered to
     # "rp-keep"
     updated = repo.update_multiple_items_with_same_values(
-        where("role.role_id", "eq", keep_id),
-        {"created_by": None, "modified_by": None},
+        filters=(Role.role_id == keep_id),
+        values={"created_by": None, "modified_by": None},
         joins=[RolePermission.role],
     )
 
@@ -473,8 +475,8 @@ def test_update_different_values_respects_filters(db_session, role_repo):
     # WHEN updating with a filter (description == "unique") and payloads for
     # both a and c
     role_repo.update_multiple_items_with_different_values(
-        where("description", "eq", "unique"),
-        [
+        filters=(Role.description == "unique"),
+        parameters=[
             {"role_id": f"{PREFIX}-a", "description": "first"},
             {"role_id": f"{PREFIX}-c", "description": "third"},
         ],
@@ -509,7 +511,7 @@ def test_update_different_values_without_commit_is_rolled_back(db_session, role_
 def test_delete_multiple_items_deletes_matching_rows(db_session, role_repo):
     # GIVEN roles a and b share description "shared"; role c is "unique"
     # WHEN deleting every row matching description == "shared"
-    deleted = role_repo.delete_multiple_items(where("description", "eq", "shared"))
+    deleted = role_repo.delete_multiple_items(filters=(Role.description == "shared"))
 
     # THEN the 2 matching rows are reported deleted, and only role c remains
     assert len(deleted) == 2
@@ -525,7 +527,7 @@ def test_delete_multiple_items_deletes_matching_rows(db_session, role_repo):
 def test_delete_multiple_items_returned_rows_are_readable_after_commit(role_repo):
     # GIVEN roles a and b share description "shared"
     # WHEN deleting them with the default commit=True
-    deleted = role_repo.delete_multiple_items(where("description", "eq", "shared"))
+    deleted = role_repo.delete_multiple_items(filters=(Role.description == "shared"))
 
     # THEN (in principle) the returned rows' attributes should still be
     # readable -- but in practice they are NOT: `delete_multiple_items`
@@ -546,7 +548,7 @@ def test_delete_multiple_items_returned_rows_are_readable_without_commit(role_re
     # WHEN deleting them with commit=False (caller owns the transaction, so
     # nothing expires the returned objects' attributes)
     deleted = role_repo.delete_multiple_items(
-        where("description", "eq", "shared"), commit=False
+        filters=(Role.description == "shared"), commit=False
     )
 
     # THEN the returned rows' attributes are readable without error --
@@ -559,7 +561,7 @@ def test_delete_multiple_items_returned_rows_are_readable_without_commit(role_re
 def test_delete_multiple_items_returns_empty_when_no_match(db_session, role_repo):
     # GIVEN roles a, b, c
     # WHEN deleting with a filter that matches nothing
-    deleted = role_repo.delete_multiple_items(where("role_id", "eq", f"{PREFIX}-x"))
+    deleted = role_repo.delete_multiple_items(filters=(Role.role_id == f"{PREFIX}-x"))
 
     # THEN an empty list is returned and all 3 rows remain
     assert deleted == []
@@ -571,7 +573,7 @@ def test_delete_multiple_items_without_commit_is_rolled_back(db_session, role_re
     # GIVEN an open savepoint over roles a, b, c
     savepoint = db_session.begin_nested()
     # WHEN deleting all prefixed rows with commit=False
-    deleted = role_repo.delete_multiple_items(PREFIXED, commit=False)
+    deleted = role_repo.delete_multiple_items(filters=PREFIXED, commit=False)
     assert len(deleted) == 3
 
     # THEN rolling back the savepoint restores all 3 rows -- the delete was
@@ -593,7 +595,7 @@ def test_delete_multiple_items_with_joins_single_pk(db_session, roles):
 
     # WHEN deleting Users joined through roles, filtered to roles[0]
     deleted = user_repo.delete_multiple_items(
-        where("roles.role_id", "eq", roles[0].role_id), joins=[User.roles]
+        filters=(Role.role_id == roles[0].role_id), joins=[User.roles]
     )
 
     # THEN only the user linked to roles[0] is deleted; the other, linked
@@ -614,7 +616,7 @@ def test_delete_multiple_items_with_joins_composite_pk(db_session):
     # WHEN deleting RolePermissions joined through role, filtered to
     # "rp-drop"
     deleted = repo.delete_multiple_items(
-        where("role.role_id", "eq", drop_id), joins=[RolePermission.role]
+        filters=(Role.role_id == drop_id), joins=[RolePermission.role]
     )
 
     # THEN only the 1 row belonging to "rp-drop" is deleted; both rows for

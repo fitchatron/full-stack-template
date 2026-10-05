@@ -3,14 +3,20 @@ from typing import Any, TypeVar
 
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination.links import Page
-from sqlalchemy import Select, delete, insert, inspect, select, tuple_, update
+from sqlalchemy import (
+    ColumnElement,
+    Select,
+    delete,
+    insert,
+    inspect,
+    select,
+    tuple_,
+    update,
+)
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-
-from app.schemas.filter_generator import FilterPayload
 from app.schemas.order_by_generator import OrderByCondition
 from app.utils.exception import NoOrderByColumnsSpecified
-from app.utils.filter_generator import FilterGenerator
 from app.utils.order_by_generator import OrderByGenerator
 
 ModelType = TypeVar("ModelType")
@@ -72,7 +78,7 @@ class CRUDRepository[ModelType, Schema]:
 
     def _build_select(
         self,
-        filters: FilterPayload | None = None,
+        filters: ColumnElement[bool] | None = None,
         sort_by: list[OrderByCondition] | None = None,
         joins: Sequence[InstrumentedAttribute] | None = None,
     ) -> Select[tuple[ModelType]]:
@@ -88,9 +94,7 @@ class CRUDRepository[ModelType, Schema]:
 
         # construct where clause if filters provided
         if filters is not None:
-            filter_generator = FilterGenerator(model=self.model)
-            filter_clause = filter_generator.build_filter(filters)
-            sql = sql.where(filter_clause)
+            sql = sql.where(filters)
 
         # construct order by
         if sort_by:
@@ -102,7 +106,7 @@ class CRUDRepository[ModelType, Schema]:
 
     def read_single_item(
         self,
-        filters: FilterPayload,
+        filters: ColumnElement[bool],
         sort_by: list[OrderByCondition] | None = None,
         joins: Sequence[InstrumentedAttribute] | None = None,
     ) -> ModelType | None:
@@ -118,7 +122,7 @@ class CRUDRepository[ModelType, Schema]:
 
     def read_multiple_items(
         self,
-        filters: FilterPayload | None = None,
+        filters: ColumnElement[bool] | None = None,
         sort_by: list[OrderByCondition] | None = None,
         joins: Sequence[InstrumentedAttribute] | None = None,
     ) -> Sequence[ModelType]:
@@ -132,7 +136,7 @@ class CRUDRepository[ModelType, Schema]:
     def read_paginated_items(
         self,
         sort_by: list[OrderByCondition],
-        filters: FilterPayload | None = None,
+        filters: ColumnElement[bool] | None = None,
         joins: Sequence[InstrumentedAttribute] | None = None,
     ) -> Page[Schema]:
         """
@@ -150,7 +154,7 @@ class CRUDRepository[ModelType, Schema]:
 
     def update_multiple_items_with_same_values(
         self,
-        filters: FilterPayload,
+        filters: ColumnElement[bool],
         values: dict,
         commit: bool = True,
         joins: Sequence[InstrumentedAttribute] | None = None,
@@ -161,10 +165,6 @@ class CRUDRepository[ModelType, Schema]:
         """
 
         sql = update(self.model).values(**values)
-
-        # construct where clause
-        filter_generator = FilterGenerator(model=self.model)
-        filter_clause = filter_generator.build_filter(filters)
 
         if joins:
             mapper = inspect(self.model)
@@ -178,14 +178,14 @@ class CRUDRepository[ModelType, Schema]:
             for join in joins:
                 subquery = subquery.join(join)
 
-            subquery = subquery.where(filter_clause)
+            subquery = subquery.where(filters)
 
             if len(pks) > 1:
                 sql = sql.where(tuple_(*pks).in_(subquery))
             else:
                 sql = sql.where(pks[0].in_(subquery))
         else:
-            sql = sql.where(filter_clause)
+            sql = sql.where(filters)
 
         # return updated records
         sql = sql.returning(self.model)
@@ -200,7 +200,7 @@ class CRUDRepository[ModelType, Schema]:
 
     def update_multiple_items_with_different_values(
         self,
-        filters: FilterPayload | None,
+        filters: ColumnElement[bool] | None,
         parameters: list[dict],
         commit: bool = True,
     ) -> None:
@@ -219,9 +219,7 @@ class CRUDRepository[ModelType, Schema]:
 
         # construct where clause if filters provided
         if filters is not None:
-            filter_generator = FilterGenerator(model=self.model)
-            filter_clause = filter_generator.build_filter(filters)
-            sql = sql.where(filter_clause)
+            sql = sql.where(filters)
 
         self.session.execute(sql, parameters)
 
@@ -230,7 +228,7 @@ class CRUDRepository[ModelType, Schema]:
 
     def delete_multiple_items(
         self,
-        filters: FilterPayload,
+        filters: ColumnElement[bool],
         commit: bool = True,
         joins: Sequence[InstrumentedAttribute] | None = None,
     ) -> Sequence[ModelType]:
@@ -239,10 +237,6 @@ class CRUDRepository[ModelType, Schema]:
         """
 
         sql = delete(self.model)
-
-        # construct where clause
-        filter_generator = FilterGenerator(model=self.model)
-        filter_clause = filter_generator.build_filter(filters)
 
         if joins:
             mapper = inspect(self.model)
@@ -256,14 +250,14 @@ class CRUDRepository[ModelType, Schema]:
             for join in joins:
                 subquery = subquery.join(join)
 
-            subquery = subquery.where(filter_clause)
+            subquery = subquery.where(filters)
 
             if len(pks) > 1:
                 sql = sql.where(tuple_(*pks).in_(subquery))
             else:
                 sql = sql.where(pks[0].in_(subquery))
         else:
-            sql = sql.where(filter_clause)
+            sql = sql.where(filters)
 
         sql = sql.returning(self.model)
 
