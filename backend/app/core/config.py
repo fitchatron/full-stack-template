@@ -1,8 +1,9 @@
-from enum import StrEnum, auto
 from pathlib import Path
 from typing import Literal
-from pydantic import EmailStr
+
+from pydantic import EmailStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from app.schemas.api import HTTPExceptionSchema
 
 # backend/app/core/config.py -> repo root is two levels up from backend/
@@ -18,10 +19,13 @@ class Settings(BaseSettings):
     )
 
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str
+    SECRET_KEY: str = Field(min_length=32, max_length=128)
     FASTAPI_ENV: Literal["development"] | None = None
     PROJECT_NAME: str
 
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
     DATABASE_URL: str
 
     # sql alchemy database pool size
@@ -31,6 +35,10 @@ class Settings(BaseSettings):
     SQLALCHEMY_POOL_PRE_PING: bool = True
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+
+    TEST_USER_PASSWORD: str = "password123"
+
+    DEFAULT_FAKER_SEED: int = 1234
 
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str

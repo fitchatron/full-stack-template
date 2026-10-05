@@ -1,4 +1,5 @@
-from typing import Any, Type, TypeVar
+from typing import Any, TypeVar
+
 from sqlalchemy import Function, func
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
@@ -12,10 +13,13 @@ class ColumnPathResolver:
         "json_delimiter": "->",  # denotes how a column splits to a JSON key e.g. user.email == user["email"]
     }
 
-    def __init__(self, model: Type[ModelType]) -> None:
+    def __init__(self, model: type[ModelType]) -> None:
         self.model = model
 
     def resolve_attr_path(self, column: str) -> InstrumentedAttribute:
+        """
+        Resolve a dot-delimited column path into a SQLAlchemy InstrumentedAttribute.
+        """
         obj = self.model
 
         path = column.split(self.PATH_SYNTAX["join_delimiter"])
@@ -26,9 +30,10 @@ class ColumnPathResolver:
 
         return getattr(obj, path[-1])
 
-    def parse_column_to_attribute(
-        self, column: str
-    ) -> Function[Any] | InstrumentedAttribute:
+    def parse_col_to_attr(self, column: str) -> Function[Any] | InstrumentedAttribute:
+        """
+        Parse a column string into a SQLAlchemy attribute or JSON function.
+        """
         # should be a JSON column
         if self.PATH_SYNTAX["json_delimiter"] in column:
             parts = column.split(self.PATH_SYNTAX["json_delimiter"])

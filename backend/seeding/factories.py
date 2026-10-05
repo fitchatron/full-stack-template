@@ -1,24 +1,52 @@
-from factory.alchemy import SQLAlchemyModelFactory
+from datetime import UTC, datetime, timedelta
+
+from factory.alchemy import SQLAlchemyModelFactory as _SQLAlchemyModelFactory
 from factory.declarations import (
     LazyAttribute,
     LazyAttributeSequence,
     LazyFunction,
     Sequence,
+    SubFactory,
     Trait,
 )
 from factory.faker import Faker
 
 from app.core.security import create_salt, hash_with_salt
-from app.models import AuthorizationAction, Permission, User
+from app.models import (
+    AuthorizationAction,
+    Permission,
+    Role,
+    RolePermission,
+    User,
+    UserRole,
+)
 
 DEFAULT_USER_PASSWORD = "Password123!"  # local dev only, not a secret
 
 
-class UserFactory(SQLAlchemyModelFactory):
+class SQLAlchemyModelFactory[ModelT](_SQLAlchemyModelFactory):
+    """Re-adds the Generic[T] param that factory_boy's own base drops.
+
+    `factory.alchemy.SQLAlchemyModelFactory` subclasses `factory.Factory`
+    without subscripting it, so `T` resolves to `Unknown` and every
+    subclass's `.build()`/`.create()` return type is `Unknown` regardless
+    of `Meta.model`. Subclass as `SQLAlchemyModelFactory[Model]` to restore
+    typed returns.
     """
-    Build-only: `.build()`/`.build_batch()` never touch a session, so
-    callers add the resulting instances themselves.
-    """
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def build(cls, **kwargs) -> ModelT:
+        return super().build(**kwargs)
+
+    @classmethod
+    def create(cls, **kwargs) -> ModelT:
+        return super().create(**kwargs)
+
+
+class UserFactory(SQLAlchemyModelFactory[User]):
 
     class Meta:
         model = User
@@ -50,14 +78,50 @@ class UserFactory(SQLAlchemyModelFactory):
     hashed_password = LazyAttribute(lambda o: hash_with_salt(o.password, o.salt))
 
 
-class PermissionFactory(SQLAlchemyModelFactory):
+class RoleFactory(SQLAlchemyModelFactory[Role]):
+
+    class Meta:
+        model = Role
+
+    role_id = Sequence(lambda n: f"role-{n}")
+    name = LazyAttribute(lambda o: o.role_id.capitalize())
+    description = LazyAttribute(lambda o: f"Description for role {o.name}")
+
+
+class UserRoleFactory(SQLAlchemyModelFactory[UserRole]):
+
+    class Meta:
+        model = UserRole
+
+    user = SubFactory(UserFactory)
+    role = SubFactory(RoleFactory)
+
+    # A minute in the past, not now: Postgres' now() is frozen at transaction
+    # start, so a role created later in the same transaction (as in tests)
+    # would otherwise not yet count as active.
+    start_at = LazyFunction(lambda: datetime.now(UTC) - timedelta(minutes=1))
+    end_at = LazyAttribute(lambda o: o.start_at + timedelta(days=365))
+
+
+class PermissionFactory(SQLAlchemyModelFactory[Permission]):
     class Meta:
         model = Permission
 
     action = AuthorizationAction.read
     resource = Sequence(lambda n: f"resource-{n}")
     description = LazyAttribute(
-        lambda o: "Full access to all actions and resources."
-        if o.action == AuthorizationAction.all and o.resource == "*"
-        else f"Permission to {o.action.value} {o.resource}."
+        lambda o: (
+            "Full access to all actions and resources."
+            if o.action == AuthorizationAction.all and o.resource == "*"
+            else f"Permission to {o.action.value} {o.resource}."
+        )
     )
+
+
+class RolePermissionFactory(SQLAlchemyModelFactory[RolePermission]):
+
+    class Meta:
+        model = RolePermission
+
+    role = SubFactory(RoleFactory)
+    permission = SubFactory(PermissionFactory)

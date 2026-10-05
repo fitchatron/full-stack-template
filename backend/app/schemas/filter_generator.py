@@ -1,12 +1,15 @@
 from __future__ import annotations
-from enum import Enum
-from typing import Any, Optional, Annotated
+
+from enum import StrEnum
+from typing import Annotated, Any
+
 from pydantic import Field, field_validator
-from pydantic_core.core_schema import FieldValidationInfo
+from pydantic_core.core_schema import ValidationInfo
+
 from app.schemas.base import BaseSchemaModel
 
 
-class ComparisonOperator(str, Enum):
+class ComparisonOperator(StrEnum):
     """
     Represents an operator that can be applied to a filter clause
     """
@@ -24,7 +27,7 @@ class ComparisonOperator(str, Enum):
     between_ = "between"
 
 
-class CompoundOperator(str, Enum):
+class CompoundOperator(StrEnum):
     """
     Represents an operator that can be applied to a compound clause e.g. and, or
     """
@@ -58,7 +61,7 @@ class FilterCondition(BaseSchemaModel):
         ),
     ]
     value: Annotated[
-        Optional[str | int | float | bool | list[Any] | bytes],
+        str | int | float | bool | list[Any] | bytes | None,
         Field(
             description="The value that you want to filter on",
             examples=["will", 2, True, [1, 45, 23]],
@@ -67,7 +70,7 @@ class FilterCondition(BaseSchemaModel):
 
     @field_validator("value")
     @classmethod
-    def validate_value_for_operator(cls, v, info: FieldValidationInfo):
+    def validate_value_for_operator(cls, v, info: ValidationInfo):
         op: ComparisonOperator | None = info.data.get("operator")
         if not op:
             raise ValueError("no operator")
@@ -120,7 +123,7 @@ class FilterCompoundCondition(BaseSchemaModel):
 
     @field_validator("conditions")
     @classmethod
-    def validate_conditions(cls, v, info: FieldValidationInfo):
+    def validate_conditions(cls, v, info: ValidationInfo):
         if len(v) < 2:
             raise ValueError("provide at least 2 conditions")
 

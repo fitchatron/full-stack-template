@@ -1,7 +1,7 @@
+from collections.abc import Sequence
 from itertools import batched
-from typing import Any
 
 
-def chunk_list(lst: list[Any], chunk_size: int):
-    """Yield successive n-sized chunks from lst."""
-    return list(batched(lst, chunk_size))
+def chunk_list[T](lst: Sequence[T], chunk_size: int) -> list[tuple[T, ...]]:
+    """Split lst into successive chunk_size-sized chunks."""
+    return list(batched(lst, chunk_size, strict=False))

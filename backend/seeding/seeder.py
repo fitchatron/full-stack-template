@@ -57,15 +57,8 @@ class CoreSeedResult:
 
 class DatabaseSeeder:
     """
-    Seeds a freshly reset database. Always assumes an empty schema: every
-    insert is unconditional, there is no get-or-create/idempotency here.
-
-    `seed_core_data()` creates everything the app requires to function --
-    roles, the full permission catalog, role grants, and the first
-    superuser -- so it's the place for any future critical data too.
-    `seed_mock_data()` adds random local-dev-only filler on top. `seed()`
-    runs the former always, the latter only if requested, and commits once
-    at the end.
+    Inserts data into an existing schema. Schema lifecycle (create/drop) lives
+    in DatabaseManager.
     """
 
     def __init__(self, session: Session) -> None:
@@ -73,7 +66,6 @@ class DatabaseSeeder:
 
     def seed(self, plan: SeedPlan | None = None) -> SeedResult:
         plan = plan or SeedPlan()
-
         core = self.seed_core_data()
         users = self.seed_mock_data(core.roles, plan) if plan.include_mock_data else []
 

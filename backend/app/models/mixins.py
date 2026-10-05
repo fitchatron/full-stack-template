@@ -1,11 +1,10 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql import func
-from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from app.models.model import User
@@ -24,19 +23,19 @@ class AuditMixin:
     )
 
     @declared_attr
-    def created_by(cls) -> Mapped[Optional[uuid.UUID]]:
+    def created_by(cls) -> Mapped[uuid.UUID | None]:
         return mapped_column(ForeignKey("users.user_id"))
 
     @declared_attr
-    def modified_by(cls) -> Mapped[Optional[uuid.UUID]]:
+    def modified_by(cls) -> Mapped[uuid.UUID | None]:
         return mapped_column(ForeignKey("users.user_id"))
 
     @declared_attr
     @classmethod
-    def created_by_user(cls) -> Mapped[Optional["User"]]:
+    def created_by_user(cls) -> Mapped[User | None]:
         return relationship("User", foreign_keys=[cls.created_by])
 
     @declared_attr
     @classmethod
-    def modified_by_user(cls) -> Mapped[Optional["User"]]:
+    def modified_by_user(cls) -> Mapped[User | None]:
         return relationship("User", foreign_keys=[cls.modified_by])

@@ -1,36 +1,11 @@
-from enum import StrEnum
-from pathlib import Path
 from typing import Annotated
 
 import typer
-from alembic import command
-from alembic.config import Config
-from alembic.config import main as alembic_main
 
-from app import models  # noqa: F401 -- registers all models on Base.metadata
-from app.core.db import Base, SessionLocal, engine
-from seeding import DatabaseSeeder, SeedPlan
+from cli.types import TestDataMode
+from seeding import DatabaseManager, DatabaseSeeder, NonLocalDatabaseError, SeedPlan
 
 app = typer.Typer()
-
-LOCAL_HOSTS = {"localhost", "127.0.0.1"}
-
-
-class TestDataMode(StrEnum):
-    alembic = "alembic"
-    mock = "mock"
-
-
-def _assert_local_host() -> None:
-    host = engine.url.host
-    if host not in LOCAL_HOSTS:
-        typer.secho(
-            f"Refusing to run against host {host!r} -- "
-            f"this command only runs against {sorted(LOCAL_HOSTS)}.",
-            fg=typer.colors.RED,
-            err=True,
-        )
-        raise typer.Exit(code=1)
 
 
 @app.command("create-local-db")
@@ -55,35 +30,30 @@ def create_local_db(
     """
 
     try:
-        _assert_local_host()
+        manager = DatabaseManager.from_settings(mode)
+    except NonLocalDatabaseError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
 
-        Base.metadata.drop_all(bind=engine)
-
-        if mode == TestDataMode.alembic:
-            alembic_main(argv=["--raiseerr", "upgrade", "head"])
-        else:
-            Base.metadata.create_all(bind=engine)
-
-            alembic_cfg = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
-            command.stamp(alembic_cfg, "head")
+    try:
+        result = manager.reset(
+            seed=lambda session: DatabaseSeeder(session).seed(
+                SeedPlan(include_mock_data=mock_data)
+            )
+        )
+        assert result is not None
 
         typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
-
-        with SessionLocal() as session:
-            result = DatabaseSeeder(session).seed(SeedPlan(include_mock_data=mock_data))
-
-            message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
-            typer.secho(message, fg=typer.colors.YELLOW)
-            typer.secho(
-                f"Admin user email: {result.admin_user.email}", fg=typer.colors.CYAN
-            )
-    except typer.Exit:
-        raise
-    except SystemExit:
-        raise
+        message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
+        typer.secho(message, fg=typer.colors.YELLOW)
+        typer.secho(
+            f"Admin user email: {result.admin_user.email}", fg=typer.colors.CYAN
+        )
     except Exception as e:
         typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1)
+    finally:
+        manager.dispose()
 
 
 if __name__ == "__main__":

@@ -1,10 +1,12 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated
+
 from pydantic import Field
+
 from app.schemas.base import BaseSchemaModel
 
 
-class OrderOperator(str, Enum):
+class OrderOperator(StrEnum):
     """
     Represents an operator that can be applied to the orientation clause e.g. asc, desc
     """

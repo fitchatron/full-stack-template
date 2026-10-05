@@ -1,7 +1,8 @@
-import email
-from typing import Annotated, Any
+from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
+
 from app.api.deps import AuthorizeUser, SessionDep
 from app.core.config import settings
 from app.schemas.auth import Token
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post(
     "/register",
     status_code=status.HTTP_200_OK,
-    responses=settings.HTTP_EXCEPTION_RESPONSES_SET["get_all"],
+    responses=settings.HTTP_EXCEPTION_RESPONSES_SET["post"],
 )
 def register(
     session: SessionDep,
@@ -30,7 +31,7 @@ def register(
 @router.post(
     "/login",
     status_code=status.HTTP_200_OK,
-    responses=settings.HTTP_EXCEPTION_RESPONSES_SET["get_all"],
+    responses=settings.HTTP_EXCEPTION_RESPONSES_SET["post"],
 )
 def login_access_token(
     session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
@@ -44,20 +45,26 @@ def login_access_token(
     )
 
 
-@router.post("/test-token")
+@router.post(
+    "/test-token",
+    responses=settings.HTTP_EXCEPTION_RESPONSES_SET["post"],
+)
 def test_token(
     current_user: Annotated[
         UserSchema,
         Depends(AuthorizeUser(required_permissions=[])),
     ],
-) -> Any:
+) -> UserSchema:
     """
     Test access token
     """
     return current_user
 
 
-@router.post("/password-recovery/{email}")
+@router.post(
+    "/password-recovery/{email}",
+    responses=settings.HTTP_EXCEPTION_RESPONSES_SET["post"],
+)
 def recover_password(session: SessionDep, email: str):
     """
     Password Recovery
@@ -65,7 +72,10 @@ def recover_password(session: SessionDep, email: str):
     raise NotImplementedError("Method not implemented")
 
 
-@router.post("/reset-password/")
+@router.post(
+    "/reset-password/",
+    responses=settings.HTTP_EXCEPTION_RESPONSES_SET["post"],
+)
 def reset_password(session: SessionDep):
     """
     Password Recovery

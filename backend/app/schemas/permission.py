@@ -1,9 +1,10 @@
-from pydantic import Field, EmailStr
-from typing import Optional
 import uuid
 from datetime import datetime
-from app.schemas.base import BaseSchemaModel
+
+from pydantic import Field
+
 from app.models.enums import AuthorizationAction
+from app.schemas.base import BaseSchemaModel
 
 
 class PermissionSchema(BaseSchemaModel):
@@ -17,9 +18,9 @@ class PermissionSchema(BaseSchemaModel):
     resource: str = Field(description="Resource of the permission")
     created_at: datetime = Field(description="Time of permission details creation")
     modified_at: datetime = Field(description="Time of permission details modification")
-    created_by: Optional[int] = Field(
+    created_by: int | None = Field(
         description="User ID that creates the permission details"
     )
-    modified_by: Optional[int] = Field(
+    modified_by: int | None = Field(
         description="User ID that modified the permission details"
     )

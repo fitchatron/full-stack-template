@@ -1,5 +1,9 @@
 from enum import StrEnum, auto
 
+from sqlalchemy import and_
+
+from app.models.model import Permission
+
 
 class AppPermissions(StrEnum):
     @staticmethod
@@ -12,6 +16,24 @@ class AppPermissions(StrEnum):
     def get_action_resource(self) -> tuple[str, str]:
         verb, _, resource = self.name.lower().partition("__")
         return verb.replace("asterisk", "*"), resource.replace("asterisk", "*")
+
+    def to_filter_clause(self):
+        action, resource = self.get_action_resource()
+        return and_(Permission.action == action, Permission.resource == resource)
+
+    def to_granted_by_clause(self):
+        action, resource = self.get_action_resource()
+        return and_(
+            Permission.action.in_(["*", action]),
+            Permission.resource.in_(["*", resource]),
+        )
+
+    def is_granted_by(self, action: str, resource: str) -> bool:
+        required_action, required_resource = self.get_action_resource()
+        return action in ("*", required_action) and resource in (
+            "*",
+            required_resource,
+        )
 
     ASTERISK__ASTERISK = auto()
 

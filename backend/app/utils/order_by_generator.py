@@ -1,8 +1,10 @@
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, TypeVar
+
 from sqlalchemy import UnaryExpression
-from app.utils.column_path_resolver import ColumnPathResolver
-from app.schemas.order_by_generator import OrderByCondition, OrderOperator
 from sqlalchemy.sql.elements import KeyedColumnElement
+
+from app.schemas.order_by_generator import OrderByCondition, OrderOperator
+from app.utils.column_path_resolver import ColumnPathResolver
 
 ModelType = TypeVar("ModelType")
 Schema = TypeVar("Schema")
@@ -39,16 +41,16 @@ def parse_param_to_order_by_condition(
     return order_state
 
 
-class OrderByGenerator(Generic[ModelType, Schema]):
+class OrderByGenerator[ModelType, Schema]:
 
     def __init__(
         self,
-        model: Type[ModelType],
-        column_mapping: dict[str, KeyedColumnElement] = {},
+        model: type[ModelType],
+        column_mapping: dict[str, KeyedColumnElement] | None = None,
     ) -> None:
         self.model = model
         self.column_path_resolver = ColumnPathResolver(model=model)
-        self.column_mapping = column_mapping
+        self.column_mapping = column_mapping or {}
 
     def build_order_conditional(self, conditions: list[OrderByCondition]):
         operators: list[UnaryExpression[Any]] = []
@@ -56,9 +58,7 @@ class OrderByGenerator(Generic[ModelType, Schema]):
             attr = (
                 self.column_mapping.get(condition.column, None)
                 if self.column_mapping.get(condition.column, None) is not None
-                else self.column_path_resolver.parse_column_to_attribute(
-                    condition.column
-                )
+                else self.column_path_resolver.parse_col_to_attr(condition.column)
             )
             if attr is None:
                 raise Exception("Attribute could not be mapped")

@@ -1,4 +1,5 @@
 from enum import StrEnum
+
 from sqlalchemy import Enum
 
 
