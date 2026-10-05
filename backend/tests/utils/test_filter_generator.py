@@ -13,10 +13,6 @@ from app.schemas.filter_generator import (
 )
 from app.utils.filter_generator import (
     FilterGenerator,
-    _parse_filter_str_to_filter_compound_condition,
-    _parse_filter_str_to_filter_condition,
-    _type_col_val,
-    parse_param_to_filter_payload,
     val_to_primitive,
 )
 
@@ -127,7 +123,7 @@ def test_type_col_val_valid_val(val, operator, expected_val):
     WHEN calling type_col_val with the value and column type
     THEN return the value casted to the column type
     """
-    assert _type_col_val(val, operator) == expected_val
+    assert FilterGenerator(model=User)._type_col_val(val, operator) == expected_val
 
 
 @pytest.mark.parametrize(
@@ -178,25 +174,28 @@ def test_type_col_val_invalid_val(val, operator, exception, exception_msg):
     THEN raise an error indicating the value cannot be casted to the column type
     """
     with pytest.raises(exception) as excinfo:
-        _type_col_val(val, operator)
+        FilterGenerator(model=User)._type_col_val(val, operator)
 
     assert exception_msg in str(excinfo.value)
 
 
 @pytest.mark.parametrize(
-    "filter_str, expected_filter_condition",
+    "model,filter_str, expected_filter_condition",
     [
         pytest.param(
+            User,
             "user_id~eq~5",
             FilterCondition(column="user_id", operator=ComparisonOperator.eq_, value=5),
             id="eq",
         ),
         pytest.param(
+            User,
             "user_id~ne~5",
             FilterCondition(column="user_id", operator=ComparisonOperator.ne_, value=5),
             id="ne",
         ),
         pytest.param(
+            User,
             "user_id~gt~45",
             FilterCondition(
                 column="user_id", operator=ComparisonOperator.gt_, value=45
@@ -204,6 +203,7 @@ def test_type_col_val_invalid_val(val, operator, exception, exception_msg):
             id="gt",
         ),
         pytest.param(
+            User,
             "user_id~in~[5,7,10,56]",
             FilterCondition(
                 column="user_id",
@@ -213,6 +213,7 @@ def test_type_col_val_invalid_val(val, operator, exception, exception_msg):
             id="in",
         ),
         pytest.param(
+            User,
             "json_field->value~eq~true",
             FilterCondition(
                 column="json_field->value",
@@ -223,7 +224,9 @@ def test_type_col_val_invalid_val(val, operator, exception, exception_msg):
         ),
     ],
 )
-def test_parse_filter_str_to_filter_condition(filter_str, expected_filter_condition):
+def test_parse_filter_str_to_filter_condition(
+    model, filter_str, expected_filter_condition
+):
     """
     Test _parse_filter_str_to_filter_condition
     GIVEN a filter string
@@ -231,14 +234,17 @@ def test_parse_filter_str_to_filter_condition(filter_str, expected_filter_condit
     THEN return the corresponding filter condition
     """
 
-    result = _parse_filter_str_to_filter_condition(filter_str)
+    result = FilterGenerator(model=model)._parse_filter_str_to_filter_condition(
+        filter_str
+    )
     assert result == expected_filter_condition
 
 
 @pytest.mark.parametrize(
-    "filter_str, expected_filter_condition",
+    "model, filter_str, expected_filter_condition",
     [
         pytest.param(
+            User,
             'and(user_id~eq~"00000000-0000-0000-0000-000000000000";user_id~ne~"00000000-1111-0000-0000-000000000000")',
             FilterCompoundCondition(
                 operator=CompoundOperator.and_,
@@ -258,6 +264,7 @@ def test_parse_filter_str_to_filter_condition(filter_str, expected_filter_condit
             id="and_simple",
         ),
         pytest.param(
+            User,
             'and(user_id~eq~"00000000-0000-0000-0000-000000000000";username~eq~"foo")',
             FilterCompoundCondition(
                 conditions=[
@@ -277,6 +284,7 @@ def test_parse_filter_str_to_filter_condition(filter_str, expected_filter_condit
             id="and_nested",
         ),
         pytest.param(
+            User,
             'or(user_id~eq~"00000000-0000-0000-0000-000000000000";username~eq~"foo";username~ne~"foobar")',
             FilterCompoundCondition(
                 conditions=[
@@ -301,6 +309,7 @@ def test_parse_filter_str_to_filter_condition(filter_str, expected_filter_condit
             id="or_simple",
         ),
         pytest.param(
+            User,
             'or(and(hello~eq~5;username~eq~"foobar";json_field->arr~in~["foo", "bar", "fisbuzz"]);or(user_id~ne~null;name~eq~"bar"))',
             FilterCompoundCondition(
                 conditions=[
@@ -347,7 +356,7 @@ def test_parse_filter_str_to_filter_condition(filter_str, expected_filter_condit
     ],
 )
 def test_parse_filter_str_to_filter_compound_condition(
-    filter_str, expected_filter_condition
+    model, filter_str, expected_filter_condition
 ):
     """
     Test parse_filter_str_to_filter_compound_condition
@@ -355,22 +364,27 @@ def test_parse_filter_str_to_filter_compound_condition(
     WHEN calling parse_filter_str_to_filter_compound_condition with the filter string
     THEN return the corresponding compound filter condition
     """
-    result = _parse_filter_str_to_filter_compound_condition(filter_str)
+    result = FilterGenerator(
+        model=model
+    )._parse_filter_str_to_filter_compound_condition(filter_str)
     assert result == expected_filter_condition
 
 
 @pytest.mark.parametrize(
-    "filter_str, expected_filter_payload",
+    "model, filter_str, expected_filter_payload",
     [
-        (
+        pytest.param(
+            User,
             "user_id~eq~5",
             FilterPayload(
                 where=FilterCondition(
                     column="user_id", operator=ComparisonOperator.eq_, value=5
                 )
             ),
+            id="simple_filter",
         ),
-        (
+        pytest.param(
+            User,
             "json_field->value~eq~true",
             FilterPayload(
                 where=FilterCondition(
@@ -379,8 +393,10 @@ def test_parse_filter_str_to_filter_compound_condition(
                     value=True,
                 )
             ),
+            id="json_field_filter",
         ),
-        (
+        pytest.param(
+            User,
             'and(user_id~eq~5;username~eq~"foo")',
             FilterPayload(
                 where=FilterCompoundCondition(
@@ -399,8 +415,10 @@ def test_parse_filter_str_to_filter_compound_condition(
                     operator=CompoundOperator.and_,
                 )
             ),
+            id="simple_and_filter",
         ),
-        (
+        pytest.param(
+            User,
             'and(created_at~eq~"foobar";or(and(hello~eq~5;username~eq~"foobar";json_field->arr~in~["foo", "bar", "fisbuzz"]);or(user_id~ne~null;name~eq~"bar")))',
             FilterPayload(
                 where=FilterCompoundCondition(
@@ -454,25 +472,30 @@ def test_parse_filter_str_to_filter_compound_condition(
                     operator=CompoundOperator.and_,
                 )
             ),
+            id="complex_filter",
         ),
-        (
+        pytest.param(
+            User,
             "",
             None,
+            id="empty_filter",
         ),
-        (
+        pytest.param(
+            User,
             None,
             None,
+            id="none_filter",
         ),
     ],
 )
-def test_parse_param_to_filter_payload(filter_str, expected_filter_payload):
+def test_parse_param_to_filter_payload(model, filter_str, expected_filter_payload):
     """
     Test parse_param_to_filter_payload
     GIVEN a filter query param
     WHEN calling parse_param_to_filter_payload with the param
     THEN return the corresponding filter payload
     """
-    result = parse_param_to_filter_payload(filter_str)
+    result = FilterGenerator(model=model).parse_param_to_filter_payload(filter_str)
     assert result == expected_filter_payload
 
 
