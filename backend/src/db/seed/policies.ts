@@ -245,10 +245,7 @@ export async function seedPolicies() {
   const publicPolicies = seededPolicies.filter(
     (policy) =>
       (policy.condition as Record<string, string | number | object | boolean>)
-        ?.self ||
-      (policy.resource === "policies" && policy.action === "view") ||
-      (policy.resource === "roles" && policy.action === "view") ||
-      (policy.resource === "role_policies" && policy.action === "view"),
+        ?.self,
   );
   const publicRole = seededRoles.find((role) => role.name === "public");
 

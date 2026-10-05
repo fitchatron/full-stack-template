@@ -194,7 +194,7 @@ router.put(
  *         description: User ID
  *     responses:
  *       "200":
- *         description: Number of rows deleted
+ *         $ref: '#/components/responses/DeleteResponse'
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
  *       "403":
@@ -316,7 +316,7 @@ router.post(
  *         description: Role ID
  *     responses:
  *       "200":
- *         description: Number of rows deleted
+ *         $ref: '#/components/responses/DeleteResponse'
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
  *       "403":

@@ -51,6 +51,7 @@ export default function permit(
 
       if (!currentUserPolicies || currentUserPolicies.length === 0) {
         res.status(403).json({ error: "Forbidden" });
+        return;
       }
 
       const decisions: ("allow" | "deny")[] = [];
@@ -69,11 +70,13 @@ export default function permit(
 
       if (decisions.find((decision) => decision === "deny") !== undefined) {
         res.status(403).json({ error: "Forbidden" });
+        return;
       }
       next();
     } catch (error) {
       console.error("Authorization middleware error:", error);
       res.status(500).json({ error: "Internal server error" });
+      return;
     }
   };
 }

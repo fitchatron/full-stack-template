@@ -39,7 +39,7 @@ export function userRoleService() {
         .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)));
 
       return {
-        data: rows.count,
+        data: { rows: rows.count },
         error: undefined,
       };
     } catch (error) {

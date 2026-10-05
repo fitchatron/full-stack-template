@@ -3,6 +3,7 @@ type AppConfig = {
   hashValues: boolean;
   adminRoleName: string;
 };
+
 const DEV_CONFIG: AppConfig = {
   mode: "development",
   hashValues: false,

@@ -44,7 +44,7 @@ export function rolePolicyService() {
         );
 
       return {
-        data: rows.count,
+        data: { rows: rows.count },
         error: undefined,
       };
     } catch (error) {

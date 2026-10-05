@@ -210,6 +210,18 @@ components:
         code: 404
         message: Resource not found
   responses:
+    DeleteResponse:
+      description: Email already taken
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              rows:
+                type: number
+                format: uuid
+          example:
+            rows: 1
     DuplicateEmail:
       description: Email already taken
       content:

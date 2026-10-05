@@ -63,10 +63,6 @@ const service = authService();
  *              $ref: '#/components/schemas/User'
  *       400:
  *         $ref: '#/components/responses/DuplicateEmail'
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         $ref: '#/components/responses/Forbidden'
  *
  */
 router.post("/register", async (req: Request, res: Response) => {

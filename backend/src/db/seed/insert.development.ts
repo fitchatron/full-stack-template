@@ -9,7 +9,7 @@ import { randomBytes } from "crypto";
 import { eq } from "drizzle-orm";
 import { seedResources } from "./resources";
 
-faker.seed(4);
+const FAKER_SEED = 4;
 const { generateSaltAndHash } = cryptoService();
 
 async function seedUsers() {
@@ -46,7 +46,7 @@ async function createUser(
   roleName?: "admin" | "public" | "user-admin",
   session?: boolean,
 ) {
-  const password = faker.internet.password();
+  const password = "s3cr3tPa55word"; //faker.internet.password();
   const { salt, hash } = await generateSaltAndHash(password);
   const user: NewUser = {
     id: faker.string.uuid(),
@@ -115,6 +115,7 @@ async function createUsers(
 
 const main = async () => {
   try {
+    faker.seed(FAKER_SEED);
     console.log("🏁 Start seeding the database...\n");
 
     await truncateTables();

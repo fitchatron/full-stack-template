@@ -26,8 +26,8 @@ export async function truncateTables() {
   await db.delete(sessions);
   await db.delete(userRoles);
   await db.delete(rolePolicies);
+  await db.delete(policies);
   await db.delete(resources);
   await db.delete(roles);
-  await db.delete(policies);
   await db.delete(users);
 }
