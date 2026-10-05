@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, TypeVar
 
 from sqlalchemy import and_, between, or_
@@ -18,6 +19,9 @@ from app.utils.column_path_resolver import ColumnPathResolver
 
 ModelType = TypeVar("ModelType")
 Schema = TypeVar("Schema")
+
+_INT_PATTERN = re.compile(r"[+-]?[0-9]+")
+_FLOAT_PATTERN = re.compile(r"[+-]?([0-9]+\.[0-9]*|\.[0-9]+|[0-9]+)([eE][+-]?[0-9]+)?")
 
 
 class SeparatorConfig:
@@ -39,11 +43,16 @@ def val_to_primitive(value: str | None) -> Any:
     if not value:
         return None
 
-    if isinstance(value, list):
-        raise ValueError("Arrays are not primitives")
+    try:
+        parsed_value = json.loads(value)
 
-    if isinstance(value, dict):
-        raise ValueError("Dictionaries are not primitives")
+        if isinstance(parsed_value, (list)):
+            raise ValueError("Arrays are not primitives")
+
+        if isinstance(parsed_value, dict):
+            raise ValueError("Dictionaries are not primitives")
+    except (json.JSONDecodeError, TypeError):
+        pass
 
     # Try parsing as null
     if value.lower() == "null":
@@ -55,38 +64,38 @@ def val_to_primitive(value: str | None) -> Any:
     if value.lower() == "false":
         return False
 
-    # Try parsing as integer
-    try:
-        int_value = int(value)
-        if str(int_value) == value:
-            return int_value
-    except ValueError:
-        pass
-
-    # Try parsing as float
-    try:
-        float_value = float(value)
-        if str(float_value) == value:
-            return float_value
-    except ValueError:
-        pass
+    # Try parsing as integer, then float
+    if _INT_PATTERN.fullmatch(value):
+        return int(value)
+    if _FLOAT_PATTERN.fullmatch(value):
+        return float(value)
 
     # Return the value with quotes removed
     return value.replace('"', "")
 
 
-def type_col_val(value: str, operator: str) -> Any:
+def _type_col_val(value: str, operator: str) -> Any:
     """Convert a string value to the appropriate type based on the operator."""
+
     if operator in ("between", "in", "not_in"):
         try:
-            return json.loads(value)
-        except Exception:
-            raise ValueError("Error parsing JSON filter value")
+            parsed_value = json.loads(value)
+
+            if not isinstance(parsed_value, list):
+                raise ValueError(
+                    "Expected a list for operator 'between', 'in', or 'not_in'"
+                )
+
+            return parsed_value
+        except (json.JSONDecodeError, TypeError):
+            raise ValueError(
+                "Expected a list for operator 'between', 'in', or 'not_in'"
+            )
 
     return val_to_primitive(value)
 
 
-def arse_filter_str_to_filter_condition(
+def _parse_filter_str_to_filter_condition(
     filter_string: str,
     config: SeparatorConfig = SeparatorConfig(),
 ) -> FilterCondition:
@@ -104,11 +113,11 @@ def arse_filter_str_to_filter_condition(
     return FilterCondition(
         column=column,
         operator=ComparisonOperator(operator_str),
-        value=type_col_val(value, operator_str),
+        value=_type_col_val(value, operator_str),
     )
 
 
-def parse_filter_str_to_filter_compound_condition(
+def _parse_filter_str_to_filter_compound_condition(
     filter_string: str,
     config: SeparatorConfig = SeparatorConfig(),
 ) -> FilterCompoundCondition:
@@ -154,10 +163,10 @@ def parse_filter_str_to_filter_compound_condition(
     conditions: list[FilterCondition | FilterCompoundCondition] = []
     for item in condition_items:
         if not item.startswith("and(") and not item.startswith("or("):
-            conditions.append(arse_filter_str_to_filter_condition(item, config))
+            conditions.append(_parse_filter_str_to_filter_condition(item, config))
         else:
             conditions.append(
-                parse_filter_str_to_filter_compound_condition(item, config)
+                _parse_filter_str_to_filter_compound_condition(item, config)
             )
 
     return FilterCompoundCondition(
@@ -183,10 +192,10 @@ def parse_param_to_filter_payload(
         return None
 
     if not filter_string.startswith("and(") and not filter_string.startswith("or("):
-        filter_condition = arse_filter_str_to_filter_condition(filter_string, config)
+        filter_condition = _parse_filter_str_to_filter_condition(filter_string, config)
         return FilterPayload(where=filter_condition)
 
-    filter_condition = parse_filter_str_to_filter_compound_condition(
+    filter_condition = _parse_filter_str_to_filter_compound_condition(
         filter_string, config
     )
     return FilterPayload(where=filter_condition)
@@ -231,16 +240,13 @@ class FilterGenerator[ModelType, Schema]:
             value = condition.value
 
             if op == "between":
-                start = value[0]  # type: ignore
-                end = value[1]  # type: ignore
+                if not isinstance(value, list):
+                    raise ValueError("Between needs a list of two values")
+                start = value[0]
+                end = value[1]
 
                 # if any of the inputs are numeric, cast them to a float so the SQL engine can cast the column reliably to a float
-                if (
-                    isinstance(start, int)
-                    or isinstance(start, float)
-                    or isinstance(end, int)
-                    or isinstance(end, float)
-                ):
+                if isinstance(start, (int, float)) or isinstance(end, (int, float)):
                     start = float(start)
                     end = float(end)
                 return attr.between(start, end)  # type: ignore
