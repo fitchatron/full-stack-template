@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+import math
 import re
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, TypeVar
 
 from sqlalchemy import and_, between, or_
@@ -38,7 +39,7 @@ class SeparatorConfig:
         self.array_separator = array_separator
 
 
-def val_to_primitive(value: str | None) -> Any:
+def _val_to_primitive(value: str | None) -> Any:
     """Convert a string value to its primitive type."""
     if not value:
         return None
@@ -51,7 +52,7 @@ def val_to_primitive(value: str | None) -> Any:
 
         if isinstance(parsed_value, dict):
             raise ValueError("Dictionaries are not primitives")
-    except (json.JSONDecodeError, TypeError):
+    except json.JSONDecodeError, TypeError:
         pass
 
     # Try parsing as null
@@ -75,7 +76,6 @@ def val_to_primitive(value: str | None) -> Any:
 
 
 class FilterGenerator[ModelType]:
-
     # Map comparison operators to SQLAlchemy expressions
     COMPARISON_OPERATORS = {
         "eq": operators.eq,
@@ -100,14 +100,20 @@ class FilterGenerator[ModelType]:
         self.column_path_resolver = ColumnPathResolver(model=model)
         self.column_mapping = column_mapping or {}
 
-    from decimal import Decimal
+    # Pattern operators compare against a string pattern, never the column's own type
+    PATTERN_OPERATORS = ("like", "ilike")
 
     def _type_col_val(self, value: str, operator: str) -> Any:
-        """Convert a string value to the appropriate type based on the operator."""
+        """Split a query-string value into a scalar or list, leaving the typing to the column.
+
+        Scalars stay as raw strings (apart from null and surrounding quotes) and list numbers
+        are kept as their original text, so values like "00501" or "0.1" survive until
+        _coerce_to_column_type knows what type the column needs.
+        """
 
         if operator in ("between", "in", "not_in"):
             try:
-                parsed_value = json.loads(value)
+                parsed_value = json.loads(value, parse_int=str, parse_float=str)
 
                 if not isinstance(parsed_value, list):
                     raise ValueError(
@@ -115,12 +121,18 @@ class FilterGenerator[ModelType]:
                     )
 
                 return parsed_value
-            except (json.JSONDecodeError, TypeError):
+            except json.JSONDecodeError, TypeError:
                 raise ValueError(
                     "Expected a list for operator 'between', 'in', or 'not_in'"
                 )
 
-        return val_to_primitive(value)
+        if not value or value.lower() == "null":
+            return None
+
+        if len(value) >= 2 and value[0] == value[-1] == '"':
+            return value[1:-1]
+
+        return value
 
     def _parse_filter_str_to_filter_condition(
         self,
@@ -206,6 +218,42 @@ class FilterGenerator[ModelType]:
             conditions=conditions,
         )
 
+    def _is_int_or_float(self, value: Any) -> bool:
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+    def _to_number(self, value: Any, python_type: type) -> int | float | Decimal:
+        """Convert a value to int, float or Decimal without losing or inventing precision."""
+        error = ValueError(f"{value!r} is not a valid {python_type.__name__}")
+
+        # bool is a subclass of int, but True should never quietly become 1
+        if isinstance(value, bool):
+            raise error
+
+        if python_type is float:
+            try:
+                result = float(value)
+            except ValueError, TypeError:
+                raise error
+            if not math.isfinite(result):
+                raise error
+            return result
+
+        # str() first so a float like 0.1 becomes Decimal("0.1"), not its binary expansion
+        try:
+            number = Decimal(str(value))
+        except InvalidOperation:
+            raise error
+        if not number.is_finite():
+            raise error
+
+        if python_type is int:
+            # reject 1.5 rather than truncating it to 1
+            if number != number.to_integral_value():
+                raise error
+            return int(number)
+
+        return number
+
     def _coerce_to_column_type(self, attr: Any, value: Any) -> Any:
         """Convert a parsed filter value to the Python type of the column it's compared against."""
         if value is None:
@@ -218,23 +266,22 @@ class FilterGenerator[ModelType]:
             python_type = attr.type.python_type
         except NotImplementedError:
             # e.g. JSON_VALUE(...) has no known type, so fall back to guessing
-            return val_to_primitive(value) if isinstance(value, str) else value
+            return _val_to_primitive(value) if isinstance(value, str) else value
 
         if python_type is str:
+            if isinstance(value, bool):
+                return "true" if value else "false"
             return str(value)
 
         if python_type is bool:
             # bool("false") is True, so don't call bool() on the string
-            result = val_to_primitive(str(value))
+            result = _val_to_primitive(str(value))
             if not isinstance(result, bool):
                 raise ValueError(f"{value!r} is not a valid boolean")
             return result
 
         if python_type in (int, float, Decimal):
-            try:
-                return python_type(value)
-            except (ValueError, ArithmeticError):
-                raise ValueError(f"{value!r} is not a valid {python_type.__name__}")
+            return self._to_number(value, python_type)
 
         # datetime, UUID, etc.: SQLAlchemy and the driver handle ISO strings and UUID strings
         return value
@@ -249,12 +296,22 @@ class FilterGenerator[ModelType]:
                 else self.column_path_resolver.parse_col_to_attr(condition.column)
             )
             op = condition.operator
-            value = self._coerce_to_column_type(attr, condition.value)
+
+            if op in self.PATTERN_OPERATORS:
+                value = None if condition.value is None else str(condition.value)
+            else:
+                value = self._coerce_to_column_type(attr, condition.value)
 
             if op == "between":
                 if not isinstance(value, list):
                     raise ValueError("Between needs a list of two values")
-                return attr.between(value[0], value[1])  # type: ignore
+                start, end = value[0], value[1]
+
+                # if any of the inputs are numeric, cast them to a float so the SQL engine can cast the column reliably to a float
+                if self._is_int_or_float(start) or self._is_int_or_float(end):
+                    start = float(start)
+                    end = float(end)
+                return attr.between(start, end)  # type: ignore
 
             return self.COMPARISON_OPERATORS[op](attr, value)
 
