@@ -1,5 +1,4 @@
 from datetime import UTC, datetime, timedelta
-from typing import TypeVar
 
 from factory.alchemy import SQLAlchemyModelFactory as _SQLAlchemyModelFactory
 from factory.declarations import (
@@ -23,8 +22,6 @@ from app.models import (
 )
 
 DEFAULT_USER_PASSWORD = "Password123!"  # local dev only, not a secret
-
-ModelT = TypeVar("ModelT")
 
 
 class SQLAlchemyModelFactory[ModelT](_SQLAlchemyModelFactory):

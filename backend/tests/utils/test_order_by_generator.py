@@ -1,20 +1,12 @@
-from logging import RootLogger
-from typing import Any
-from pydantic import TypeAdapter
 import pytest
-from sqlalchemy import and_, asc, desc, func, select
-from app.models.model import User, Permission, Role
+from pydantic import TypeAdapter
+
+from app.models.model import Permission, Role, User
 from app.schemas.order_by_generator import OrderByCondition, OrderOperator
 from app.utils.order_by_generator import (
     OrderByGenerator,
     parse_param_to_order_by_condition,
 )
-from sqlalchemy.orm import (
-    aliased,
-    relationship,
-)
-from sqlalchemy.sql.elements import KeyedColumnElement
-from sqlalchemy.dialects import mssql
 
 
 @pytest.mark.parametrize(
@@ -122,5 +114,5 @@ def test_order_by_generator_build_order_conditional(model, data, expected_order_
 
     assert len(generated_order) == len(expected_order_by)
 
-    for generated, expected in zip(generated_order, expected_order_by):
+    for generated, expected in zip(generated_order, expected_order_by, strict=False):
         assert generated.compare(expected), f"{generated} != {expected}"

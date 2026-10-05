@@ -31,11 +31,11 @@ def test_order_operator(enum, operator):
 )
 def test_valid_filter_condition(data):
     """
-    Test FilterCompoundCondition model
+    Test OrderByCondition model
 
     GIVEN a valid payload
-    WHEN calling FilterCompoundCondition.model_validate_json
-    THEN return a validated FilterCompoundCondition
+    WHEN creating an OrderByCondition instance
+    THEN it should be created successfully
     """
 
     OrderByCondition(**data)

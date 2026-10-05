@@ -21,7 +21,7 @@ def run_tests(
     Run test suite located at the specified path. If no path is provided, runs all tests.
 
     usage: uv run -m cli.main test run
-           uv run -m cli.main test run
+           uv run -m cli.main test run tests/path/to/test
     """
     if path:
         output = call(["pytest", path], stderr=STDOUT)

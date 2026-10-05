@@ -4,7 +4,6 @@ from fastapi import APIRouter, Body, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.deps import AuthorizeUser, SessionDep
-from app.core.app_permissions import AppPermissions
 from app.core.config import settings
 from app.schemas.auth import Token
 from app.schemas.user import RegisterUserPOSTRequest, UserSchema

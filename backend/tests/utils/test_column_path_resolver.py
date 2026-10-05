@@ -1,10 +1,7 @@
-import json
 import pytest
-from app.utils.filter_generator import FilterGenerator
-from app.models.model import Permission
-from sqlalchemy import Function
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from app.schemas.filter_generator import FilterPayload
+
+from app.models.model import Permission
 from app.utils.column_path_resolver import ColumnPathResolver
 
 

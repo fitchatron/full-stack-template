@@ -1,17 +1,9 @@
 from datetime import datetime
-from uuid import uuid4
 
 import pytest
 from sqlalchemy import and_, or_
 
-from app.utils.filter_generator import (
-    val_to_primitive,
-    _type_col_val,
-    _parse_filter_str_to_filter_condition,
-    _parse_filter_str_to_filter_compound_condition,
-    parse_param_to_filter_payload,
-    FilterGenerator,
-)
+from app.models.model import User
 from app.schemas.filter_generator import (
     ComparisonOperator,
     CompoundOperator,
@@ -19,7 +11,14 @@ from app.schemas.filter_generator import (
     FilterCondition,
     FilterPayload,
 )
-from app.models.model import User
+from app.utils.filter_generator import (
+    FilterGenerator,
+    _parse_filter_str_to_filter_compound_condition,
+    _parse_filter_str_to_filter_condition,
+    _type_col_val,
+    parse_param_to_filter_payload,
+    val_to_primitive,
+)
 
 
 @pytest.mark.parametrize(
