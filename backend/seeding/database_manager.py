@@ -88,26 +88,35 @@ class DatabaseManager:
                 is not None
             )
 
+    def _create_database_stmt(self, connection: Connection) -> None:
+        connection.execute(
+            text(f"CREATE DATABASE {self._quoted_database_name(connection)}")
+        )
+
+    def _drop_database_stmt(self, connection: Connection) -> None:
+        connection.execute(
+            text(
+                f"DROP DATABASE IF EXISTS "
+                f"{self._quoted_database_name(connection)} WITH (FORCE)"
+            )
+        )
+
     def create_database(self) -> None:
         with self._maintenance_connection() as connection:
-            connection.execute(
-                text(f"CREATE DATABASE {self._quoted_database_name(connection)}")
-            )
+            self._create_database_stmt(connection)
 
     def drop_database(self) -> None:
         # release our own pooled connections; FORCE terminates everyone else's
         self.engine.dispose()
         with self._maintenance_connection() as connection:
-            connection.execute(
-                text(
-                    f"DROP DATABASE IF EXISTS "
-                    f"{self._quoted_database_name(connection)} WITH (FORCE)"
-                )
-            )
+            self._drop_database_stmt(connection)
 
     def recreate_database(self) -> None:
-        self.drop_database()
-        self.create_database()
+        # release our own pooled connections; FORCE terminates everyone else's
+        self.engine.dispose()
+        with self._maintenance_connection() as connection:
+            self._drop_database_stmt(connection)
+            self._create_database_stmt(connection)
 
     # MARK: tables
     def _alembic_config(self, connection: Connection) -> Config:
