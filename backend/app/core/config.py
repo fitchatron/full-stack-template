@@ -28,11 +28,12 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     DATABASE_URL: str
 
-    # sql alchemy database pool size
     SQLALCHEMY_DATABASE_POOL_SIZE: int = 15
 
     # sql alchemy pessimistic disconnect handling using pool pre ping
     SQLALCHEMY_POOL_PRE_PING: bool = True
+
+    SQLALCHEMY_POOL_RECYCLE_SECONDS: int = 1800
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 

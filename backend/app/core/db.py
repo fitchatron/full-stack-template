@@ -8,6 +8,7 @@ engine = create_engine(
     settings.DATABASE_URL,
     pool_size=settings.SQLALCHEMY_DATABASE_POOL_SIZE,
     pool_pre_ping=settings.SQLALCHEMY_POOL_PRE_PING,
+    pool_recycle=settings.SQLALCHEMY_POOL_RECYCLE_SECONDS,
 )
 
 # factory function to create database session
