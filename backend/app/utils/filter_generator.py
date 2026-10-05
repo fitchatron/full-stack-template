@@ -52,7 +52,7 @@ def _val_to_primitive(value: str | None) -> Any:
 
         if isinstance(parsed_value, dict):
             raise ValueError("Dictionaries are not primitives")
-    except json.JSONDecodeError, TypeError:
+    except (json.JSONDecodeError, TypeError):
         pass
 
     # Try parsing as null
@@ -121,7 +121,7 @@ class FilterGenerator[ModelType]:
                     )
 
                 return parsed_value
-            except json.JSONDecodeError, TypeError:
+            except (json.JSONDecodeError, TypeError):
                 raise ValueError(
                     "Expected a list for operator 'between', 'in', or 'not_in'"
                 )
@@ -232,7 +232,7 @@ class FilterGenerator[ModelType]:
         if python_type is float:
             try:
                 result = float(value)
-            except ValueError, TypeError:
+            except (ValueError, TypeError):
                 raise error
             if not math.isfinite(result):
                 raise error
