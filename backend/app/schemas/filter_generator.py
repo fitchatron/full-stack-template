@@ -76,7 +76,7 @@ class FilterCondition(BaseSchemaModel):
             raise ValueError("no operator")
 
         if op not in ["in", "not_in", "between"] and isinstance(v, list):
-            raise ValueError(f"Operator '{op}' requires a single of value")
+            raise ValueError(f"Operator '{op}' requires a single value")
 
         if op in ["in", "not_in", "between"]:
             if not isinstance(v, list):

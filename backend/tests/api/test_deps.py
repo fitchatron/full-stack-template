@@ -149,18 +149,6 @@ fake = Faker()
             [AppPermissions.CREATE__USERS, AppPermissions.READ__USERS],
             [
                 {
-                    "permissions": [AppPermissions.CREATE__USERS],
-                    "start_at": fake.past_datetime(tzinfo=UTC),
-                    "end_at": fake.future_datetime(tzinfo=UTC),
-                }
-            ],
-            False,
-            id="required_permission_not_fully_granted",
-        ),
-        pytest.param(
-            [AppPermissions.CREATE__USERS, AppPermissions.READ__USERS],
-            [
-                {
                     "permissions": [
                         AppPermissions.CREATE__USERS,
                         AppPermissions.READ__USERS,

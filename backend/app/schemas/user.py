@@ -23,8 +23,10 @@ class UserSchema(BaseSchemaModel):
     is_active: bool = Field(description="Active status of the user")
     created_at: datetime = Field(description="Time of user details creation")
     modified_at: datetime = Field(description="Time of user details modification")
-    created_by: int | None = Field(description="User ID that creates the user details")
-    modified_by: int | None = Field(
+    created_by: uuid.UUID | None = Field(
+        description="User ID that creates the user details"
+    )
+    modified_by: uuid.UUID | None = Field(
         description="User ID that modified the user details"
     )
 
