@@ -53,9 +53,7 @@ def login_access_token(
 def test_token(
     current_user: Annotated[
         UserSchema,
-        Depends(
-            AuthorizeUser(required_permissions=[AppPermissions.ASTERISK__ASTERISK])
-        ),
+        Depends(AuthorizeUser(required_permissions=[])),
     ],
 ) -> UserSchema:
     """
