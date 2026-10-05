@@ -1,0 +1,100 @@
+from collections.abc import Generator
+from typing import Annotated
+from uuid import UUID
+
+import jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jwt.exceptions import InvalidTokenError
+from pydantic import ValidationError
+from sqlalchemy.orm import Session
+
+from app.core import security
+from app.core.app_permissions import AppPermissions
+from app.core.config import settings
+from app.core.db import SessionLocal
+from app.models import User
+from app.schemas.auth import TokenPayload
+from app.services.user import UserService
+
+reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+
+
+# FastAPI dependency: yields a session per request, closing it afterwards
+def get_db() -> Generator[Session]:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+SessionDep = Annotated[Session, Depends(get_db)]
+TokenDep = Annotated[str, Depends(reusable_oauth2)]
+
+
+class AuthorizeUser:
+    """
+    Dependency class to authorize user by verifying token and checking user permission at application level.
+    Where multiple permissions are passed to required_permissions, all must be granted to the user to pass.
+    """
+
+    def __init__(
+        self,
+        required_permissions: list[AppPermissions] | None = None,
+    ):
+        self.required_permissions = required_permissions
+
+    def __call__(self, token: TokenDep, session: SessionDep) -> User:
+
+        user = self._get_current_user(session, token)
+        # check permisison
+        if not self._is_authorized(session, user.user_id):
+            raise HTTPException(status_code=403)
+
+        # return user
+        return user
+
+    def _is_authorized(self, session: Session, user_id: UUID) -> bool:
+        """
+        Checks if the user has the required permissions.
+
+        Returns True if the user is authorized, False otherwise.
+        """
+        # if required permissions is None, then endpoint can be executed without any permission
+        # as long as user is authenticated
+        if self.required_permissions is None:
+            return True
+
+        # get all permissions attached to the user
+        authorized = UserService(session).has_all_permissions(
+            user_id, required_permissions=self.required_permissions
+        )
+
+        return authorized
+
+    def _get_current_user(self, session: SessionDep, token: TokenDep) -> User:
+        """
+        Retrieves the current user based on the provided token.
+
+        Raises HTTPException if the token is invalid, the user is not found, or the user is inactive.
+
+        Returns the User object.
+        """
+        try:
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+            )
+            token_data = TokenPayload(**payload)
+            user_id = UUID(token_data.sub)
+        except (InvalidTokenError, ValidationError, TypeError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Could not validate credentials",
+            )
+        user = UserService(session).read_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        if not user.is_active:
+            raise HTTPException(status_code=400, detail="Inactive user")
+        return user
