@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -22,11 +23,11 @@ class AuditMixin:
     )
 
     @declared_attr
-    def created_by(cls) -> Mapped[int | None]:
+    def created_by(cls) -> Mapped[uuid.UUID | None]:
         return mapped_column(ForeignKey("users.user_id"))
 
     @declared_attr
-    def modified_by(cls) -> Mapped[int | None]:
+    def modified_by(cls) -> Mapped[uuid.UUID | None]:
         return mapped_column(ForeignKey("users.user_id"))
 
     @declared_attr

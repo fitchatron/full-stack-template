@@ -137,5 +137,5 @@ def act_as_admin(act_as_user, db_session):
 
 @pytest.fixture
 def auth_headers(act_as_user):
-    token = create_access_token(str(act_as_user.public_id), timedelta(minutes=5))
+    token = create_access_token(str(act_as_user.user_id), timedelta(minutes=5))
     return {"Authorization": f"Bearer {token}"}

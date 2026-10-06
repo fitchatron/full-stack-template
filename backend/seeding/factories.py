@@ -1,4 +1,3 @@
-import uuid
 from datetime import UTC, datetime, timedelta
 
 from factory.alchemy import SQLAlchemyModelFactory as _SQLAlchemyModelFactory
@@ -61,7 +60,6 @@ class UserFactory(SQLAlchemyModelFactory[User]):
         inactive = Trait(is_active=False)
         verified = Trait(email_verified=True)
 
-    public_id = LazyFunction(uuid.uuid7)
     given_name = Faker("first_name")
     family_name = Faker("last_name")
     # Sequence (not Faker's `.unique`, which is global mutable state that
@@ -95,9 +93,7 @@ class UserRoleFactory(SQLAlchemyModelFactory[UserRole]):
     class Meta:
         model = UserRole
 
-    public_id = LazyFunction(uuid.uuid7)
     user = SubFactory(UserFactory)
-    public_user_id = LazyAttribute(lambda o: o.user.public_id)
     role = SubFactory(RoleFactory)
 
     # A minute in the past, not now: Postgres' now() is frozen at transaction
@@ -111,7 +107,6 @@ class PermissionFactory(SQLAlchemyModelFactory[Permission]):
     class Meta:
         model = Permission
 
-    public_id = LazyFunction(uuid.uuid7)
     action = AuthorizationAction.read
     resource = Sequence(lambda n: f"resource-{n}")
     description = LazyAttribute(
@@ -130,4 +125,3 @@ class RolePermissionFactory(SQLAlchemyModelFactory[RolePermission]):
 
     role = SubFactory(RoleFactory)
     permission = SubFactory(PermissionFactory)
-    public_permission_id = LazyAttribute(lambda o: o.permission.public_id)

@@ -152,7 +152,7 @@ def test_test_token_valid_user(client, act_as_user):
     """
     token = Token(
         access_token=create_access_token(
-            act_as_user.public_id, expires_delta=timedelta(minutes=5)
+            act_as_user.user_id, expires_delta=timedelta(minutes=5)
         )
     )
 
@@ -162,8 +162,7 @@ def test_test_token_valid_user(client, act_as_user):
     )
 
     assert response.status_code == 200
-    assert response.json()["userId"] == act_as_user.user_id
-    assert response.json()["publicId"] == str(act_as_user.public_id)
+    assert response.json()["userId"] == str(act_as_user.user_id)
 
 
 def test_test_token_valid_user_expired_token(client, act_as_user):
@@ -172,7 +171,7 @@ def test_test_token_valid_user_expired_token(client, act_as_user):
     """
     token = Token(
         access_token=create_access_token(
-            act_as_user.public_id, expires_delta=timedelta(minutes=-5)
+            act_as_user.user_id, expires_delta=timedelta(minutes=-5)
         )
     )
 

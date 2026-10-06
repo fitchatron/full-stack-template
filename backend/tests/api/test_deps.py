@@ -233,7 +233,7 @@ def test_authorize_user_is_authorized(
 
 # MARK: _get_current_user
 def test_get_current_user_returns_user_for_valid_token(db_session, act_as_user):
-    token = create_access_token(act_as_user.public_id, timedelta(minutes=5))
+    token = create_access_token(act_as_user.user_id, timedelta(minutes=5))
 
     user = AuthorizeUser()._get_current_user(db_session, token)
 
@@ -285,7 +285,7 @@ def test_get_current_user_unknown_user(db_session):
 def test_get_current_user_inactive_user(db_session, act_as_user):
     act_as_user.is_active = False
     db_session.flush()
-    token = create_access_token(act_as_user.public_id, timedelta(minutes=5))
+    token = create_access_token(act_as_user.user_id, timedelta(minutes=5))
 
     with pytest.raises(HTTPException) as exc_info:
         AuthorizeUser()._get_current_user(db_session, token)

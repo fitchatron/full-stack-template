@@ -4,7 +4,7 @@ from sqlalchemy import Select, and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.app_permissions import AppPermissions
-from app.models.model import Permission, Role, RolePermission, UserRole
+from app.models.model import Permission, Role, UserRole
 from app.repositories.generic import CRUDRepository
 from app.schemas.permission import PermissionSchema
 
@@ -30,7 +30,7 @@ class PermissionRepository(CRUDRepository[Permission, PermissionSchema]):
             .select_from(Role)
             .join(Role.role_permissions)
             .join(Role.user_roles)
-            .join(RolePermission.permission)
+            .join(Permission)
             .where(
                 and_(
                     UserRole.user_id == user_id,
