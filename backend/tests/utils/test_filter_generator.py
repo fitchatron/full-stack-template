@@ -250,19 +250,19 @@ def test_parse_filter_str_to_filter_condition(
     [
         pytest.param(
             User,
-            'and(user_id~eq~"00000000-0000-0000-0000-000000000000";user_id~ne~"00000000-1111-0000-0000-000000000000")',
+            'and(user_id~eq~"5";user_id~ne~"1")',
             FilterCompoundCondition(
                 operator=CompoundOperator.and_,
                 conditions=[
                     FilterCondition(
                         column="user_id",
                         operator=ComparisonOperator.eq_,
-                        value="00000000-0000-0000-0000-000000000000",
+                        value="5",
                     ),
                     FilterCondition(
                         column="user_id",
                         operator=ComparisonOperator.ne_,
-                        value="00000000-1111-0000-0000-000000000000",
+                        value="1",
                     ),
                 ],
             ),
@@ -270,13 +270,13 @@ def test_parse_filter_str_to_filter_condition(
         ),
         pytest.param(
             User,
-            'and(user_id~eq~"00000000-0000-0000-0000-000000000000";username~eq~"foo")',
+            'and(user_id~eq~"5";username~eq~"foo")',
             FilterCompoundCondition(
                 conditions=[
                     FilterCondition(
                         column="user_id",
                         operator=ComparisonOperator.eq_,
-                        value="00000000-0000-0000-0000-000000000000",
+                        value="5",
                     ),
                     FilterCondition(
                         column="username",
@@ -290,13 +290,13 @@ def test_parse_filter_str_to_filter_condition(
         ),
         pytest.param(
             User,
-            'or(user_id~eq~"00000000-0000-0000-0000-000000000000";username~eq~"foo";username~ne~"foobar")',
+            'or(user_id~eq~"3";username~eq~"foo";username~ne~"foobar")',
             FilterCompoundCondition(
                 conditions=[
                     FilterCondition(
                         column="user_id",
                         operator=ComparisonOperator.eq_,
-                        value="00000000-0000-0000-0000-000000000000",
+                        value="3",
                     ),
                     FilterCondition(
                         column="username",
@@ -512,9 +512,9 @@ def test_parse_param_to_filter_payload(model, filter_str, expected_filter_payloa
             FilterCondition(
                 column="user_id",
                 operator=ComparisonOperator.eq_,
-                value="00000000-0000-0000-0000-000000000000",
+                value="5",
             ),
-            (User.user_id == "00000000-0000-0000-0000-000000000000"),
+            (User.user_id == 5),
         ),
         (
             User,
@@ -523,7 +523,7 @@ def test_parse_param_to_filter_payload(model, filter_str, expected_filter_payloa
                     FilterCondition(
                         column="user_id",
                         operator=ComparisonOperator.eq_,
-                        value="00000000-0000-0000-0000-000000000000",
+                        value=3,
                     ),
                     FilterCondition(
                         column="username",
@@ -534,7 +534,7 @@ def test_parse_param_to_filter_payload(model, filter_str, expected_filter_payloa
                 operator=CompoundOperator.and_,
             ),
             and_(
-                User.user_id == "00000000-0000-0000-0000-000000000000",
+                User.user_id == 3,
                 User.username == "foo",
             ),
         ),
@@ -619,10 +619,10 @@ def test_filter_generator_generate_filter(model, filter, expected_filter):
                 where=FilterCondition(
                     column="user_id",
                     operator=ComparisonOperator.eq_,
-                    value="00000000-0000-0000-0000-000000000000",
+                    value=2,
                 )
             ),
-            (User.user_id == "00000000-0000-0000-0000-000000000000"),
+            (User.user_id == 2),
         ),
         (
             User,
@@ -632,7 +632,7 @@ def test_filter_generator_generate_filter(model, filter, expected_filter):
                         FilterCondition(
                             column="user_id",
                             operator=ComparisonOperator.eq_,
-                            value="00000000-0000-0000-0000-000000000000",
+                            value=5,
                         ),
                         FilterCondition(
                             column="username",
@@ -644,7 +644,7 @@ def test_filter_generator_generate_filter(model, filter, expected_filter):
                 )
             ),
             and_(
-                User.user_id == "00000000-0000-0000-0000-000000000000",
+                User.user_id == 5,
                 User.username == "foo",
             ),
         ),

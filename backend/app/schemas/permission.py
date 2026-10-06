@@ -12,10 +12,11 @@ class PermissionSchema(BaseSchemaModel):
     Base permissions schema
     """
 
-    permission_id: uuid.UUID = Field(description="ID of the permission")
-    description: str = Field(description="Description of the permission")
+    permission_id: int = Field(description="Private ID of the permission")
+    public_id: uuid.UUID = Field(description="Public ID of the user")
     action: AuthorizationAction = Field(description="Action of the permission")
     resource: str = Field(description="Resource of the permission")
+    description: str = Field(description="Description of the permission")
     created_at: datetime = Field(description="Time of permission details creation")
     modified_at: datetime = Field(description="Time of permission details modification")
     created_by: uuid.UUID | None = Field(

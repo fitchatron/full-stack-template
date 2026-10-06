@@ -1,5 +1,3 @@
-
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -26,6 +24,15 @@ class UserRepository(CRUDRepository[User, UserSchema]):
         """
 
         sql = select(self.model).where(self.model.email == email)
+        result = self.session.scalars(sql).first()
+        return result
+
+    def read_user_by_public_id(self, public_id: str) -> User | None:
+        """
+        Read a single user by public ID
+        """
+
+        sql = select(self.model).where(self.model.public_id == public_id)
         result = self.session.scalars(sql).first()
         return result
 

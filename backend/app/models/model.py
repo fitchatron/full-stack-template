@@ -1,7 +1,15 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Text, UniqueConstraint, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Text,
+    UniqueConstraint,
+    Integer,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -17,11 +25,16 @@ class User(Base):
     """
 
     __tablename__ = "users"
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        server_default=text("uuidv7()"),
+    user_id: Mapped[int] = mapped_column(
+        Integer,
         primary_key=True,
         index=True,
+    )
+    public_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        server_default=text("uuidv7()"),
+        index=True,
+        unique=True,
     )
     username: Mapped[str] = mapped_column(Text)
     email: Mapped[str] = mapped_column(Text)
@@ -37,8 +50,8 @@ class User(Base):
     modified_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-    created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey(user_id))
-    modified_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey(user_id))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey(user_id))
+    modified_by: Mapped[int | None] = mapped_column(ForeignKey(user_id))
 
     __table_args__ = (
         UniqueConstraint(email),
@@ -82,11 +95,16 @@ class Permission(AuditMixin, Base):
     """
 
     __tablename__ = "permissions"
-    permission_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        server_default=text("uuidv7()"),
+    permission_id: Mapped[int] = mapped_column(
+        Integer,
         primary_key=True,
         index=True,
+    )
+    public_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        server_default=text("uuidv7()"),
+        index=True,
+        unique=True,
     )
     action: Mapped[AuthorizationAction] = mapped_column(authorization_action_type)
     resource: Mapped[str] = mapped_column(Text)
@@ -97,6 +115,7 @@ class Permission(AuditMixin, Base):
         "RolePermission",
         back_populates="permission",
         cascade="all, delete-orphan",
+        primaryjoin="RolePermission.permission_id == Permission.permission_id",
     )
     __table_args__ = (UniqueConstraint(action, resource),)
 
@@ -137,9 +156,13 @@ class RolePermission(AuditMixin, Base):
         primary_key=True,
         index=True,
     )
-    permission_id: Mapped[uuid.UUID] = mapped_column(
+    permission_id: Mapped[int] = mapped_column(
         ForeignKey(Permission.permission_id, ondelete="CASCADE"),
         primary_key=True,
+        index=True,
+    )
+    public_permission_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(Permission.public_id, ondelete="CASCADE"),
         index=True,
     )
 
@@ -163,14 +186,22 @@ class UserRole(AuditMixin, Base):
     """
 
     __tablename__ = "user_roles"
-    user_role_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        server_default=text("uuidv7()"),
+    user_role_id: Mapped[int] = mapped_column(
+        Integer,
         primary_key=True,
         index=True,
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    public_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        server_default=text("uuidv7()"),
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
         ForeignKey(User.user_id, ondelete="CASCADE"),
+        index=True,
+    )
+    public_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(User.public_id, ondelete="CASCADE"),
         index=True,
     )
     role_id: Mapped[str] = mapped_column(

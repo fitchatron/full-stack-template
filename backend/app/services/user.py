@@ -24,12 +24,12 @@ class UserService:
         self.user_role_repository = CRUDRepository(session, UserRole)
         self.permission_repository = PermissionRepository(session, Permission)
 
-    def read_by_id(self, user_id: UUID) -> User | None:
+    def read_by_public_id(self, public_user_id: UUID) -> User | None:
         """
-        Function to get user by ID.
+        Function to get user by public ID.
         """
         try:
-            return self.repository.read_by_pk(user_id)
+            return self.repository.read_user_by_public_id(str(public_user_id))
 
         except Exception as exception:
             # LOG.exception("Exception")

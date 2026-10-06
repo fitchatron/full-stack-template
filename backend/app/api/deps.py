@@ -49,7 +49,7 @@ class AuthorizeUser:
 
         user = self._get_current_user(session, token)
         # check permisison
-        if not self._is_authorized(session, user.user_id):
+        if not self._is_authorized(session, user.public_id):
             raise HTTPException(status_code=403)
 
         # return user
@@ -86,13 +86,13 @@ class AuthorizeUser:
                 token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
             )
             token_data = TokenPayload(**payload)
-            user_id = UUID(token_data.sub)
+            public_user_id = UUID(token_data.sub)
         except (InvalidTokenError, ValidationError, TypeError, ValueError):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Could not validate credentials",
             )
-        user = UserService(session).read_by_id(user_id)
+        user = UserService(session).read_by_public_id(public_user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         if not user.is_active:

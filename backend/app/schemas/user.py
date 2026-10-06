@@ -12,7 +12,8 @@ class UserSchema(BaseSchemaModel):
     Base users schema
     """
 
-    user_id: uuid.UUID = Field(description="ID of the user")
+    user_id: int = Field(description="Private ID of the user")
+    public_id: uuid.UUID = Field(description="Public ID of the user")
     username: str = Field(description="Username of the user")
     email: EmailStr = Field(description="Email of the user")
     hashed_password: str = Field(description="Hashed password of the user")

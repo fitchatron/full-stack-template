@@ -11,11 +11,15 @@ from app.models import (
     AuthorizationAction,
     Permission,
     Role,
-    RolePermission,
     User,
     UserRole,
 )
-from seeding.factories import PermissionFactory, UserFactory
+from seeding.factories import (
+    PermissionFactory,
+    RolePermissionFactory,
+    UserFactory,
+    UserRoleFactory,
+)
 from seeding.plan import SeedPlan, SeedResult
 
 # Fixed role <-> permission mapping
@@ -120,7 +124,9 @@ class DatabaseSeeder:
             role = roles[role_name]
             for member in granted:
                 permission = permissions[member.get_action_resource()]
-                self.session.add(RolePermission(role=role, permission=permission))
+                self.session.add(
+                    RolePermissionFactory.build(role=role, permission=permission)
+                )
 
         return roles
 
@@ -134,7 +140,7 @@ class DatabaseSeeder:
             email_verified=True,
         )
         self.session.add(admin_user)
-        self.session.add(UserRole(user=admin_user, role=roles["admin"]))
+        self.session.add(UserRoleFactory.build(user=admin_user, role=roles["admin"]))
         return admin_user
 
     def _assign_random_roles(
@@ -143,4 +149,4 @@ class DatabaseSeeder:
         role_list = list(roles.values())
         for user in users:
             for role in rng.sample(role_list, k=rng.randint(1, len(role_list))):
-                self.session.add(UserRole(user=user, role=role))
+                self.session.add(UserRoleFactory.build(user=user, role=role))
