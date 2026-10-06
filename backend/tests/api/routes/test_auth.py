@@ -190,7 +190,7 @@ def test_test_token_invalid_user(client):
     """
     token = Token(
         access_token=create_access_token(
-            uuid.uuid4(), expires_delta=timedelta(minutes=-5)
+            uuid.uuid7(), expires_delta=timedelta(minutes=-5)
         )
     )
 

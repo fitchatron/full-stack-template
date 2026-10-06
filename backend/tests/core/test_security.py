@@ -14,7 +14,7 @@ def decode(token: str) -> dict:
 
 # MARK: create_access_token
 def test_create_access_token_round_trips_uuid_subject():
-    user_id = uuid.uuid4()
+    user_id = uuid.uuid7()
 
     payload = decode(security.create_access_token(user_id, timedelta(minutes=5)))
 

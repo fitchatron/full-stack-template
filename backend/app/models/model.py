@@ -19,7 +19,7 @@ class User(Base):
     __tablename__ = "users"
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        server_default=text("gen_random_uuid()"),
+        server_default=text("uuidv7()"),
         primary_key=True,
         index=True,
     )
@@ -84,13 +84,13 @@ class Permission(AuditMixin, Base):
     __tablename__ = "permissions"
     permission_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        server_default=text("gen_random_uuid()"),
+        server_default=text("uuidv7()"),
         primary_key=True,
         index=True,
     )
-    description: Mapped[str] = mapped_column(Text)
     action: Mapped[AuthorizationAction] = mapped_column(authorization_action_type)
     resource: Mapped[str] = mapped_column(Text)
+    description: Mapped[str] = mapped_column(Text)
 
     # MARK: Relationships
     role_permissions: Mapped[list[RolePermission]] = relationship(
@@ -165,7 +165,7 @@ class UserRole(AuditMixin, Base):
     __tablename__ = "user_roles"
     user_role_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        server_default=text("gen_random_uuid()"),
+        server_default=text("uuidv7()"),
         primary_key=True,
         index=True,
     )
