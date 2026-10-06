@@ -244,12 +244,12 @@ def test_get_current_user_returns_user_for_valid_token(db_session, act_as_user):
     "token",
     [
         pytest.param(
-            create_access_token(uuid.uuid4(), timedelta(seconds=-1)),
+            create_access_token(uuid.uuid7(), timedelta(seconds=-1)),
             id="expired",
         ),
         pytest.param(
             jwt.encode(
-                {"sub": str(uuid.uuid4())},
+                {"sub": str(uuid.uuid7())},
                 "not-the-secret-key-but-long-enough-for-hs256",
                 ALGORITHM,
             ),
@@ -274,7 +274,7 @@ def test_get_current_user_rejects_invalid_token(db_session, token):
 
 
 def test_get_current_user_unknown_user(db_session):
-    token = create_access_token(uuid.uuid4(), timedelta(minutes=5))
+    token = create_access_token(uuid.uuid7(), timedelta(minutes=5))
 
     with pytest.raises(HTTPException) as exc_info:
         AuthorizeUser()._get_current_user(db_session, token)
