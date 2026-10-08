@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, status
 from app.api.deps import AuthorizeUser
 from app.core.app_permissions import AppPermissions
 from app.core.config import settings
-from app.schemas.user import UserSchema
+from app.schemas.user import UserResponseSchema, UserSchema
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -21,7 +21,7 @@ def get_all_users(
         UserSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.READ__USERS])),
     ],
-) -> list[UserSchema]:
+) -> list[UserResponseSchema]:
     """
     Get a list of all users.
     """
@@ -40,7 +40,7 @@ def get_user_by_id(
         UserSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.READ__USERS])),
     ],
-) -> UserSchema:
+) -> UserResponseSchema:
     """
     Get a user by ID.
     """
@@ -59,7 +59,7 @@ def update_user_by_id(
         UserSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.UPDATE__USERS])),
     ],
-) -> UserSchema:
+) -> UserResponseSchema:
     """
     Update a user by ID.
     """

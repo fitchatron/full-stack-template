@@ -31,6 +31,20 @@ class UserSchema(BaseSchemaModel):
     )
 
 
+class UserResponseSchema(BaseSchemaModel):
+    """
+    Response schema for a user
+    """
+
+    user_id: uuid.UUID = Field(description="ID of the user")
+    username: str = Field(description="Username of the user")
+    email: EmailStr = Field(description="Email of the user")
+    given_name: str | None = Field(description="Given name of the user")
+    family_name: str | None = Field(description="Family name of the user")
+    email_verified: bool = Field(description="Email verification status of the user")
+    is_active: bool = Field(description="Active status of the user")
+
+
 class RegisterUserPOSTRequest(BaseSchemaModel):
     email: EmailStr = Field(description="Email of the user")
     username: str = Field(description="Username of the user")
