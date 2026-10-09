@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from app.schemas.order_by_generator import OrderByCondition
+from app.schemas.pagination import OptionalPage
 from app.utils.exception import NoOrderByColumnsSpecified
 from app.utils.order_by_generator import OrderByGenerator
 
@@ -174,7 +175,7 @@ class CRUDRepository[ModelType, Schema]:
         sort_by: list[OrderByCondition],
         filters: ColumnElement[bool] | None = None,
         joins: Sequence[InstrumentedAttribute] | None = None,
-    ) -> Page[ModelType]:
+    ) -> OptionalPage[ModelType]:
         """
         Read a page of items by specifying filters.
         At least 1 order by column is required so pages are stable.
