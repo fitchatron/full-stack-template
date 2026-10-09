@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Self
 
+from fastapi_pagination.links import Page
 from pydantic import EmailStr, Field, SecretStr, model_validator
 
 from app.schemas.base import BaseSchemaModel
@@ -72,3 +73,12 @@ class RegisterUserSchema(BaseSchemaModel):
     family_name: str | None = Field(None, description="Family name of the user")
     hashed_password: SecretStr = Field(..., description="Hashed password of the user")
     salt: str = Field(description="Salt used for hashing the password")
+
+
+class UserResponseSchemaPaginated(Page[UserResponseSchema]):
+    """
+    Paginated user schema. This is required for documentation purposes by FastAPI.
+    Without this, the schema will be called "Page_<schema name>_" instead of "<schema name>Paginated"
+    """
+
+    pass

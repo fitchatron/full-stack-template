@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.api.deps import AuthorizeUser, SessionDep
 from app.core.config import settings
 from app.schemas.auth import Token
-from app.schemas.user import RegisterUserPOSTRequest, UserSchema
+from app.schemas.user import RegisterUserPOSTRequest, UserResponseSchema
 from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -45,20 +45,22 @@ def login_access_token(
     )
 
 
-@router.post(
-    "/test-token",
-    responses=settings.HTTP_EXCEPTION_RESPONSES_SET["post"],
-)
-def test_token(
-    current_user: Annotated[
-        UserSchema,
-        Depends(AuthorizeUser(required_permissions=[])),
-    ],
-) -> UserSchema:
-    """
-    Test access token
-    """
-    return current_user
+if settings.FASTAPI_ENV == "development":
+
+    @router.post(
+        "/test-token",
+        responses=settings.HTTP_EXCEPTION_RESPONSES_SET["post"],
+    )
+    def test_token(
+        current_user: Annotated[
+            UserResponseSchema,
+            Depends(AuthorizeUser(required_permissions=[])),
+        ],
+    ) -> UserResponseSchema:
+        """
+        Test access token
+        """
+        return current_user
 
 
 @router.post(

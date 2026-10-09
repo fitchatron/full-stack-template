@@ -1,5 +1,6 @@
 from uuid import UUID
-
+from app.schemas.order_by_generator import OrderByCondition
+from app.schemas.user import UserResponseSchemaPaginated
 from fastapi import HTTPException
 from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
@@ -12,6 +13,8 @@ from app.repositories.user import UserRepository
 from app.schemas.permission import (
     PermissionSchema,
 )
+from app.schemas.user import UserResponseSchema
+from app.utils.exception import NotFoundError
 
 
 class UserService:
@@ -24,12 +27,35 @@ class UserService:
         self.user_role_repository = CRUDRepository(session, UserRole)
         self.permission_repository = PermissionRepository(session, Permission)
 
-    def read_by_id(self, user_id: UUID) -> User | None:
+    def read_all(self, sort_by: list[OrderByCondition]) -> UserResponseSchemaPaginated:
+        """
+        Function to get all users.
+        """
+        try:
+            page = self.repository.read_paginated_items(sort_by=sort_by)
+            return UserResponseSchemaPaginated.model_validate(
+                page, from_attributes=True
+            )
+
+        except Exception as exception:
+            # LOG.exception("Exception")
+            raise HTTPException(status_code=500, detail=str(exception))
+
+    def read_by_id(self, user_id: UUID) -> UserResponseSchema:
         """
         Function to get user by ID.
         """
         try:
-            return self.repository.read_by_pk(user_id)
+            user = self.repository.read_by_pk(user_id)
+
+            if not user:
+                raise NotFoundError("User not found")
+
+            return UserResponseSchema.model_validate(user)
+
+        except NotFoundError as exception:
+            # LOG.exception("Exception")
+            raise HTTPException(status_code=404, detail=str(exception))
 
         except Exception as exception:
             # LOG.exception("Exception")

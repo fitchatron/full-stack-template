@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.core.db import SessionLocal
 from app.models import User
 from app.schemas.auth import TokenPayload
+from app.schemas.user import UserResponseSchema
 from app.services.user import UserService
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
@@ -45,7 +46,7 @@ class AuthorizeUser:
     ):
         self.required_permissions = required_permissions
 
-    def __call__(self, token: TokenDep, session: SessionDep) -> User:
+    def __call__(self, token: TokenDep, session: SessionDep) -> UserResponseSchema:
 
         user = self._get_current_user(session, token)
         # check permisison
@@ -73,13 +74,15 @@ class AuthorizeUser:
 
         return authorized
 
-    def _get_current_user(self, session: SessionDep, token: TokenDep) -> User:
+    def _get_current_user(
+        self, session: SessionDep, token: TokenDep
+    ) -> UserResponseSchema:
         """
         Retrieves the current user based on the provided token.
 
         Raises HTTPException if the token is invalid, the user is not found, or the user is inactive.
 
-        Returns the User object.
+        Returns the UserResponseSchema object.
         """
         try:
             payload = jwt.decode(
@@ -87,14 +90,12 @@ class AuthorizeUser:
             )
             token_data = TokenPayload(**payload)
             user_id = UUID(token_data.sub)
-        except (InvalidTokenError, ValidationError, TypeError, ValueError):
+        except InvalidTokenError, ValidationError, TypeError, ValueError:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Could not validate credentials",
             )
         user = UserService(session).read_by_id(user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
         if not user.is_active:
             raise HTTPException(status_code=400, detail="Inactive user")
         return user

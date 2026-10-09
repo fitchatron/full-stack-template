@@ -3,10 +3,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
-from app.api.deps import AuthorizeUser
+from app.api.deps import AuthorizeUser, SessionDep
 from app.core.app_permissions import AppPermissions
 from app.core.config import settings
-from app.schemas.user import UserResponseSchema, UserSchema
+from app.schemas.order_by_generator import OrderByCondition, OrderOperator
+from app.schemas.user import UserResponseSchema, UserResponseSchemaPaginated, UserSchema
+from app.services.user import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -17,16 +19,17 @@ router = APIRouter(prefix="/users", tags=["users"])
     responses=settings.HTTP_EXCEPTION_RESPONSES_SET["get"],
 )
 def get_all_users(
-    current_user: Annotated[
-        UserSchema,
+    session: SessionDep,
+    _current_user: Annotated[
+        UserResponseSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.READ__USERS])),
     ],
-) -> list[UserResponseSchema]:
+) -> UserResponseSchemaPaginated:
     """
     Get a list of all users.
     """
-
-    raise NotImplementedError("Method not implemented")
+    sort_by = [OrderByCondition(column="user_id", orientation=OrderOperator.asc_)]
+    return UserService(session).read_all(sort_by=sort_by)
 
 
 @router.get(
@@ -35,17 +38,18 @@ def get_all_users(
     responses=settings.HTTP_EXCEPTION_RESPONSES_SET["get"],
 )
 def get_user_by_id(
-    user_id: UUID,
-    current_user: Annotated[
-        UserSchema,
+    session: SessionDep,
+    _current_user: Annotated[
+        UserResponseSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.READ__USERS])),
     ],
+    user_id: UUID,
 ) -> UserResponseSchema:
     """
     Get a user by ID.
     """
 
-    raise NotImplementedError("Method not implemented")
+    return UserService(session).read_by_id(user_id=user_id)
 
 
 @router.put(
@@ -75,7 +79,7 @@ def update_user_by_id(
 def patch_user_by_id(
     user_id: UUID,
     current_user: Annotated[
-        UserSchema,
+        UserResponseSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.UPDATE__USERS])),
     ],
 ) -> None:
@@ -94,7 +98,7 @@ def patch_user_by_id(
 def delete_user_by_id(
     user_id: UUID,
     current_user: Annotated[
-        UserSchema,
+        UserResponseSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.DELETE__USERS])),
     ],
 ) -> None:
