@@ -1,7 +1,6 @@
 from uuid import UUID
 
 from fastapi import HTTPException
-from httpx import delete
 from pydantic import TypeAdapter
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
