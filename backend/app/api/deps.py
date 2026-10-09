@@ -13,7 +13,6 @@ from app.core import security
 from app.core.app_permissions import AppPermissions
 from app.core.config import settings
 from app.core.db import SessionLocal
-from app.models import User
 from app.schemas.auth import TokenPayload
 from app.schemas.user import UserResponseSchema
 from app.services.user import UserService

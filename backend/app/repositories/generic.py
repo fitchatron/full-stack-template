@@ -5,7 +5,9 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination.links import Page
 from sqlalchemy import (
     ColumnElement,
+    Delete,
     Select,
+    Update,
     delete,
     insert,
     inspect,
@@ -105,6 +107,39 @@ class CRUDRepository[ModelType, Schema]:
 
         return sql
 
+    def _apply_filters[Statement: (Update, Delete)](
+        self,
+        sql: Statement,
+        filters: ColumnElement[bool],
+        joins: Sequence[InstrumentedAttribute] | None = None,
+    ) -> Statement:
+        """
+        Apply filters to an update or delete statement.
+        UPDATE/DELETE can't join directly, so when joins are provided the filters are
+        applied to a select of the primary keys and the statement targets those rows.
+        """
+
+        if not joins:
+            return sql.where(filters)
+
+        mapper = inspect(self.model)
+        if mapper is None:
+            raise ValueError(f"Model {self.model} is not mapped")
+
+        pks = mapper.primary_key
+
+        subquery = select(*pks).select_from(self.model)
+
+        for join in joins:
+            subquery = subquery.join(join)
+
+        subquery = subquery.where(filters)
+
+        if len(pks) > 1:
+            return sql.where(tuple_(*pks).in_(subquery))
+
+        return sql.where(pks[0].in_(subquery))
+
     def read_single_item(
         self,
         filters: ColumnElement[bool],
@@ -153,6 +188,32 @@ class CRUDRepository[ModelType, Schema]:
         sql = self._build_select(filters, sort_by, joins)
         return paginate(self.session, sql)
 
+    def update_single_item(
+        self,
+        filters: ColumnElement[bool],
+        values: dict,
+        commit: bool = True,
+        joins: Sequence[InstrumentedAttribute] | None = None,
+    ) -> ModelType | None:
+        """
+        Update a single item by specifying filters and new values.
+        Filters must identify at most one row
+        """
+        sql = update(self.model).values(**values)
+
+        sql = self._apply_filters(sql, filters, joins)
+
+        # return updated records
+        sql = sql.returning(self.model)
+
+        # execute sql
+        result = self.session.scalars(sql).one_or_none()
+
+        if commit:
+            self.session.commit()
+
+        return result
+
     def update_multiple_items_with_same_values(
         self,
         filters: ColumnElement[bool],
@@ -167,26 +228,7 @@ class CRUDRepository[ModelType, Schema]:
 
         sql = update(self.model).values(**values)
 
-        if joins:
-            mapper = inspect(self.model)
-            if mapper is None:
-                raise ValueError(f"Model {self.model} is not mapped")
-
-            pks = mapper.primary_key
-
-            subquery = select(*pks).select_from(self.model)
-
-            for join in joins:
-                subquery = subquery.join(join)
-
-            subquery = subquery.where(filters)
-
-            if len(pks) > 1:
-                sql = sql.where(tuple_(*pks).in_(subquery))
-            else:
-                sql = sql.where(pks[0].in_(subquery))
-        else:
-            sql = sql.where(filters)
+        sql = self._apply_filters(sql, filters, joins)
 
         # return updated records
         sql = sql.returning(self.model)
@@ -227,6 +269,30 @@ class CRUDRepository[ModelType, Schema]:
         if commit:
             self.session.commit()
 
+    def delete_single_item(
+        self,
+        filters: ColumnElement[bool],
+        commit: bool = True,
+        joins: Sequence[InstrumentedAttribute] | None = None,
+    ) -> ModelType | None:
+        """
+        Delete a single row. When deleting a single row, the deleted row is returned.
+        """
+
+        sql = delete(self.model)
+
+        sql = self._apply_filters(sql, filters, joins)
+
+        sql = sql.returning(self.model)
+
+        # execute sql
+        result = self.session.scalars(sql).one_or_none()
+
+        if commit:
+            self.session.commit()
+
+        return result
+
     def delete_multiple_items(
         self,
         filters: ColumnElement[bool],
@@ -239,26 +305,7 @@ class CRUDRepository[ModelType, Schema]:
 
         sql = delete(self.model)
 
-        if joins:
-            mapper = inspect(self.model)
-            if mapper is None:
-                raise ValueError(f"Model {self.model} is not mapped")
-
-            pks = mapper.primary_key
-
-            subquery = select(*pks).select_from(self.model)
-
-            for join in joins:
-                subquery = subquery.join(join)
-
-            subquery = subquery.where(filters)
-
-            if len(pks) > 1:
-                sql = sql.where(tuple_(*pks).in_(subquery))
-            else:
-                sql = sql.where(pks[0].in_(subquery))
-        else:
-            sql = sql.where(filters)
+        sql = self._apply_filters(sql, filters, joins)
 
         sql = sql.returning(self.model)
 
