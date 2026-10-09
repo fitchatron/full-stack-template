@@ -277,6 +277,8 @@ class CRUDRepository[ModelType, Schema]:
     ) -> ModelType | None:
         """
         Delete a single row. When deleting a single row, the deleted row is returned.
+        The returned row is detached from the session so its column values stay readable
+        after commit. Relationships on it can't be lazy loaded.
         """
 
         sql = delete(self.model)
@@ -287,6 +289,10 @@ class CRUDRepository[ModelType, Schema]:
 
         # execute sql
         result = self.session.scalars(sql).one_or_none()
+
+        # detach so commit doesn't expire the row, which no longer exists to be reloaded
+        if result is not None:
+            self.session.expunge(result)
 
         if commit:
             self.session.commit()
@@ -301,6 +307,8 @@ class CRUDRepository[ModelType, Schema]:
     ) -> Sequence[ModelType]:
         """
         Delete multiple rows. When deleting multiple rows, the deleted rows are returned.
+        The returned rows are detached from the session so their column values stay
+        readable after commit. Relationships on them can't be lazy loaded.
         """
 
         sql = delete(self.model)
@@ -311,6 +319,10 @@ class CRUDRepository[ModelType, Schema]:
 
         # execute sql
         results = self.session.scalars(sql).all()
+
+        # detach so commit doesn't expire the rows, which no longer exist to be reloaded
+        for result in results:
+            self.session.expunge(result)
 
         if commit:
             self.session.commit()

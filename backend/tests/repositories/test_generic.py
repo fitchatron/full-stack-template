@@ -1,7 +1,7 @@
 import pytest
 from fastapi_pagination import Params, set_params
-from sqlalchemy import select
-from sqlalchemy.orm.exc import ObjectDeletedError
+from sqlalchemy import inspect, select
+from sqlalchemy.exc import MultipleResultsFound
 
 from app.models.model import Role, RolePermission, User
 from app.repositories.generic import CRUDRepository
@@ -348,6 +348,132 @@ def test_read_paginated_items_with_joins(db_session, roles):
     assert [u.email for u in page.items] == sorted(u.email for u in users)[:2]
 
 
+# MARK: update_single_item
+@pytest.mark.usefixtures("roles")
+def test_update_single_item_updates_matching_row(db_session, role_repo):
+    # GIVEN roles a, b, c
+    # WHEN updating the single row with role_id == c
+    updated = role_repo.update_single_item(
+        filters=(Role.role_id == f"{PREFIX}-c"), values={"description": "changed"}
+    )
+
+    # THEN the updated row is returned and persisted with the new value; roles
+    # a and b are untouched
+    assert updated is not None
+    assert updated.role_id == f"{PREFIX}-c"
+    assert updated.description == "changed"
+    assert {r.role_id: r.description for r in get_roles(db_session)} == {
+        f"{PREFIX}-a": "shared",
+        f"{PREFIX}-b": "shared",
+        f"{PREFIX}-c": "changed",
+    }
+
+
+@pytest.mark.usefixtures("roles")
+def test_update_single_item_returns_none_when_no_match(db_session, role_repo):
+    # GIVEN roles a, b, c
+    # WHEN updating with a filter that matches nothing
+    updated = role_repo.update_single_item(
+        filters=(Role.role_id == f"{PREFIX}-nope"), values={"description": "changed"}
+    )
+
+    # THEN None is returned rather than raising, and no rows are touched
+    assert updated is None
+    assert [r.description for r in get_roles(db_session)] == [
+        "shared",
+        "shared",
+        "unique",
+    ]
+
+
+@pytest.mark.usefixtures("roles")
+def test_update_single_item_raises_when_multiple_match(db_session, role_repo):
+    # GIVEN roles a and b share description "shared"
+    savepoint = db_session.begin_nested()
+
+    # WHEN updating with a filter that matches both of them
+    # THEN MultipleResultsFound is raised -- the filter must identify at most
+    # one row
+    with pytest.raises(MultipleResultsFound):
+        role_repo.update_single_item(
+            filters=(Role.description == "shared"), values={"description": "changed"}
+        )
+
+    # AND the UPDATE has already run by the time it raises, but it was never
+    # committed, so rolling back leaves both rows unchanged
+    savepoint.rollback()
+    assert [r.description for r in get_roles(db_session)] == [
+        "shared",
+        "shared",
+        "unique",
+    ]
+
+
+@pytest.mark.usefixtures("roles")
+def test_update_single_item_without_commit_is_rolled_back(db_session, role_repo):
+    # GIVEN an open savepoint over roles a, b, c
+    savepoint = db_session.begin_nested()
+    # WHEN updating role a with commit=False
+    updated = role_repo.update_single_item(
+        filters=(Role.role_id == f"{PREFIX}-a"),
+        values={"description": "changed"},
+        commit=False,
+    )
+    assert updated is not None
+    assert updated.description == "changed"
+
+    # THEN rolling back the savepoint restores the original value -- the
+    # update was never durable
+    savepoint.rollback()
+    assert get_roles(db_session)[0].description == "shared"
+
+
+def test_update_single_item_with_joins_single_pk(db_session, roles):
+    # GIVEN two users, each linked to a different role (roles[0] and
+    # roles[1]), both starting with given_name "before"
+    user = UserFactory.build(given_name="before")
+    other = UserFactory.build(given_name="before")
+    db_session.add(UserRoleFactory.build(user=user, role=roles[0]))
+    db_session.add(UserRoleFactory.build(user=other, role=roles[1]))
+    db_session.flush()
+    user_repo = CRUDRepository(db_session, User)
+
+    # WHEN updating the single User joined through roles, filtered to roles[0]
+    updated = user_repo.update_single_item(
+        filters=(Role.role_id == roles[0].role_id),
+        values={"given_name": "after"},
+        joins=[User.roles],
+    )
+
+    # THEN only the user linked to roles[0] is updated and returned; the
+    # other, linked to a different role, is unaffected
+    assert updated is user
+    db_session.expire_all()
+    assert user.given_name == "after"
+    assert other.given_name == "before"
+
+
+@pytest.mark.usefixtures("role_permissions")
+def test_update_single_item_with_joins_composite_pk(db_session):
+    # GIVEN role "rp-drop" has exactly 1 RolePermission -- RolePermission's
+    # primary key is the composite (role_id, permission_id)
+    repo = CRUDRepository(db_session, RolePermission)
+    drop_id = f"{PREFIX}-rp-drop"
+
+    # WHEN updating the single RolePermission joined through role, filtered
+    # to "rp-drop"
+    updated = repo.update_single_item(
+        filters=(Role.role_id == drop_id),
+        values={"created_by": None, "modified_by": None},
+        joins=[RolePermission.role],
+    )
+
+    # THEN that row is returned, proving the join-based filter resolves
+    # correctly even with a composite PK
+    assert updated is not None
+    assert updated.role_id == drop_id
+
+
 # MARK: update_multiple_items_with_same_values
 @pytest.mark.usefixtures("roles")
 def test_update_same_values_updates_matching_rows(db_session, role_repo):
@@ -506,6 +632,141 @@ def test_update_different_values_without_commit_is_rolled_back(db_session, role_
     assert get_roles(db_session)[0].description == "shared"
 
 
+# MARK: delete_single_item
+def test_delete_single_item_deletes_matching_row(db_session, role_repo, roles):
+    # GIVEN roles a, b, c
+    # WHEN deleting the single row with role_id == c
+    deleted = role_repo.delete_single_item(filters=(Role.role_id == f"{PREFIX}-c"))
+
+    # THEN the deleted row is returned and only roles a and b remain
+    assert deleted is not None
+    assert deleted.role_id == roles[1].role_id
+    assert [r.role_id for r in get_roles(db_session)] == [
+        f"{PREFIX}-a",
+        f"{PREFIX}-b",
+    ]
+
+
+@pytest.mark.usefixtures("roles")
+def test_delete_single_item_returned_row_is_readable_after_commit(role_repo):
+    # GIVEN role c
+    # WHEN deleting it with the default commit=True
+    deleted = role_repo.delete_single_item(filters=(Role.role_id == f"{PREFIX}-c"))
+
+    # THEN the returned row is detached from the session, so the commit didn't
+    # expire it and its attributes are readable without trying to reload a row
+    # that no longer exists
+    assert deleted is not None
+    assert inspect(deleted).detached
+    assert deleted.role_id == f"{PREFIX}-c"
+    assert deleted.name == f"{PREFIX} c"
+
+
+@pytest.mark.usefixtures("roles")
+def test_delete_single_item_returned_row_is_readable_without_commit(role_repo):
+    # GIVEN role c
+    # WHEN deleting it with commit=False
+    deleted = role_repo.delete_single_item(
+        filters=(Role.role_id == f"{PREFIX}-c"), commit=False
+    )
+
+    # THEN the returned row's attributes are readable without error
+    assert deleted is not None
+    assert deleted.role_id == f"{PREFIX}-c"
+
+
+@pytest.mark.usefixtures("roles")
+def test_delete_single_item_returns_none_when_no_match(db_session, role_repo):
+    # GIVEN roles a, b, c
+    # WHEN deleting with a filter that matches nothing
+    deleted = role_repo.delete_single_item(filters=(Role.role_id == f"{PREFIX}-x"))
+
+    # THEN None is returned and all 3 rows remain
+    assert deleted is None
+    assert len(get_roles(db_session)) == 3
+
+
+@pytest.mark.usefixtures("roles")
+def test_delete_single_item_raises_when_multiple_match(db_session, role_repo):
+    # GIVEN roles a and b share description "shared"
+    savepoint = db_session.begin_nested()
+
+    # WHEN deleting with a filter that matches both of them
+    # THEN MultipleResultsFound is raised -- the filter must identify at most
+    # one row
+    with pytest.raises(MultipleResultsFound):
+        role_repo.delete_single_item(filters=(Role.description == "shared"))
+
+    # AND the DELETE has already run by the time it raises, but it was never
+    # committed, so rolling back restores both rows
+    savepoint.rollback()
+    assert len(get_roles(db_session)) == 3
+
+
+@pytest.mark.usefixtures("roles")
+def test_delete_single_item_without_commit_is_rolled_back(db_session, role_repo):
+    # GIVEN an open savepoint over roles a, b, c
+    savepoint = db_session.begin_nested()
+    # WHEN deleting role a with commit=False
+    deleted = role_repo.delete_single_item(
+        filters=(Role.role_id == f"{PREFIX}-a"), commit=False
+    )
+    assert deleted is not None
+    assert len(get_roles(db_session)) == 2
+
+    # THEN rolling back the savepoint restores the row -- the delete was never
+    # durable
+    savepoint.rollback()
+    assert len(get_roles(db_session)) == 3
+
+
+def test_delete_single_item_with_joins_single_pk(db_session, roles):
+    # GIVEN two users, each linked to a different role (roles[0] and
+    # roles[1])
+    user = UserFactory.build()
+    other = UserFactory.build()
+    db_session.add(UserRoleFactory.build(user=user, role=roles[0]))
+    db_session.add(UserRoleFactory.build(user=other, role=roles[1]))
+    db_session.flush()
+    user_id, other_id = user.user_id, other.user_id
+    user_repo = CRUDRepository(db_session, User)
+
+    # WHEN deleting the single User joined through roles, filtered to roles[0]
+    deleted = user_repo.delete_single_item(
+        filters=(Role.role_id == roles[0].role_id), joins=[User.roles]
+    )
+
+    # THEN only the user linked to roles[0] is deleted and returned; the
+    # other, linked to a different role, survives
+    assert deleted is not None
+    assert deleted.user_id == user_id
+    db_session.expire_all()
+    assert db_session.get(User, user_id) is None
+    assert db_session.get(User, other_id) is not None
+
+
+@pytest.mark.usefixtures("role_permissions")
+def test_delete_single_item_with_joins_composite_pk(db_session):
+    # GIVEN role "rp-drop" has exactly 1 RolePermission and "rp-keep" has 2 --
+    # RolePermission's primary key is the composite (role_id, permission_id)
+    repo = CRUDRepository(db_session, RolePermission)
+    drop_id = f"{PREFIX}-rp-drop"
+
+    # WHEN deleting the single RolePermission joined through role, filtered
+    # to "rp-drop"
+    deleted = repo.delete_single_item(
+        filters=(Role.role_id == drop_id), joins=[RolePermission.role]
+    )
+
+    # THEN only that row is deleted; both rows for "rp-keep" remain
+    assert deleted is not None
+    db_session.expire_all()
+    remaining = db_session.scalars(
+        select(RolePermission.role_id).where(RolePermission.role_id.like(f"{PREFIX}-%"))
+    ).all()
+    assert remaining == [f"{PREFIX}-rp-keep", f"{PREFIX}-rp-keep"]
+
+
 # MARK: delete_multiple_items
 @pytest.mark.usefixtures("roles")
 def test_delete_multiple_items_deletes_matching_rows(db_session, role_repo):
@@ -518,27 +779,18 @@ def test_delete_multiple_items_deletes_matching_rows(db_session, role_repo):
     assert [r.role_id for r in get_roles(db_session)] == [f"{PREFIX}-c"]
 
 
-@pytest.mark.xfail(
-    raises=ObjectDeletedError,
-    strict=True,
-    reason="commit expires the returned rows, which no longer exist to be reloaded",
-)
 @pytest.mark.usefixtures("roles")
 def test_delete_multiple_items_returned_rows_are_readable_after_commit(role_repo):
     # GIVEN roles a and b share description "shared"
     # WHEN deleting them with the default commit=True
     deleted = role_repo.delete_multiple_items(filters=(Role.description == "shared"))
 
-    # THEN (in principle) the returned rows' attributes should still be
-    # readable -- but in practice they are NOT: `delete_multiple_items`
-    # commits the session, and a plain `Session` defaults to
-    # `expire_on_commit=True`, which expires every attribute on the
-    # returned ORM objects. The *next* attribute access (`r.role_id` below)
-    # tries to re-SELECT the row to refresh it, finds nothing because the
-    # row was just deleted, and raises `ObjectDeletedError` instead of
-    # yielding the value. This is a known, documented limitation -- `xfail`
-    # with `strict=True` means the suite stays green today, but will fail
-    # loudly (forcing the marker's removal) the moment someone fixes it.
+    # THEN the returned rows are detached from the session before the commit.
+    # A plain `Session` defaults to `expire_on_commit=True`, which would
+    # otherwise expire every attribute, and the next access would try to
+    # re-SELECT a row that no longer exists and raise `ObjectDeletedError`.
+    # Detached, they keep the values from DELETE ... RETURNING
+    assert all(inspect(r).detached for r in deleted)
     assert sorted(r.role_id for r in deleted) == [f"{PREFIX}-a", f"{PREFIX}-b"]
 
 
@@ -551,9 +803,7 @@ def test_delete_multiple_items_returned_rows_are_readable_without_commit(role_re
         filters=(Role.description == "shared"), commit=False
     )
 
-    # THEN the returned rows' attributes are readable without error --
-    # confirming the bug above is specifically about commit-triggered
-    # expiration, not about DELETE ... RETURNING itself
+    # THEN the returned rows' attributes are readable without error
     assert sorted(r.role_id for r in deleted) == [f"{PREFIX}-a", f"{PREFIX}-b"]
 
 
