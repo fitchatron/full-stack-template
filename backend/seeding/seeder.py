@@ -52,7 +52,6 @@ FIXED_ROLE_GRANTS: dict[str, list[AppPermissions]] = {
 class CoreSeedResult:
     roles: dict[str, Role]
     permissions: dict[tuple[str, str], Permission]
-    admin_user: User
 
 
 class DatabaseSeeder:
@@ -67,23 +66,22 @@ class DatabaseSeeder:
     def seed(self, plan: SeedPlan | None = None) -> SeedResult:
         plan = plan or SeedPlan()
         core = self.seed_core_data()
+        if plan.admin_user:
+            admin_user = self._seed_admin_user(core.roles)
         users = self.seed_mock_data(core.roles, plan) if plan.include_mock_data else []
 
         self.session.commit()
         return SeedResult(
             roles=core.roles,
             permissions=core.permissions,
-            admin_user=core.admin_user,
+            admin_user=admin_user if plan.admin_user else None,
             users=users,
         )
 
     def seed_core_data(self) -> CoreSeedResult:
         permissions = self._seed_permissions()
         roles = self._seed_roles(permissions)
-        admin_user = self._seed_admin_user(roles)
-        return CoreSeedResult(
-            roles=roles, permissions=permissions, admin_user=admin_user
-        )
+        return CoreSeedResult(roles=roles, permissions=permissions)
 
     def seed_mock_data(self, roles: dict[str, Role], plan: SeedPlan) -> list[User]:
         factory.random.reseed_random(plan.faker_seed)
