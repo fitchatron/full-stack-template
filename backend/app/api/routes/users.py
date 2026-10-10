@@ -115,7 +115,7 @@ def patch_user_by_id(
 def delete_user_by_id(
     session: SessionDep,
     user_id: Annotated[UUID, Path(description="ID of the target user to be deleted")],
-    _current_user: Annotated[
+    current_user: Annotated[
         UserResponseSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.DELETE__USERS])),
     ],
@@ -124,4 +124,4 @@ def delete_user_by_id(
     Delete a user by ID.
     """
 
-    return UserService(session).delete_by_id(user_id=user_id)
+    return UserService(session).delete_by_id(user_id=user_id, current_user=current_user)

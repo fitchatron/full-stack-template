@@ -20,7 +20,7 @@ from app.schemas.user import (
     UserSchemaPATCHRequest,
     UserSchemaPUTRequest,
 )
-from app.utils.exception import NotFoundError
+from app.utils.exception import ForbiddenError, NotFoundError
 
 
 class UserService:
@@ -124,20 +124,19 @@ class UserService:
             | {"modified_by": current_user.user_id},
         )
 
-    def delete_by_id(self, user_id: UUID) -> None:
+    def delete_by_id(self, current_user: UserResponseSchema, user_id: UUID) -> None:
         """
         Function to delete a user by ID.
         """
         try:
-            deleted_user = self.repository.delete_single_item(
-                filters=(User.user_id == user_id)
-            )
-            if not deleted_user:
-                raise NotFoundError("User not found")
+            if current_user.user_id == user_id:
+                raise ForbiddenError("Users cannot delete their own account")
 
-        except NotFoundError as exception:
+            self.repository.delete_single_item(filters=(User.user_id == user_id))
+
+        except ForbiddenError as exception:
             # LOG.exception("Exception")
-            raise HTTPException(status_code=404, detail=str(exception))
+            raise HTTPException(status_code=403, detail=str(exception))
 
         except Exception as exception:
             # LOG.exception("Exception")

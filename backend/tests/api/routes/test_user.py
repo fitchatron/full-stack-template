@@ -292,3 +292,22 @@ def test_delete_existing_user_by_id_twice(db_session, client, auth_headers):
 
     assert response.status_code == 204
 
+
+def test_delete_user_deleting_self(db_session, client, act_as_admin, auth_headers):
+    """
+    WHEN a user attempts to delete their own account,
+    THEN the response should indicate forbidden action,
+    EXPECT the response to be 403
+    """
+
+    response = client.delete(f"{BASE_URL}/{act_as_admin.user_id}", headers=auth_headers)
+
+    assert response.status_code == 403
+    assert "Users cannot delete their own account" in response.text
+
+    # the target user should still exist since self-deletion is forbidden
+    db_user = db_session.scalars(
+        select(User).where(User.user_id == act_as_admin.user_id)
+    ).one_or_none()
+
+    assert db_user is not None
