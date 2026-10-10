@@ -10,6 +10,7 @@ from app.api.deps import AuthorizeUser
 from app.core.app_permissions import AppPermissions
 from app.core.config import settings
 from app.core.security import ALGORITHM, create_access_token
+from app.utils.exception import NotFoundError
 
 Faker.seed(settings.DEFAULT_FAKER_SEED)
 
@@ -291,12 +292,12 @@ def test_get_current_user_rejects_invalid_token(db_session, token):
 def test_get_current_user_unknown_user(db_session):
     """
     WHEN a valid token is provided for a user that does not exist in the database,
-    THEN the current user retrieval should raise an HTTPException.
+    THEN the current user retrieval should raise a NotFoundError.
     EXPECT the status code of the exception to be 404.
     """
     token = create_access_token(uuid.uuid7(), timedelta(minutes=5))
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(NotFoundError) as exc_info:
         AuthorizeUser()._get_current_user(db_session, token)
 
     assert exc_info.value.status_code == 404
