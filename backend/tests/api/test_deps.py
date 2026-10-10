@@ -215,6 +215,11 @@ def test_authorize_user_is_authorized(
     granted_user_roles,
     expected_result,
 ):
+    """
+    WHEN the user is authorized with the given permissions,
+    THEN the authorization check should return the expected result,
+    EXPECT the result of the authorization check.
+    """
     user = act_as_user
     user_roles = []
     for ur in granted_user_roles:
@@ -233,6 +238,11 @@ def test_authorize_user_is_authorized(
 
 # MARK: _get_current_user
 def test_get_current_user_returns_user_for_valid_token(db_session, act_as_user):
+    """
+    WHEN a valid token is provided,
+    THEN the current user should be returned.
+    EXPECT the result to be the current user corresponding to the valid token.
+    """
     token = create_access_token(act_as_user.user_id, timedelta(minutes=5))
 
     user = AuthorizeUser()._get_current_user(db_session, token)
@@ -267,6 +277,11 @@ def test_get_current_user_returns_user_for_valid_token(db_session, act_as_user):
     ],
 )
 def test_get_current_user_rejects_invalid_token(db_session, token):
+    """
+    WHEN an invalid token is provided,
+    THEN the current user retrieval should raise an HTTPException.
+    EXPECT the status code of the exception to be 403.
+    """
     with pytest.raises(HTTPException) as exc_info:
         AuthorizeUser()._get_current_user(db_session, token)
 
@@ -274,6 +289,11 @@ def test_get_current_user_rejects_invalid_token(db_session, token):
 
 
 def test_get_current_user_unknown_user(db_session):
+    """
+    WHEN a valid token is provided for a user that does not exist in the database,
+    THEN the current user retrieval should raise an HTTPException.
+    EXPECT the status code of the exception to be 404.
+    """
     token = create_access_token(uuid.uuid7(), timedelta(minutes=5))
 
     with pytest.raises(HTTPException) as exc_info:
@@ -283,6 +303,11 @@ def test_get_current_user_unknown_user(db_session):
 
 
 def test_get_current_user_inactive_user(db_session, act_as_user):
+    """
+    WHEN a valid token is provided for a user that is inactive,
+    THEN the current user retrieval should raise an HTTPException.
+    EXPECT the status code of the exception to be 400.
+    """
     act_as_user.is_active = False
     db_session.flush()
     token = create_access_token(act_as_user.user_id, timedelta(minutes=5))

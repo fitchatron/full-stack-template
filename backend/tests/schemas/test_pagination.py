@@ -24,9 +24,9 @@ _ITEMS = [_ItemSchema(item_id=item_id) for item_id in range(1, 6)]
 @pytest.fixture(scope="module")
 def pagination_client():
     """
-    Client for a throwaway app returning a fixed list through OptionalPage, so the
-    pagination contract every paginated schema inherits is covered without a route,
-    a service or the database.
+    WHEN a FastAPI test client is created for a throwaway app with a paginated endpoint,
+    THEN the client should be able to make requests to the endpoint and receive paginated responses.
+    EXPECT the client to correctly handle the pagination logic without requiring a full application setup.
     """
     app = FastAPI()
 
@@ -85,6 +85,11 @@ def test_optional_page_returns_requested_rows(
     expected_size,
     expected_pages,
 ):
+    """
+    WHEN a request is made to the paginated endpoint with specific query parameters,
+    THEN the response should contain the expected subset of items along with correct pagination metadata.
+    EXPECT the response to match the requested page, size, and total number of pages.
+    """
     response = pagination_client.get("/items", params=params)
 
     assert response.status_code == 200
@@ -108,6 +113,11 @@ def test_optional_page_returns_requested_rows(
     ],
 )
 def test_optional_page_with_out_of_range_params_returns_422(pagination_client, params):
+    """
+    WHEN a request is made to the paginated endpoint with out-of-range query parameters,
+    THEN the response should have a 422 Unprocessable Entity status code.
+    EXPECT the server to reject requests with invalid pagination parameters.
+    """
     response = pagination_client.get("/items", params=params)
 
     assert response.status_code == 422
