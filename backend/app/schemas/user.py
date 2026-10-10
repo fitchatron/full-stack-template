@@ -65,7 +65,6 @@ class UserSchemaPATCHRequest(BaseSchemaModel):
     """
 
     username: str | None = Field(None, description="Username of the user")
-    email: EmailStr | None = Field(None, description="Email of the user")
     given_name: str | None = Field(None, description="Given name of the user")
     family_name: str | None = Field(None, description="Family name of the user")
     email_verified: bool | None = Field(
@@ -73,7 +72,7 @@ class UserSchemaPATCHRequest(BaseSchemaModel):
     )
     is_active: bool | None = Field(None, description="Active status of the user")
 
-    @field_validator("username", "email", "email_verified", "is_active")
+    @field_validator("username", "email_verified", "is_active")
     @classmethod
     def reject_null(cls, value: Any) -> Any:
         # Fields may be omitted, but these columns are non-nullable so an explicit null is rejected

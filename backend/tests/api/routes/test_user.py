@@ -254,9 +254,8 @@ def test_patch_update_user_by_id(
     assert validated_body == expected
 
 
-@pytest.mark.parametrize("conflicting_field", ["username", "email"])
-def test_patch_update_user_conflicting_field(
-    db_session, client, act_as_admin, auth_headers, conflicting_field
+def test_patch_update_user_conflicting_username(
+    db_session, client, act_as_admin, auth_headers
 ):
     """
     WHEN a valid user attempts to patch a user with a value already held by another user,
@@ -269,14 +268,14 @@ def test_patch_update_user_conflicting_field(
     db_session.flush()
 
     # reuse a value already held by another user
-    request_body = {conflicting_field: getattr(act_as_admin, conflicting_field)}
+    request_body = {"username": act_as_admin.username}
 
     response = client.patch(
         f"{BASE_URL}/{user.user_id}", json=request_body, headers=auth_headers
     )
 
     assert response.status_code == 409
-    assert f"{conflicting_field.capitalize()} already in use" in response.text
+    assert "Username already in use" in response.text
 
 
 @pytest.mark.parametrize(

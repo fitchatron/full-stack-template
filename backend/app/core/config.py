@@ -11,7 +11,6 @@ ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
 
 class Settings(BaseSettings):
-
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
         env_ignore_empty=True,
@@ -68,6 +67,7 @@ class Settings(BaseSettings):
             401: {"model": HTTPExceptionSchema},
             403: {"model": HTTPExceptionSchema},
             404: {"model": HTTPExceptionSchema},
+            409: {"model": HTTPExceptionSchema},
             500: {"model": HTTPExceptionSchema},
         },
         "delete": {
@@ -82,6 +82,7 @@ class Settings(BaseSettings):
             401: {"model": HTTPExceptionSchema},
             403: {"model": HTTPExceptionSchema},
             404: {"model": HTTPExceptionSchema},
+            409: {"model": HTTPExceptionSchema},
             500: {"model": HTTPExceptionSchema},
         },
     }
