@@ -59,5 +59,5 @@ async def integrity_error_handler(
 
 
 def register_exception_handlers(app: FastAPI) -> None:
-    app.add_exception_handler(AppError, app_error_handler)
-    app.add_exception_handler(IntegrityError, integrity_error_handler)
+    app.exception_handler(AppError)(app_error_handler)
+    app.exception_handler(IntegrityError)(integrity_error_handler)
