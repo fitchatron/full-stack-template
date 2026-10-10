@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -21,6 +22,8 @@ from app.schemas.user import (
     UserSchemaPUTRequest,
 )
 from app.utils.exception import ForbiddenError, NotFoundError
+
+logger = logging.getLogger(__name__)
 
 # unique constraint name -> field name reported back in a 409
 _UNIQUE_FIELDS = {
@@ -66,15 +69,15 @@ class UserService:
             raise HTTPException(status_code=409, detail=f"{field} already in use")
 
         except NotFoundError as exception:
-            # LOG.exception("Exception")
+            logger.exception("Not found error updating user by ID %s", user_id)
             raise HTTPException(status_code=404, detail=str(exception))
 
         except ForbiddenError as exception:
-            # LOG.exception("Exception")
+            logger.exception("Forbidden error updating user by ID %s", user_id)
             raise HTTPException(status_code=403, detail=str(exception))
 
         except Exception as exception:
-            # LOG.exception("Exception")
+            logger.exception("Unexpected error updating user by ID %s", user_id)
             raise HTTPException(status_code=500, detail=str(exception))
 
     def read_all(self, sort_by: list[OrderByCondition]) -> UserResponseSchemaPaginated:
@@ -88,7 +91,7 @@ class UserService:
             )
 
         except Exception as exception:
-            # LOG.exception("Exception")
+            logger.exception("Unexpected error reading all users")
             raise HTTPException(status_code=500, detail=str(exception))
 
     def read_by_id(self, user_id: UUID) -> UserResponseSchema:
@@ -104,11 +107,11 @@ class UserService:
             return UserResponseSchema.model_validate(user)
 
         except NotFoundError as exception:
-            # LOG.exception("Exception")
+            logger.exception("Not found error reading user by ID %s", user_id)
             raise HTTPException(status_code=404, detail=str(exception))
 
         except Exception as exception:
-            # LOG.exception("Exception")
+            logger.exception("Unexpected error reading user by ID %s", user_id)
             raise HTTPException(status_code=500, detail=str(exception))
 
     def update_by_id(
@@ -156,15 +159,15 @@ class UserService:
                 raise NotFoundError("User not found")
 
         except NotFoundError as exception:
-            # LOG.exception("Exception")
+            logger.exception("Not found error deleting user %s", user_id)
             raise HTTPException(status_code=404, detail=str(exception))
 
         except ForbiddenError as exception:
-            # LOG.exception("Exception")
+            logger.exception("Forbidden error deleting user %s", user_id)
             raise HTTPException(status_code=403, detail=str(exception))
 
         except Exception as exception:
-            # LOG.exception("Exception")
+            logger.exception("Unexpected error deleting user %s", user_id)
             raise HTTPException(status_code=500, detail=str(exception))
 
     def read_active_for_user(self, user_id: UUID) -> list[PermissionSchema]:
@@ -176,7 +179,9 @@ class UserService:
             return TypeAdapter(list[PermissionSchema]).validate_python(permissions)
 
         except Exception as exception:
-            # LOG.exception("Exception")
+            logger.exception(
+                "Unexpected error reading active permissions for user %s", user_id
+            )
             raise HTTPException(status_code=500, detail=str(exception))
 
     def has_all_permissions(
@@ -198,5 +203,7 @@ class UserService:
             )
 
         except Exception as exception:
-            # LOG.exception("Exception")
+            logger.exception(
+                "Unexpected error checking permissions for user %s", user_id
+            )
             raise HTTPException(status_code=500, detail=str(exception))
