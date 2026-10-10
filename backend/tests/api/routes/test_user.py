@@ -94,9 +94,9 @@ PUT_REQUEST = {
 
 # MARK: PUT tests
 @pytest.mark.parametrize(
-    "user_exists, request_body, conflicting_field, expected_status_code",
+    "user_exists, request_body, expected_status_code",
     [
-        pytest.param(True, PUT_REQUEST, None, 200, id="valid"),
+        pytest.param(True, PUT_REQUEST, 200, id="valid"),
         pytest.param(
             True,
             {
@@ -104,56 +104,43 @@ PUT_REQUEST = {
                 for k, v in PUT_REQUEST.items()
                 if k not in ("givenName", "familyName")
             },
-            None,
             200,
             id="valid-no-name",
         ),
-        pytest.param(False, PUT_REQUEST, None, 404, id="missing-user"),
-        pytest.param(True, PUT_REQUEST, "username", 409, id="username-taken"),
-        pytest.param(True, PUT_REQUEST, "email", 409, id="email-taken"),
+        pytest.param(False, PUT_REQUEST, 404, id="missing-user"),
         pytest.param(
             True,
             {k: v for k, v in PUT_REQUEST.items() if k != "email"},
-            None,
             422,
             id="missing-required-field",
         ),
     ],
 )
+@pytest.mark.usefixtures("act_as_admin")
 def test_put_update_user_by_id(
     db_session,
     client,
-    act_as_admin,
     auth_headers,
     user_exists,
     request_body,
-    conflicting_field,
     expected_status_code,
 ):
     """
     WHEN a valid user attempts to update a user by ID,
     THEN the response should reflect the updated user details if the update is successful,
-    EXPECT the response status code to be 200 for successful updates, 404 for missing users, 409 for conflicts, and 422 for validation errors.
+    EXPECT the response status code to be 200 for successful updates, 404 for missing users, and 422 for validation errors.
     """
 
     user = UserFactory.build()
     db_session.add(user)
     db_session.flush()
-    user_id = user.user_id if user_exists else uuid.uuid4()
-
-    if conflicting_field:
-        # reuse a value already held by another user
-        request_body = request_body | {
-            conflicting_field: getattr(act_as_admin, conflicting_field)
-        }
+    user_id = user.user_id if user_exists else uuid.uuid7()
 
     response = client.put(
         f"{BASE_URL}/{user_id}", json=request_body, headers=auth_headers
     )
 
     assert response.status_code == expected_status_code
-    if conflicting_field:
-        assert f"{conflicting_field.capitalize()} already in use" in response.text
     if expected_status_code != 200:
         return
 
@@ -165,40 +152,63 @@ def test_put_update_user_by_id(
     assert validated_body == expected
 
 
+@pytest.mark.parametrize("conflicting_field", ["username", "email"])
+def test_put_update_user_conflicting_field(
+    db_session, client, act_as_admin, auth_headers, conflicting_field
+):
+    """
+    WHEN a valid user attempts to update a user with a value already held by another user,
+    THEN the response should indicate a conflict,
+    EXPECT the response to be 409 with a message naming the conflicting field.
+    """
+
+    user = UserFactory.build()
+    db_session.add(user)
+    db_session.flush()
+
+    # reuse a value already held by another user
+    request_body = PUT_REQUEST | {
+        conflicting_field: getattr(act_as_admin, conflicting_field)
+    }
+
+    response = client.put(
+        f"{BASE_URL}/{user.user_id}", json=request_body, headers=auth_headers
+    )
+
+    assert response.status_code == 409
+    assert f"{conflicting_field.capitalize()} already in use" in response.text
+
+
 # MARK: PATCH tests
 @pytest.mark.parametrize(
-    "user_exists, request_body, conflicting_field, expected_status_code",
+    "user_exists, request_body, expected_status_code",
     [
-        pytest.param(True, {"givenName": "Patched"}, None, 200, id="single-field"),
+        pytest.param(True, {"givenName": "Patched"}, 200, id="single-field"),
         pytest.param(
             True,
             {"username": "patched-user", "isActive": False},
-            None,
             200,
             id="multiple-fields",
         ),
-        pytest.param(True, {}, None, 200, id="empty-body"),
-        pytest.param(False, {"givenName": "Patched"}, None, 404, id="missing-user"),
-        pytest.param(True, {}, "username", 409, id="username-taken"),
-        pytest.param(True, {}, "email", 409, id="email-taken"),
-        pytest.param(True, {"username": None}, None, 422, id="null-required-field"),
+        pytest.param(True, {}, 200, id="empty-body"),
+        pytest.param(False, {"givenName": "Patched"}, 404, id="missing-user"),
+        pytest.param(True, {"username": None}, 422, id="null-required-field"),
     ],
 )
+@pytest.mark.usefixtures("act_as_admin")
 def test_patch_update_user_by_id(
     db_session,
     client,
-    act_as_admin,
     auth_headers,
     user_exists,
     request_body,
-    conflicting_field,
     expected_status_code,
 ):
     """
     WHEN a valid user attempts to partially update a user by ID, leaving omitted
     fields untouched,
     THEN the response should reflect the updated user details if the update is successful,
-    EXPECT the response status code to be 200 for successful updates, 404 for missing users, 409 for conflicts, and 422 for validation errors.
+    EXPECT the response status code to be 200 for successful updates, 404 for missing users, and 422 for validation errors.
     """
 
     user = UserFactory.build()
@@ -207,19 +217,11 @@ def test_patch_update_user_by_id(
     user_id = user.user_id if user_exists else uuid.uuid4()
     original = UserResponseSchema.model_validate(user)
 
-    if conflicting_field:
-        # reuse a value already held by another user
-        request_body = request_body | {
-            conflicting_field: getattr(act_as_admin, conflicting_field)
-        }
-
     response = client.patch(
         f"{BASE_URL}/{user_id}", json=request_body, headers=auth_headers
     )
 
     assert response.status_code == expected_status_code
-    if conflicting_field:
-        assert f"{conflicting_field.capitalize()} already in use" in response.text
     if expected_status_code != 200:
         return
 
@@ -229,6 +231,31 @@ def test_patch_update_user_by_id(
     )
 
     assert validated_body == expected
+
+
+@pytest.mark.parametrize("conflicting_field", ["username", "email"])
+def test_patch_update_user_conflicting_field(
+    db_session, client, act_as_admin, auth_headers, conflicting_field
+):
+    """
+    WHEN a valid user attempts to patch a user with a value already held by another user,
+    THEN the response should indicate a conflict,
+    EXPECT the response to be 409 with a message naming the conflicting field.
+    """
+
+    user = UserFactory.build()
+    db_session.add(user)
+    db_session.flush()
+
+    # reuse a value already held by another user
+    request_body = {conflicting_field: getattr(act_as_admin, conflicting_field)}
+
+    response = client.patch(
+        f"{BASE_URL}/{user.user_id}", json=request_body, headers=auth_headers
+    )
+
+    assert response.status_code == 409
+    assert f"{conflicting_field.capitalize()} already in use" in response.text
 
 
 @pytest.mark.parametrize(
