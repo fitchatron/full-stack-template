@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from typing import Any, TypeVar
 
 from fastapi_pagination.ext.sqlalchemy import paginate
-from fastapi_pagination.links import Page
 from sqlalchemy import (
     ColumnElement,
     Delete,
