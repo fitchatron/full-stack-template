@@ -46,3 +46,7 @@ class ConflictError(Exception):
 
 class UnprocessableContentError(Exception):
     pass
+
+
+class ForbiddenError(Exception):
+    pass

@@ -30,7 +30,7 @@ def db_manager():
     manager = DatabaseManager.for_tests()
     manager.reset(
         seed=lambda session: DatabaseSeeder(session).seed(
-            SeedPlan(include_mock_data=False)
+            SeedPlan(admin_user=False, include_mock_data=False)
         ),
         recreate_db=True,
     )

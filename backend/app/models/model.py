@@ -37,8 +37,12 @@ class User(Base):
     modified_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-    created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey(user_id))
-    modified_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey(user_id))
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey(user_id, ondelete="SET NULL")
+    )
+    modified_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey(user_id, ondelete="SET NULL")
+    )
 
     __table_args__ = (
         UniqueConstraint(email),

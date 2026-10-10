@@ -29,8 +29,8 @@ class SQLAlchemyModelFactory[ModelT](_SQLAlchemyModelFactory):
 
     `factory.alchemy.SQLAlchemyModelFactory` subclasses `factory.Factory`
     without subscripting it, so `T` resolves to `Unknown` and every
-    subclass's `.build()`/`.create()` return type is `Unknown` regardless
-    of `Meta.model`. Subclass as `SQLAlchemyModelFactory[Model]` to restore
+    subclass's `.build()`/`.create()` (and `_batch` variants) return type
+    is `Unknown` regardless of `Meta.model`. Subclass as `SQLAlchemyModelFactory[Model]` to restore
     typed returns.
     """
 
@@ -44,6 +44,14 @@ class SQLAlchemyModelFactory[ModelT](_SQLAlchemyModelFactory):
     @classmethod
     def create(cls, **kwargs) -> ModelT:
         return super().create(**kwargs)
+
+    @classmethod
+    def build_batch(cls, size: int, **kwargs) -> list[ModelT]:
+        return super().build_batch(size, **kwargs)
+
+    @classmethod
+    def create_batch(cls, size: int, **kwargs) -> list[ModelT]:
+        return super().create_batch(size, **kwargs)
 
 
 class UserFactory(SQLAlchemyModelFactory[User]):

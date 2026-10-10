@@ -47,7 +47,10 @@ def create_local_db(
         message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
         typer.secho(message, fg=typer.colors.YELLOW)
         typer.secho(
-            f"Admin user email: {result.admin_user.email}", fg=typer.colors.CYAN
+            f"Admin user email: {result.admin_user.email}"
+            if result.admin_user
+            else "No admin user created",
+            fg=typer.colors.CYAN,
         )
     except Exception as e:
         typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)

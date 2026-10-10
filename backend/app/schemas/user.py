@@ -1,10 +1,11 @@
 import uuid
 from datetime import datetime
-from typing import Self
+from typing import Any, Self
 
-from pydantic import EmailStr, Field, SecretStr, model_validator
+from pydantic import EmailStr, Field, SecretStr, field_validator, model_validator
 
 from app.schemas.base import BaseSchemaModel
+from app.schemas.pagination import OptionalPage
 
 
 class UserSchema(BaseSchemaModel):
@@ -29,6 +30,56 @@ class UserSchema(BaseSchemaModel):
     modified_by: uuid.UUID | None = Field(
         description="User ID that modified the user details"
     )
+
+
+class UserResponseSchema(BaseSchemaModel):
+    """
+    Response schema for a user
+    """
+
+    user_id: uuid.UUID = Field(description="ID of the user")
+    username: str = Field(description="Username of the user")
+    email: EmailStr = Field(description="Email of the user")
+    given_name: str | None = Field(description="Given name of the user")
+    family_name: str | None = Field(description="Family name of the user")
+    email_verified: bool = Field(description="Email verification status of the user")
+    is_active: bool = Field(description="Active status of the user")
+
+
+class UserSchemaPUTRequest(BaseSchemaModel):
+    """
+    Request schema for updating a user on a PUT request
+    """
+
+    username: str = Field(description="Username of the user")
+    email: EmailStr = Field(description="Email of the user")
+    given_name: str | None = Field(None, description="Given name of the user")
+    family_name: str | None = Field(None, description="Family name of the user")
+    email_verified: bool = Field(description="Email verification status of the user")
+    is_active: bool = Field(description="Active status of the user")
+
+
+class UserSchemaPATCHRequest(BaseSchemaModel):
+    """
+    Request schema for updating a user on a PATCH request
+    """
+
+    username: str | None = Field(None, description="Username of the user")
+    given_name: str | None = Field(None, description="Given name of the user")
+    family_name: str | None = Field(None, description="Family name of the user")
+    email_verified: bool | None = Field(
+        None, description="Email verification status of the user"
+    )
+    is_active: bool | None = Field(None, description="Active status of the user")
+
+    @field_validator("username", "email_verified", "is_active")
+    @classmethod
+    def reject_null(cls, value: Any) -> Any:
+        # Fields may be omitted, but these columns are non-nullable so an explicit null is rejected
+        if value is None:
+            raise ValueError("field cannot be null")
+
+        return value
 
 
 class RegisterUserPOSTRequest(BaseSchemaModel):
@@ -58,3 +109,12 @@ class RegisterUserSchema(BaseSchemaModel):
     family_name: str | None = Field(None, description="Family name of the user")
     hashed_password: SecretStr = Field(..., description="Hashed password of the user")
     salt: str = Field(description="Salt used for hashing the password")
+
+
+class UserResponseSchemaPaginated(OptionalPage[UserResponseSchema]):
+    """
+    Paginated user schema. This is required for documentation purposes by FastAPI.
+    Without this, the schema will be called "Page_<schema name>_" instead of "<schema name>Paginated"
+    """
+
+    pass

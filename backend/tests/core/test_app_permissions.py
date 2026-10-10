@@ -126,6 +126,11 @@ from app.models.model import Permission
     ],
 )
 def test_get_app_permission_value(app_permission, expected_value):
+    """
+    WHEN an app permission is provided,
+    THEN the value of the app permission should match the expected string representation.
+    EXPECT the value to match the expected string representation.
+    """
     assert app_permission.value == expected_value
 
 
@@ -178,6 +183,11 @@ def test_get_app_permission_value(app_permission, expected_value):
     ],
 )
 def test_get_action_resource(app_permission, expected_action, expected_resource):
+    """
+    WHEN an app permission is provided,
+    THEN the action and resource extracted from the app permission should match the expected values.
+    EXPECT the action and resource to be correctly identified.
+    """
     action, resource = app_permission.get_action_resource()
     assert action == expected_action
     assert resource == expected_resource
@@ -219,6 +229,11 @@ def test_get_action_resource(app_permission, expected_action, expected_resource)
     ],
 )
 def test_convert_to_filter_clause(app_permission, expected_action, expected_resource):
+    """
+    WHEN an app permission is provided,
+    THEN the corresponding database filter clause should correctly reflect the action and resource.
+    EXPECT the generated filter clause to match the expected SQLAlchemy filter.
+    """
     db_filter = app_permission.to_filter_clause()
     expected_filter = and_(
         Permission.action == expected_action,
@@ -251,6 +266,11 @@ def test_convert_to_filter_clause(app_permission, expected_action, expected_reso
     ],
 )
 def test_to_granted_by_clause(app_permission, expected_action, expected_resource):
+    """
+    WHEN an app permission is provided,
+    THEN the corresponding granted_by clause should correctly reflect the action and resource.
+    EXPECT the generated granted_by clause to match the expected SQLAlchemy filter.
+    """
     db_filter = app_permission.to_granted_by_clause()
     expected_filter = and_(
         Permission.action.in_(["*", expected_action]),
@@ -287,6 +307,11 @@ def test_to_granted_by_clause(app_permission, expected_action, expected_resource
 def test_to_granted_by_clause_matches_seeded_permissions(
     db_session, app_permission, expected_granted_by
 ):
+    """
+    WHEN an app permission is provided,
+    THEN the set of permissions matched by the granted_by clause should match the expected set of seeded permissions.
+    EXPECT the resulting set to be identical to the expected granted_by set.
+    """
     rows = db_session.execute(
         select(Permission.action, Permission.resource).where(
             app_permission.to_granted_by_clause()
@@ -297,7 +322,11 @@ def test_to_granted_by_clause_matches_seeded_permissions(
 
 @pytest.mark.parametrize("app_permission", list(AppPermissions))
 def test_to_granted_by_clause_agrees_with_is_granted_by(db_session, app_permission):
-    """The SQL and Python versions of the grant rule must never drift apart."""
+    """
+    WHEN an app permission is provided,
+    THEN the set of permissions matched by the SQL granted_by clause should agree with the set matched by the Python logic.
+    EXPECT the two sets to be identical, ensuring consistency between SQL and Python implementations.
+    """
     all_permissions = db_session.scalars(select(Permission)).all()
     matched_in_sql = set(
         db_session.scalars(
@@ -397,4 +426,9 @@ def test_to_granted_by_clause_agrees_with_is_granted_by(db_session, app_permissi
     ],
 )
 def test_is_granted_by(app_permission, held_action, held_resource, expected):
+    """
+    WHEN an app permission is provided along with an action and resource,
+    THEN the is_granted_by method should correctly determine if the permission is granted.
+    EXPECT the result to match the expected boolean value.
+    """
     assert app_permission.is_granted_by(held_action, held_resource) is expected
