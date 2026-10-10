@@ -21,7 +21,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.get(
     "/",
     status_code=status.HTTP_200_OK,
-    responses=settings.HTTP_EXCEPTION_RESPONSES_SET["get"],
+    responses=settings.HTTP_EXCEPTION_RESPONSES_SET["get_all"],
 )
 def get_all_users(
     session: SessionDep,

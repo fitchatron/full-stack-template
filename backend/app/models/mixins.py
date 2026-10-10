@@ -24,11 +24,11 @@ class AuditMixin:
 
     @declared_attr
     def created_by(cls) -> Mapped[uuid.UUID | None]:
-        return mapped_column(ForeignKey("users.user_id"))
+        return mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"))
 
     @declared_attr
     def modified_by(cls) -> Mapped[uuid.UUID | None]:
-        return mapped_column(ForeignKey("users.user_id"))
+        return mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"))
 
     @declared_attr
     @classmethod

@@ -66,15 +66,16 @@ class DatabaseSeeder:
     def seed(self, plan: SeedPlan | None = None) -> SeedResult:
         plan = plan or SeedPlan()
         core = self.seed_core_data()
-        if plan.admin_user:
-            admin_user = self._seed_admin_user(core.roles)
+
+        admin_user = self._seed_admin_user(core.roles) if plan.admin_user else None
+
         users = self.seed_mock_data(core.roles, plan) if plan.include_mock_data else []
 
         self.session.commit()
         return SeedResult(
             roles=core.roles,
             permissions=core.permissions,
-            admin_user=admin_user if plan.admin_user else None,
+            admin_user=admin_user,
             users=users,
         )
 

@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.models.model import User
 from app.schemas.user import UserResponseSchema, UserResponseSchemaPaginated
-from seeding.factories import UserFactory
+from seeding.factories import RoleFactory, UserFactory
 
 BASE_URL = "/api/v1/users"
 
@@ -152,6 +152,8 @@ def test_put_update_user_by_id(
     )
 
     assert response.status_code == expected_status_code
+    if conflicting_field:
+        assert f"{conflicting_field.capitalize()} already in use" in response.text
     if expected_status_code != 200:
         return
 
@@ -216,6 +218,8 @@ def test_patch_update_user_by_id(
     )
 
     assert response.status_code == expected_status_code
+    if conflicting_field:
+        assert f"{conflicting_field.capitalize()} already in use" in response.text
     if expected_status_code != 200:
         return
 
@@ -225,6 +229,39 @@ def test_patch_update_user_by_id(
     )
 
     assert validated_body == expected
+
+
+@pytest.mark.parametrize(
+    "method, request_body",
+    [
+        pytest.param("put", PUT_REQUEST, id="put"),
+        pytest.param("patch", {"isActive": False}, id="patch"),
+    ],
+)
+def test_update_user_updating_self(
+    db_session, client, act_as_admin, auth_headers, method, request_body
+):
+    """
+    WHEN a user attempts to update their own account,
+    THEN the response should indicate forbidden action,
+    EXPECT the response to be 403 and the user to be unchanged
+    """
+
+    original = UserResponseSchema.model_validate(act_as_admin)
+
+    response = client.request(
+        method,
+        f"{BASE_URL}/{act_as_admin.user_id}",
+        json=request_body,
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 403
+    assert "Users cannot update their own account" in response.text
+
+    # the user should be unchanged since self-update is forbidden
+    db_session.refresh(act_as_admin)
+    assert UserResponseSchema.model_validate(act_as_admin) == original
 
 
 # MARK: DELETE tests
@@ -256,21 +293,22 @@ def test_delete_existing_user_by_id(db_session, client, auth_headers):
 def test_delete_non_existing_user_by_id(client, auth_headers):
     """
     WHEN a valid user attempts to delete a non-existing user by ID,
-    THEN the response should indicate successful deletion,
-    EXPECT the response to be 204
+    THEN the response should indicate the user was not found,
+    EXPECT the response to be 404
     """
 
     response = client.delete(f"{BASE_URL}/{uuid.uuid7()}", headers=auth_headers)
 
-    assert response.status_code == 204
+    assert response.status_code == 404
+    assert "User not found" in response.text
 
 
 @pytest.mark.usefixtures("act_as_admin")
 def test_delete_existing_user_by_id_twice(db_session, client, auth_headers):
     """
     WHEN the user is deleted and then the endpoint is called again
-    THEN the response should indicate successful deletion
-    EXPECT the response to be 204 both times
+    THEN the first response should indicate successful deletion and the second that the user was not found
+    EXPECT the response to be 204 then 404
     """
 
     user = UserFactory.build()
@@ -290,7 +328,39 @@ def test_delete_existing_user_by_id_twice(db_session, client, auth_headers):
 
     response = client.delete(f"{BASE_URL}/{user_id}", headers=auth_headers)
 
+    assert response.status_code == 404
+
+
+@pytest.mark.usefixtures("act_as_admin")
+def test_delete_user_referenced_as_auditor(db_session, client, auth_headers):
+    """
+    WHEN a user who is recorded as created_by/modified_by on other rows is deleted,
+    THEN the deletion should succeed and those audit references should be cleared,
+    EXPECT the response to be 204 and the audit columns to be null
+    """
+
+    auditor = UserFactory.build()
+    db_session.add(auditor)
+    db_session.flush()
+
+    # one users row (self-referencing FK) and one AuditMixin row
+    audited_user = UserFactory.build(
+        created_by=auditor.user_id, modified_by=auditor.user_id
+    )
+    audited_role = RoleFactory.build(
+        created_by=auditor.user_id, modified_by=auditor.user_id
+    )
+    db_session.add_all([audited_user, audited_role])
+    db_session.flush()
+
+    response = client.delete(f"{BASE_URL}/{auditor.user_id}", headers=auth_headers)
+
     assert response.status_code == 204
+
+    # ON DELETE SET NULL happens in the database, so reload what the session holds
+    for row in (audited_user, audited_role):
+        db_session.refresh(row)
+        assert (row.created_by, row.modified_by) == (None, None)
 
 
 def test_delete_user_deleting_self(db_session, client, act_as_admin, auth_headers):
