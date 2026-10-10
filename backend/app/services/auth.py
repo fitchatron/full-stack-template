@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import timedelta
 
@@ -13,6 +14,8 @@ from app.schemas.auth import Token
 
 # from app.schemas.user import RegisterUserPOSTRequest
 from app.schemas.user import RegisterUserPOSTRequest, RegisterUserSchema
+
+logger = logging.getLogger(__name__)
 
 
 class AuthService:
@@ -35,14 +38,24 @@ class AuthService:
             # Prevent timing attacks by running password verification even when user doesn't exist
             # This ensures the response time is similar whether or not the email exists
             verify_password(password, self.DUMMY_HASH)
+            logger.exception(
+                "Authentication failed for non-existent user with email: %s", email
+            )
             raise HTTPException(status_code=400, detail="Incorrect email or password")
 
         verified = verify_password(f"{password}{user.salt}", user.hashed_password)
 
         if not verified:
+            logger.exception(
+                "Authentication failed for user with email: %s due to incorrect password",
+                email,
+            )
             raise HTTPException(status_code=400, detail="Incorrect email or password")
 
         if verified and not user.is_active:
+            logger.exception(
+                "Inactive user attempted to authenticate: %s", user.user_id
+            )
             raise HTTPException(status_code=400, detail="Inactive user")
 
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -73,6 +86,7 @@ class AuthService:
         new_user = self.user_repo.create_user(user_data=user_data)
 
         if not new_user:
+            logger.exception("Failed to create new user")
             raise HTTPException(status_code=500, detail="Failed to create user")
 
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
