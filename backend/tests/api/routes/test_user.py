@@ -10,6 +10,7 @@ from seeding.factories import UserFactory
 BASE_URL = "/api/v1/users"
 
 
+# MARK: GET tests
 @pytest.mark.parametrize(
     "num_seed_users, page, size",
     [
@@ -21,7 +22,9 @@ def test_get_all_users(
     db_session, client, act_as_admin, auth_headers, num_seed_users, page, size
 ):
     """
-    Test that a valid user can retrieve all users.
+    WHEN a valid user requests a paginated list of all users,
+    THEN the response should include the correct number of users for the requested page and size.
+    EXPECT the response to be 200 and the pagination metadata to be accurate.
     """
 
     users = UserFactory.build_batch(num_seed_users)
@@ -56,7 +59,9 @@ def test_get_user_by_id(
     db_session, client, auth_headers, user_exists, expected_status_code
 ):
     """
-    Test that a valid user can retrieve a user by ID.
+    WHEN a valid user attempts to retrieve a user by ID,
+    THEN the response should include the user's details if the user exists,
+    EXPECT the response status code to be 200 for existing users and 404 for missing users.
     """
 
     user = UserFactory.build()
@@ -87,6 +92,7 @@ PUT_REQUEST = {
 }
 
 
+# MARK: PUT tests
 @pytest.mark.parametrize(
     "user_exists, request_body, conflicting_field, expected_status_code",
     [
@@ -125,7 +131,9 @@ def test_put_update_user_by_id(
     expected_status_code,
 ):
     """
-    Test that a valid user can replace a user by ID.
+    WHEN a valid user attempts to update a user by ID,
+    THEN the response should reflect the updated user details if the update is successful,
+    EXPECT the response status code to be 200 for successful updates, 404 for missing users, 409 for conflicts, and 422 for validation errors.
     """
 
     user = UserFactory.build()
@@ -155,6 +163,7 @@ def test_put_update_user_by_id(
     assert validated_body == expected
 
 
+# MARK: PATCH tests
 @pytest.mark.parametrize(
     "user_exists, request_body, conflicting_field, expected_status_code",
     [
@@ -184,8 +193,10 @@ def test_patch_update_user_by_id(
     expected_status_code,
 ):
     """
-    Test that a valid user can partially update a user by ID, leaving omitted
-    fields untouched.
+    WHEN a valid user attempts to partially update a user by ID, leaving omitted
+    fields untouched,
+    THEN the response should reflect the updated user details if the update is successful,
+    EXPECT the response status code to be 200 for successful updates, 404 for missing users, 409 for conflicts, and 422 for validation errors.
     """
 
     user = UserFactory.build()
@@ -216,32 +227,68 @@ def test_patch_update_user_by_id(
     assert validated_body == expected
 
 
-@pytest.mark.parametrize(
-    "user_exists, expected_status_code",
-    [
-        pytest.param(True, 204, id="existing-user"),
-        pytest.param(False, 404, id="missing-user"),
-    ],
-)
+# MARK: DELETE tests
 @pytest.mark.usefixtures("act_as_admin")
-def test_delete_user_by_id(
-    db_session, client, auth_headers, user_exists, expected_status_code
-):
+def test_delete_existing_user_by_id(db_session, client, auth_headers):
     """
-    Test that a valid user can delete a user by ID.
+    WHEN a valid user attempts to delete an existing user by ID
+    THEN the response should indicate successful deletion
+    EXPECT the response to be 204
     """
 
     user = UserFactory.build()
     db_session.add(user)
     db_session.flush()
-    user_id = user.user_id if user_exists else uuid.uuid4()
 
-    response = client.delete(f"{BASE_URL}/{user_id}", headers=auth_headers)
+    response = client.delete(f"{BASE_URL}/{user.user_id}", headers=auth_headers)
 
-    assert response.status_code == expected_status_code
+    assert response.status_code == 204
 
     # the target user is only gone if it was the one deleted
     db_user = db_session.scalars(
         select(User).where(User.user_id == user.user_id)
     ).one_or_none()
-    assert (db_user is None) == user_exists
+
+    assert db_user is None
+
+
+@pytest.mark.usefixtures("act_as_admin")
+def test_delete_non_existing_user_by_id(client, auth_headers):
+    """
+    WHEN a valid user attempts to delete a non-existing user by ID,
+    THEN the response should indicate successful deletion,
+    EXPECT the response to be 204
+    """
+
+    response = client.delete(f"{BASE_URL}/{uuid.uuid7()}", headers=auth_headers)
+
+    assert response.status_code == 204
+
+
+@pytest.mark.usefixtures("act_as_admin")
+def test_delete_existing_user_by_id_twice(db_session, client, auth_headers):
+    """
+    WHEN the user is deleted and then the endpoint is called again
+    THEN the response should indicate successful deletion
+    EXPECT the response to be 204 both times
+    """
+
+    user = UserFactory.build()
+    db_session.add(user)
+    db_session.flush()
+    user_id = user.user_id
+    response = client.delete(f"{BASE_URL}/{user_id}", headers=auth_headers)
+
+    assert response.status_code == 204
+
+    # the target user is only gone if it was the one deleted
+    db_user = db_session.scalars(
+        select(User).where(User.user_id == user_id)
+    ).one_or_none()
+
+    assert db_user is None
+
+    response = client.delete(f"{BASE_URL}/{user_id}", headers=auth_headers)
+
+    assert response.status_code == 204
+
