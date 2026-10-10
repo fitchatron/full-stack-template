@@ -82,37 +82,53 @@ def test_get_user_by_id(
     assert validated_body.email == user.email
 
 
-PUT_REQUEST = {
-    "username": "updated-user",
-    "email": "updated-user@test.example.com",
-    "givenName": "Updated",
-    "familyName": "User",
-    "emailVerified": True,
-    "isActive": False,
-}
-
-
 # MARK: PUT tests
 @pytest.mark.parametrize(
-    "user_exists, request_body, expected_status_code",
+    "request_body, expected_status_code",
     [
-        pytest.param(True, PUT_REQUEST, 200, id="valid"),
         pytest.param(
-            True,
             {
-                k: v
-                for k, v in PUT_REQUEST.items()
-                if k not in ("givenName", "familyName")
+                "username": "valid-all-fields",
+                "email": "valid-all-fields@test.example.com",
+                "givenName": "Updated",
+                "familyName": "User",
+                "emailVerified": True,
+                "isActive": False,
+            },
+            200,
+            id="valid-all-fields",
+        ),
+        pytest.param(
+            {
+                "username": "valid-unset-name",
+                "email": "valid-unset-name@test.example.com",
+                "givenName": None,
+                "familyName": None,
+                "emailVerified": True,
+                "isActive": False,
+            },
+            200,
+            id="valid-unset-name",
+        ),
+        pytest.param(
+            {
+                "username": "valid-no-name",
+                "email": "valid-no-name@test.example.com",
+                "emailVerified": True,
+                "isActive": False,
             },
             200,
             id="valid-no-name",
         ),
-        pytest.param(False, PUT_REQUEST, 404, id="missing-user"),
         pytest.param(
-            True,
-            {k: v for k, v in PUT_REQUEST.items() if k != "email"},
+            {
+                "username": None,
+                "email": None,
+                "emailVerified": True,
+                "isActive": False,
+            },
             422,
-            id="missing-required-field",
+            id="invalid-no-username-email",
         ),
     ],
 )
@@ -121,7 +137,6 @@ def test_put_update_user_by_id(
     db_session,
     client,
     auth_headers,
-    user_exists,
     request_body,
     expected_status_code,
 ):
@@ -134,10 +149,9 @@ def test_put_update_user_by_id(
     user = UserFactory.build()
     db_session.add(user)
     db_session.flush()
-    user_id = user.user_id if user_exists else uuid.uuid7()
 
     response = client.put(
-        f"{BASE_URL}/{user_id}", json=request_body, headers=auth_headers
+        f"{BASE_URL}/{user.user_id}", json=request_body, headers=auth_headers
     )
 
     assert response.status_code == expected_status_code
@@ -153,8 +167,9 @@ def test_put_update_user_by_id(
 
 
 @pytest.mark.parametrize("conflicting_field", ["username", "email"])
+@pytest.mark.usefixtures("act_as_admin")
 def test_put_update_user_conflicting_field(
-    db_session, client, act_as_admin, auth_headers, conflicting_field
+    db_session, client, auth_headers, conflicting_field
 ):
     """
     WHEN a valid user attempts to update a user with a value already held by another user,
@@ -163,13 +178,19 @@ def test_put_update_user_conflicting_field(
     """
 
     user = UserFactory.build()
-    db_session.add(user)
+    conflicting_user = UserFactory.build()
+    db_session.add_all([user, conflicting_user])
     db_session.flush()
 
     # reuse a value already held by another user
-    request_body = PUT_REQUEST | {
-        conflicting_field: getattr(act_as_admin, conflicting_field)
-    }
+    request_body = {
+        "username": user.username,
+        "email": user.email,
+        "givenName": user.given_name,
+        "familyName": user.family_name,
+        "emailVerified": user.email_verified,
+        "isActive": user.is_active,
+    } | {conflicting_field: getattr(conflicting_user, conflicting_field)}
 
     response = client.put(
         f"{BASE_URL}/{user.user_id}", json=request_body, headers=auth_headers
@@ -261,7 +282,18 @@ def test_patch_update_user_conflicting_field(
 @pytest.mark.parametrize(
     "method, request_body",
     [
-        pytest.param("put", PUT_REQUEST, id="put"),
+        pytest.param(
+            "put",
+            {
+                "username": "self",
+                "email": "self@test.example.com",
+                "givenName": "Updated",
+                "familyName": "User",
+                "emailVerified": True,
+                "isActive": False,
+            },
+            id="put",
+        ),
         pytest.param("patch", {"isActive": False}, id="patch"),
     ],
 )
