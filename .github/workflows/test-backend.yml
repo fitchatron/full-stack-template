@@ -29,6 +29,7 @@ jobs:
           touch .env
 
           echo '# Backend' >> .env
+          echo "FASTAPI_ENV=development" >> .env
           echo "PROJECT_NAME=${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}" >> .env
           printf 'SECRET_KEY=%s\n' "$SECRET_KEY" >> .env
           echo "FIRST_SUPERUSER=test-not-a-secret@email.com" >> .env
