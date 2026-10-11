@@ -38,7 +38,8 @@ jobs:
           printf 'POSTGRES_USER=%s\n' "$POSTGRES_USER" >> .env
           printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD" >> .env
           printf 'POSTGRES_DB=%s\n' "$POSTGRES_DB" >> .env
-          printf 'DATABASE_URL=postgresql+psycopg://%s:%s@localhost:5432/%s\n' "$POSTGRES_USER" "$POSTGRES_PASSWORD" "$POSTGRES_DB" >> .env
+          urlencode() { python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1"; }
+          printf 'DATABASE_URL=postgresql+psycopg://%s:%s@localhost:5432/%s\n' "$(urlencode "$POSTGRES_USER")" "$(urlencode "$POSTGRES_PASSWORD")" "$POSTGRES_DB" >> .env
 
           echo '' >> .env
 
