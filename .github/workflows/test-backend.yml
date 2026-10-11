@@ -43,7 +43,7 @@ jobs:
 
       - name: Start docker containers
         run: |
-          docker compose -f compose.yml up -d --wait
+          docker compose -f compose.yml --env-file .env up -d --wait
 
       - name: Run linter
         run: |
