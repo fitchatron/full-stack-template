@@ -1,0 +1,60 @@
+name: test-backend
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+jobs:
+  test_backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.12.1"
+
+      - name: Generate .env file
+        run: |
+
+          rm -f .env
+          rm -f backend/.env
+          touch .env
+
+          echo "PROJECT_NAME=${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}" >> .env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+          echo "POSTGRES_DB=${{ vars.POSTGRES_DB }}" >> .env
+          echo "DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}" >> .env`
+
+          echo '' >> .env
+
+          cp .env backend/
+
+      - name: Start docker containers
+        run: |
+          docker compose -f compose.yml up -d --wait
+
+      - name: Run linter
+        run: |
+          cd backend
+          uv run --group dev ruff check .
+
+      - name: Run FastAPI tests
+        run: |
+          cd backend
+          uv run --group dev -m cli.main test run
+      
+      - name: Shutdown docker containers
+        if: ${{ always() }}
+        run: |
+          docker compose -f compose.yml down -v
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          rm -f .env
+          rm -f backend/.env
