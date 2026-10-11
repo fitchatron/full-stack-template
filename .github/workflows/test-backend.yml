@@ -17,22 +17,29 @@ jobs:
           version: "0.12.1"
 
       - name: Generate .env file
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
         run: |
 
           rm -f .env
-          rm -f backend/.env
           touch .env
 
+          echo '# Backend' >> .env
           echo "PROJECT_NAME=${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}" >> .env
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
-          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
-          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
-          echo "POSTGRES_DB=${{ vars.POSTGRES_DB }}" >> .env
-          echo "DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}" >> .env`
+          printf 'SECRET_KEY=%s\n' "$SECRET_KEY" >> .env
+          echo "FIRST_SUPERUSER=$test-not-a-secret@email.com" >> .env
+          echo "FIRST_SUPERUSER_PASSWORD=test-user-password" >> .env
+          echo '' >> .env
+          echo '# Postgres' >> .env
+          printf 'POSTGRES_USER=%s\n' "$POSTGRES_USER" >> .env
+          printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD" >> .env
+          printf 'POSTGRES_DB=%s\n' "$POSTGRES_DB" >> .env
+          printf 'DATABASE_URL=postgresql+psycopg://%s:%s@localhost:5432/%s\n' "$POSTGRES_USER" "$POSTGRES_PASSWORD" "$POSTGRES_DB" >> .env
 
           echo '' >> .env
-
-          cp .env backend/
 
       - name: Start docker containers
         run: |
@@ -57,4 +64,3 @@ jobs:
         if: ${{ always() }}
         run: |
           rm -f .env
-          rm -f backend/.env

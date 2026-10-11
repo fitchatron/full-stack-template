@@ -4,8 +4,6 @@ on:
     outputs:
       environment:
         value: ${{ jobs.set_environment.outputs.environment }}
-      runner:
-        value: ${{ jobs.set_environment.outputs.runner }}
       version:
         value: ${{ jobs.set_environment.outputs.version }}
 
