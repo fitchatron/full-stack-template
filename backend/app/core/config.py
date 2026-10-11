@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     FASTAPI_ENV: Literal["development"] | None = None
     PROJECT_NAME: str
 
+    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str

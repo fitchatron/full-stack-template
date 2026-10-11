@@ -9,9 +9,10 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-if config.config_file_name is not None:
+# Interpret the config file for Python logging, but only when alembic owns the
+# process. When run in-process with a connection (seeding.DatabaseManager), the
+# caller has already configured logging and fileConfig would disable its loggers.
+if config.config_file_name is not None and "connection" not in config.attributes:
     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here

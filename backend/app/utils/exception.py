@@ -36,17 +36,30 @@ class InvalidAuthorization(HTTPException):
         )
 
 
-class NotFoundError(Exception):
-    pass
+class AppError(Exception):
+    """
+    Base domain error. Services raise these and the handler registered in
+    app.api.exception_handlers turns them into a response with status_code.
+    """
+
+    status_code = 500
 
 
-class ConflictError(Exception):
-    pass
+class BadRequestError(AppError):
+    status_code = 400
 
 
-class UnprocessableContentError(Exception):
-    pass
+class ForbiddenError(AppError):
+    status_code = 403
 
 
-class ForbiddenError(Exception):
-    pass
+class NotFoundError(AppError):
+    status_code = 404
+
+
+class ConflictError(AppError):
+    status_code = 409
+
+
+class UnprocessableContentError(AppError):
+    status_code = 422
