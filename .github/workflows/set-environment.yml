@@ -1,0 +1,32 @@
+name: set-environment
+on:
+  workflow_call:
+    outputs:
+      environment:
+        value: ${{ jobs.set_environment.outputs.environment }}
+      version:
+        value: ${{ jobs.set_environment.outputs.version }}
+
+jobs:
+  set_environment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set environment
+        id: set_env
+        run: |
+          echo "Workflow trigger is ${{github.ref_type}} : ${{ github.ref_name }}"
+          if [[ ${{github.ref_type}} == tag ]]; then
+            echo "Setting environment to Production"
+            echo "VERSION=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "ENVIRONMENT=production" >> $GITHUB_OUTPUT
+          else
+            echo "Setting environment to Development"
+            echo "VERSION=${{github.sha}}" >> $GITHUB_OUTPUT
+            echo "ENVIRONMENT=development" >> $GITHUB_OUTPUT
+          fi
+
+    outputs:
+      environment: ${{ steps.set_env.outputs.environment }}
+      version: ${{ steps.set_env.outputs.version }}
+

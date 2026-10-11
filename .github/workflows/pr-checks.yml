@@ -1,0 +1,15 @@
+name: PR Checks
+run-name: Pull Request Checks
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+jobs:
+  set_environment:
+    uses: ./.github/workflows/set-environment.yml
+
+  test-backend:
+    needs: set_environment
+    uses: ./.github/workflows/test-backend.yml
+    secrets: inherit
+    with:
+      environment: ${{ needs.set_environment.outputs.environment }}
