@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "filters": {
+    "request_id": { "()": "app.core.logging.RequestIdFilter" }
+  },
+  "formatters": {
+    "text": {
+      "format": "%(asctime)s %(levelname)-8s [%(request_id)s] %(name)s: %(message)s"
+    },
+    "json": { "()": "app.core.logging.JsonFormatter" }
+  },
+  "handlers": {
+    "default": {
+      "class": "logging.StreamHandler",
+      "formatter": "json",
+      "filters": ["request_id"]
+    }
+  },
+  "root": { "handlers": ["default"], "level": "INFO" },
+  "loggers": {
+    "uvicorn": { "handlers": [], "propagate": true },
+    "uvicorn.access": { "handlers": [], "propagate": false },
+    "sqlalchemy.engine": { "level": "WARNING" }
+  }
+}
