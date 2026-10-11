@@ -8,6 +8,7 @@ on:
 jobs:
   test_backend:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
 
     steps:
       - uses: actions/checkout@v7
@@ -30,7 +31,7 @@ jobs:
           echo '# Backend' >> .env
           echo "PROJECT_NAME=${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}" >> .env
           printf 'SECRET_KEY=%s\n' "$SECRET_KEY" >> .env
-          echo "FIRST_SUPERUSER=$test-not-a-secret@email.com" >> .env
+          echo "FIRST_SUPERUSER=test-not-a-secret@email.com" >> .env
           echo "FIRST_SUPERUSER_PASSWORD=test-user-password" >> .env
           echo '' >> .env
           echo '# Postgres' >> .env
