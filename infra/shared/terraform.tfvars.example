@@ -1,0 +1,3 @@
+coolify_endpoint = "https://coolify.example.com"
+server_uuid      = "replace-with-server-uuid"
+project_name     = "myapp"

@@ -18,3 +18,16 @@ wheels/
 
 node_modules
 dist
+
+#terraform
+# State holds the DB passwords and app secrets in plain text.
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Real values; commit the .example files only.
+*.tfvars
+!*.tfvars.example
+
+.terraform/
+# Commit .terraform.lock.hcl so provider versions stay pinned.
