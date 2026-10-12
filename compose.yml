@@ -1,6 +1,7 @@
 name: full-stack-template
 services:
   db:
+    container_name: db
     image: postgres:18
     # restart: always vs unless-stopped
     # always will also restart the container after a manual docker stop

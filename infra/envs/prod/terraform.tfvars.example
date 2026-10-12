@@ -1,0 +1,13 @@
+# non-sensitive variables for this environment
+app_name = "My App"
+
+# Leave commented out for the first apply; set after the first deploy.
+# domain = "https://app.example.com"
+
+# app_env = {
+#   LOG_LEVEL = "INFO"
+# }
+
+# Terraform manages DB roles through an SSH tunnel to 127.0.0.1 on the
+# database's public port; override if your tunnel listens elsewhere.
+# db_admin_port = 15433

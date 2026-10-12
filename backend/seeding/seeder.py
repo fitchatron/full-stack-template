@@ -2,6 +2,7 @@ import random
 from dataclasses import dataclass
 
 import factory.random
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.app_permissions import AppPermissions
@@ -35,14 +36,8 @@ FIXED_ROLE_GRANTS: dict[str, list[AppPermissions]] = {
         AppPermissions.UPDATE__USERS,
     ],
     "user_admin": [
-        AppPermissions.CREATE__USERS,
-        AppPermissions.READ__USERS,
-        AppPermissions.UPDATE__USERS,
-        AppPermissions.DELETE__USERS,
-        AppPermissions.CREATE__USER_ROLES,
-        AppPermissions.READ__USER_ROLES,
-        AppPermissions.UPDATE__USER_ROLES,
-        AppPermissions.DELETE__USER_ROLES,
+        AppPermissions.ASTERISK__USERS,
+        AppPermissions.ASTERISK__USER_ROLES,
     ],
     "admin": list(AppPermissions),
 }
@@ -65,7 +60,10 @@ class DatabaseSeeder:
 
     def seed(self, plan: SeedPlan | None = None) -> SeedResult:
         plan = plan or SeedPlan()
-        core = self.seed_core_data()
+
+        core = (
+            self._seed_core_data() if plan.include_core_data else self._load_core_data()
+        )
 
         admin_user = self._seed_admin_user(core.roles) if plan.admin_user else None
 
@@ -79,7 +77,14 @@ class DatabaseSeeder:
             users=users,
         )
 
-    def seed_core_data(self) -> CoreSeedResult:
+    def _load_core_data(self) -> CoreSeedResult:
+        roles = {r.role_id: r for r in self.session.scalars(select(Role))}
+        permissions = {
+            (p.action, p.resource): p for p in self.session.scalars(select(Permission))
+        }
+        return CoreSeedResult(roles=roles, permissions=permissions)
+
+    def _seed_core_data(self) -> CoreSeedResult:
         permissions = self._seed_permissions()
         roles = self._seed_roles(permissions)
         return CoreSeedResult(roles=roles, permissions=permissions)
