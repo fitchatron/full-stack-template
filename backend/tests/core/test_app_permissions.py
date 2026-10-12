@@ -14,9 +14,9 @@ from app.models.model import Permission
             id="asterisk_asterisk",
         ),
         pytest.param(
-            AppPermissions.CREATE__ASTERISK,
-            "create:*",
-            id="create_asterisk",
+            AppPermissions.READ__ASTERISK,
+            "read:*",
+            id="read_asterisk",
         ),
         pytest.param(
             AppPermissions.ASTERISK__USERS,
@@ -145,10 +145,10 @@ def test_get_app_permission_value(app_permission, expected_value):
             id="asterisk_asterisk",
         ),
         pytest.param(
-            AppPermissions.CREATE__ASTERISK,
-            "create",
+            AppPermissions.READ__ASTERISK,
+            "read",
             "*",
-            id="create_asterisk",
+            id="read_asterisk",
         ),
         pytest.param(
             AppPermissions.ASTERISK__USERS,
@@ -203,10 +203,10 @@ def test_get_action_resource(app_permission, expected_action, expected_resource)
             id="asterisk_asterisk",
         ),
         pytest.param(
-            AppPermissions.CREATE__ASTERISK,
-            "create",
+            AppPermissions.READ__ASTERISK,
+            "read",
             "*",
-            id="create_asterisk",
+            id="read_asterisk",
         ),
         pytest.param(
             AppPermissions.ASTERISK__USERS,
@@ -252,10 +252,10 @@ def test_convert_to_filter_clause(app_permission, expected_action, expected_reso
             id="asterisk_asterisk",
         ),
         pytest.param(
-            AppPermissions.CREATE__ASTERISK,
-            "create",
+            AppPermissions.READ__ASTERISK,
+            "read",
             "*",
-            id="create_asterisk",
+            id="read_asterisk",
         ),
         pytest.param(
             AppPermissions.READ__USERS,
@@ -284,18 +284,13 @@ def test_to_granted_by_clause(app_permission, expected_action, expected_resource
     [
         pytest.param(
             AppPermissions.READ__USERS,
-            {"*:*", "*:users", "read:users"},
+            {"*:*", "read:*", "*:users", "read:users"},
             id="read_users",
         ),
         pytest.param(
-            AppPermissions.CREATE__USERS,
-            {"*:*", "create:*", "*:users", "create:users"},
-            id="create_users",
-        ),
-        pytest.param(
-            AppPermissions.CREATE__ASTERISK,
-            {"*:*", "create:*"},
-            id="create_asterisk",
+            AppPermissions.READ__ASTERISK,
+            {"*:*", "read:*"},
+            id="read_asterisk",
         ),
         pytest.param(
             AppPermissions.ASTERISK__ASTERISK,
@@ -403,15 +398,15 @@ def test_to_granted_by_clause_agrees_with_is_granted_by(db_session, app_permissi
             id="resource_wildcard_wrong_action",
         ),
         pytest.param(
-            AppPermissions.CREATE__ASTERISK,
-            "create",
+            AppPermissions.READ__ASTERISK,
+            "read",
             "users",
             False,
             id="required_wildcard_not_granted_by_specific",
         ),
         pytest.param(
-            AppPermissions.CREATE__ASTERISK,
-            "create",
+            AppPermissions.READ__ASTERISK,
+            "read",
             "*",
             True,
             id="required_wildcard_granted_by_same_wildcard",

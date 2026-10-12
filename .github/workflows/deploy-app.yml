@@ -1,0 +1,40 @@
+name: Deploy app
+
+# Coolify builds from the branch each app tracks: dev tracks main, prod
+# tracks production. This job only decides when, after the tests pass.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    permissions:
+      contents: write # move the production branch
+
+    steps:
+      - uses: actions/checkout@v7
+        if: inputs.environment == 'production'
+        with:
+          # A shallow clone can't push: "shallow update not allowed".
+          fetch-depth: 0
+
+      # production only ever follows main, so this is a fast-forward to the
+      # tagged commit. Without -f it fails rather than rewrite history.
+      # Pushes made with GITHUB_TOKEN don't trigger workflows, so no loop.
+      - name: Move production to the release
+        if: inputs.environment == 'production'
+        run: git push origin "${GITHUB_SHA}:refs/heads/production"
+
+      - name: Trigger Coolify deployment
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          curl -fsS -X POST "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
+

@@ -1,0 +1,20 @@
+name: full-stack-template
+services:
+  backend:
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    restart: always
+    expose:
+      - 8000
+    env_file:
+      - .env
+
+  nginx:
+    build:
+      context: nginx
+      dockerfile: Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: always

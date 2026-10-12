@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
+    POSTGRES_HOST: str
     DATABASE_URL: str
 
     SQLALCHEMY_DATABASE_POOL_SIZE: int = 15
@@ -42,8 +43,8 @@ class Settings(BaseSettings):
 
     DEFAULT_FAKER_SEED: int = 1234
 
-    FIRST_SUPERUSER: EmailStr
-    FIRST_SUPERUSER_PASSWORD: str
+    FIRST_SUPERUSER: EmailStr = "some@email.com"
+    FIRST_SUPERUSER_PASSWORD: str = "not-a-secret-123"
 
     HTTP_EXCEPTION_RESPONSES_SET: dict = {
         "get": {
