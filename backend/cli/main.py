@@ -1,6 +1,6 @@
 import typer
 
-from cli import db, setup, test
+from cli import backend, db, setup, test
 
 app = typer.Typer()
 
@@ -8,6 +8,7 @@ app = typer.Typer()
 app.add_typer(db.app, name="db", help="Subcommands to manage database")
 app.add_typer(test.app, name="test", help="Subcommands to run tests")
 app.add_typer(setup.app, name="setup", help="Subcommands to set-up the env")
+app.add_typer(backend.app, name="backend", help="Subcommands to manage backend")
 
 
 if __name__ == "__main__":
