@@ -12,7 +12,8 @@ terraform {
   # and run: terraform init -migrate-state
 }
 
-# Token comes from the COOLIFY_TOKEN env var so it never sits in a file.
+# Token comes from coolify_token in terraform.tfvars if provided. If not, it falls back to the COOLIFY_TOKEN env var.
 provider "coolify" {
   endpoint = var.coolify_endpoint
+  token    = var.coolify_token
 }

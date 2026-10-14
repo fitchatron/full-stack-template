@@ -73,25 +73,70 @@ No `build:` keys, no Postgres service (Coolify runs it separately).
 
 ## First run
 
-1. In Coolify: enable the API, create a token with **deploy** and
-   **read:sensitive** permissions, and note the server UUID.
-2. `export COOLIFY_TOKEN=...`
-3. Shared:
+1. In Coolify:
+   - **Settings → Advanced:** enable API access.
+   - **Security → API Tokens:** create a token for Terraform with these
+     permissions:
+     - `read`
+     - `write`: create and update projects, databases, services and env vars
+     - `deploy`
+     - `read:sensitive`: lets compose files and DB URLs read back, which
+       avoids spurious diffs
+
+     `root` also works but grants more than this needs.
+   - **Servers:** note your server's UUID.
+
+   Give GitHub Actions its own token: `deploy` to trigger deployments, plus
+   `write` if the workflow updates `IMAGE_TAG` through the API.
+
+2. Give Terraform the token. Pick one option:
+
+      **Option A: in `secrets.auto.tfvars`** (fine for a single local machine)
+
+   In each root (`shared`, `envs/dev`, `envs/prod`), create
+   `secrets.auto.tfvars` alongside `terraform.tfvars`:
+   ```hcl
+     coolify_token = "1|abc123..."
+   ```
+   Terraform loads `*.auto.tfvars` automatically. Keep secrets here and plain
+   config in `terraform.tfvars`. The file is gitignored.
+
+   **Option B: environment variable** (for a dedicated machine or CI)
+
+   Leave `coolify_token` out of every `terraform.tfvars` and set:
    ```sh
+     export COOLIFY_TOKEN=...
+   ```
+   
+   Put it in your shell profile or inject it from a password manager. If you
+   type it inline, the value ends up in your shell history.
+
+   How the provider picks a token:
+   - `coolify_token` in `terraform.tfvars` wins.
+   - If it's unset, the provider falls back to `COOLIFY_TOKEN`.
+   - Don't use `TF_VAR_coolify_token` as well, or you can't tell which token
+     is in use.
+   - To switch from A to B, delete the `coolify_token` line from all three
+     `terraform.tfvars` files.
+
+3. Shared:
+```sh
    cd shared
    cp terraform.tfvars.example terraform.tfvars   # fill in
    terraform init && terraform apply
-   ```
+```
+
 4. Each environment:
-   ```sh
+```sh
    cd ../envs/dev
    cp terraform.tfvars.example terraform.tfvars   # fill in
    terraform init && terraform apply
    terraform output -raw deploy_webhook           # → GitHub dev environment secret
-   ```
+```
    Same for `envs/prod`.
-5. Push to main (or tag) so Actions builds images and triggers the first
-   deploy. The stack is created stopped until then.
+
+5. Push to main (or tag) so Actions builds the images and triggers the first
+   deploy. The stack stays stopped until then.
 
 ## Things to know
 

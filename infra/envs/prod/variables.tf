@@ -13,3 +13,10 @@ variable "app_secrets" {
   default     = {}
   sensitive   = true
 }
+
+variable "coolify_token" {
+  description = "Coolify API token. Leave unset to use the COOLIFY_TOKEN env var instead."
+  type        = string
+  default     = null
+  sensitive   = true
+}

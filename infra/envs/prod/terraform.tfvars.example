@@ -1,7 +1,3 @@
+# non-sensitive variables for the prod environment
 app_name = "myapp"
 domain   = "https://app.example.com"
-
-# Put secrets in secrets.auto.tfvars (gitignored), not here:
-# app_secrets = {
-#   ENTRA_CLIENT_SECRET = "..."
-# }

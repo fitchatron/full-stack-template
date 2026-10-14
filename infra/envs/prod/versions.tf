@@ -22,8 +22,7 @@ data "terraform_remote_state" "shared" {
   }
 }
 
-# Token from the COOLIFY_TOKEN env var. Needs deploy + read:sensitive
-# permissions (read:sensitive so compose and DB URLs read back without diffs).
 provider "coolify" {
   endpoint = data.terraform_remote_state.shared.outputs.coolify_endpoint
+  token    = var.coolify_token
 }
