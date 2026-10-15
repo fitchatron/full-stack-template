@@ -1,0 +1,14 @@
+name: full-stack-template
+services:
+  backend:
+    container_name: full-stack-backend
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    restart: always
+    # expose:
+    #   - 8000
+    ports:
+      - 8000:8000
+    env_file:
+      - .env
