@@ -34,47 +34,11 @@ variable "environment_name" {
   default     = null
 }
 
-# --- App stack ----------------------------------------------------------------
-
-variable "compose_file" {
-  description = "Path to the compose file Coolify runs (images from GHCR, $${VAR} placeholders for env vars)."
-  type        = string
-}
-
-variable "domain" {
-  description = "Public URL for the nginx container, e.g. https://dev.example.com."
-  type        = string
-}
-
-variable "nginx_service_name" {
-  description = "Name of the nginx service in the compose file (the only one that gets a domain)."
-  type        = string
-  default     = "nginx"
-}
-
-variable "initial_image_tag" {
-  description = "IMAGE_TAG set on first create only. After that, GitHub Actions owns it."
-  type        = string
-}
-
-variable "app_env" {
-  description = "Extra non-secret env vars for the stack (LOG_LEVEL, CORS origins, etc.)."
-  type        = map(string)
-  default     = {}
-}
-
-variable "app_secrets" {
-  description = "Extra secret env vars for the stack (Entra client secret, API keys)."
-  type        = map(string)
-  default     = {}
-  sensitive   = true
-}
-
 # --- Database -----------------------------------------------------------------
 
 variable "postgres_image" {
   type    = string
-  default = "postgres:17"
+  default = "postgres:18"
 }
 
 variable "postgres_db" {
@@ -94,9 +58,9 @@ variable "db_memory_limit" {
 }
 
 variable "database_url_scheme" {
-  description = "Scheme for DATABASE_URL. SQLAlchemy async with asyncpg wants postgresql+asyncpg."
+  description = "Scheme for DATABASE_URL. The backend uses SQLAlchemy with psycopg 3."
   type        = string
-  default     = "postgresql+asyncpg"
+  default     = "postgresql+psycopg"
 }
 
 # --- Backups ------------------------------------------------------------------

@@ -12,7 +12,7 @@ terraform {
     }
   }
 
-  # Local state: envs/prod/terraform.tfstate. Separate from prod on purpose.
+  # Local state: envs/prod/terraform.tfstate. Separate from dev on purpose.
 }
 
 data "terraform_remote_state" "shared" {

@@ -2,8 +2,8 @@ locals {
   shared = data.terraform_remote_state.shared.outputs
 }
 
-module "app" {
-  source = "../../modules/app-environment"
+module "database" {
+  source = "../../modules/database"
 
   app_name     = var.app_name
   env_name     = "prod"
@@ -12,18 +12,6 @@ module "app" {
 
   # Coolify auto-creates "production" with the project; reference it by name.
   environment_name = "production"
-
-  compose_file = "${path.module}/../../../compose.prod.yaml"
-  domain       = var.domain
-
-  # Placeholder until the first tagged release; Actions sets the real tag.
-  initial_image_tag = "latest"
-
-  app_env = {
-    ENVIRONMENT = "prod"
-    LOG_LEVEL   = "info"
-  }
-  app_secrets = var.app_secrets
 
   db_memory_limit = "1g"
 

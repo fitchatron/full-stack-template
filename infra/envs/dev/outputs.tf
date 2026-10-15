@@ -1,9 +1,24 @@
-output "service_uuid" {
-  description = "Add to GitHub as the dev COOLIFY_SERVICE_UUID variable."
-  value       = module.app.service_uuid
+# Values for the app's environment variables in Coolify.
+# Read sensitive ones with: terraform output -raw <name>
+
+output "database_uuid" {
+  value = module.database.database_uuid
 }
 
-output "deploy_webhook" {
-  description = "Add to GitHub as the dev COOLIFY_WEBHOOK secret."
-  value       = "${local.shared.coolify_endpoint}/api/v1/deploy?uuid=${module.app.service_uuid}"
+output "database_url" {
+  value     = module.database.database_url
+  sensitive = true
+}
+
+output "postgres_user" {
+  value = module.database.postgres_user
+}
+
+output "postgres_db" {
+  value = module.database.postgres_db
+}
+
+output "postgres_password" {
+  value     = module.database.postgres_password
+  sensitive = true
 }

@@ -1,3 +1,2 @@
-# non-sensitive variables for the prod environment
+# non-sensitive variables for this environment
 app_name = "myapp"
-domain   = "https://app.example.com"
