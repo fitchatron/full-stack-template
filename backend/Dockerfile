@@ -21,29 +21,23 @@ RUN apt-get update && \
   ca-certificates \
   curl
 
-# Install uv
-# Download the installer
-ADD https://astral.sh/uv/0.13.1/install.sh /uv-installer.sh
-
-# Run the installer then remove it
-RUN sh /uv-installer.sh && rm /uv-installer.sh
-
-# Ensure the installed binary is on the `PATH`
-ENV PATH="/root/.local/bin/:$PATH"
+# Install uv from the official image into /bin so it's usable by any user
+# (the install script puts it in /root/.local/bin, which appuser can't read).
+COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /uvx /bin/
 
 WORKDIR /app
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
-# ARG UID=10001
-# RUN adduser \
-#   --disabled-password \
-#   --gecos "" \
-#   --home "/nonexistent" \
-#   --shell "/sbin/nologin" \
-#   --no-create-home \
-#   --uid "${UID}" \
-#   appuser
+ARG UID=10001
+RUN adduser \
+  --disabled-password \
+  --gecos "" \
+  --home "/nonexistent" \
+  --shell "/sbin/nologin" \
+  --no-create-home \
+  --uid "${UID}" \
+  appuser
 
 # Copy alembic file separately to cache layer
 COPY alembic.ini ./ 
@@ -64,14 +58,18 @@ RUN --mount=type=cache,target=/tmp/.uv_cache \
   --mount=type=bind,source=uv.lock,target=uv.lock \
   uv sync --frozen --no-install-project
 
-# Switch to the non-privileged user to run the application.
-# USER appuser
+# Put the venv on PATH so the app runs without `uv run`, which would try to
+# re-lock/sync into the root-owned /app at startup.
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy the source code into the container.
 COPY app/ ./app/
+
+# Switch to the non-privileged user to run the application.
+USER appuser
 
 # Expose the port that the application listens on.
 EXPOSE 8000
 
 # Run the application.
-CMD ["uv", "run", "fastapi", "run"]
+CMD ["fastapi", "run"]
