@@ -18,8 +18,8 @@ ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update && \
   apt-get install -y --no-install-recommends \
-  ca-certificates \
-  curl
+  curl && \
+  rm -rf /var/lib/apt/lists/*
 
 # Install uv from the official image into /bin so it's usable by any user
 # (the install script puts it in /root/.local/bin, which appuser can't read).
@@ -39,9 +39,6 @@ RUN adduser \
   --uid "${UID}" \
   appuser
 
-# Copy alembic file separately to cache layer
-COPY alembic.ini ./ 
-
 # Copy dependency files first for better caching
 COPY .python-version pyproject.toml ./
 
@@ -50,17 +47,22 @@ COPY .python-version pyproject.toml ./
 ENV UV_LINK_MODE=copy
 ENV UV_CACHE_DIR="/tmp/.uv_cache"
 ENV UV_PYTHON_CACHE_DIR="/tmp/.uv_cache/python"
+ENV UV_PYTHON_DOWNLOADS=never
+ENV UV_COMPILE_BYTECODE=1
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.cache/uv to speed up subsequent builds.
+# Leverage a cache mount to /tmp/.uv_cache to speed up subsequent builds.
 # Install dependencies
 RUN --mount=type=cache,target=/tmp/.uv_cache \
   --mount=type=bind,source=uv.lock,target=uv.lock \
-  uv sync --frozen --no-install-project
+  uv sync --frozen --no-install-project --no-dev
 
 # Put the venv on PATH so the app runs without `uv run`, which would try to
 # re-lock/sync into the root-owned /app at startup.
 ENV PATH="/app/.venv/bin:$PATH"
+
+# Copy alembic file separately to cache layer
+COPY alembic.ini ./ 
 
 # Copy the source code into the container.
 COPY app/ ./app/
@@ -68,8 +70,17 @@ COPY app/ ./app/
 # Switch to the non-privileged user to run the application.
 USER appuser
 
+# Trust X-Forwarded-* headers from the reverse proxy so client
+# IPs and https scheme are correct. 
+# Safe only while the container is reachable solely through the proxy.
+ENV FORWARDED_ALLOW_IPS="*"
+
 # Expose the port that the application listens on.
 EXPOSE 8000
+
+# Let Docker know when the app is actually serving requests.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -fsS http://localhost:8000/docs > /dev/null || exit 1
 
 # Run the application.
 CMD ["fastapi", "run"]
