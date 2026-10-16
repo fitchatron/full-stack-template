@@ -1,7 +1,7 @@
 name: full-stack-template
 services:
   backend:
-    container_name: full-stack-backend
+    container_name: backend
     build:
       context: backend
       dockerfile: Dockerfile
