@@ -5,6 +5,10 @@ output "database_uuid" {
   value = module.database.database_uuid
 }
 
+output "public_port" {
+  value = module.database.public_port
+}
+
 output "database_url" {
   value     = module.database.database_url
   sensitive = true

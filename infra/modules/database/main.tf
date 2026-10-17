@@ -35,7 +35,11 @@ resource "coolify_database_postgresql" "this" {
   postgres_user     = var.postgres_user
   postgres_password = random_password.db.result
 
-  is_public      = false # only reachable from containers on the Coolify network
+  # The app always connects over the Coolify network (database_url). Public
+  # access is only for admins connecting from outside, e.g. with psql.
+  is_public   = var.is_public
+  public_port = var.is_public ? var.public_port : null
+
   instant_deploy = true
   limits_memory  = var.db_memory_limit
 

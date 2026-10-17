@@ -15,6 +15,11 @@ module "database" {
 
   db_memory_limit = "1g"
 
+  # Admin access from outside the server. Restrict this port to known IPs
+  # in the firewall; the app itself uses the internal URL.
+  is_public   = true
+  public_port = 5434
+
   backup_schedule     = "0 2 * * *"
   backup_retain_local = 7
 

@@ -57,6 +57,18 @@ variable "db_memory_limit" {
   default     = null
 }
 
+variable "is_public" {
+  description = "Expose Postgres on the server's IP for admin access. The app never uses this."
+  type        = bool
+  default     = false
+}
+
+variable "public_port" {
+  description = "Host port for public access. null lets Coolify pick one. Ignored unless is_public."
+  type        = number
+  default     = null
+}
+
 variable "database_url_scheme" {
   description = "Scheme for DATABASE_URL. The backend uses SQLAlchemy with psycopg 3."
   type        = string

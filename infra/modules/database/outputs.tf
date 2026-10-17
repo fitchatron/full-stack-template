@@ -3,6 +3,11 @@ output "database_uuid" {
   value       = coolify_database_postgresql.this.uuid
 }
 
+output "public_port" {
+  description = "Host port for admin access, or null when the database isn't public."
+  value       = var.is_public ? coolify_database_postgresql.this.public_port : null
+}
+
 # The backend reads these four. Paste them into the app's env vars in Coolify.
 output "database_url" {
   description = "Internal connection string for the app."
