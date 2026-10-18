@@ -1,0 +1,30 @@
+name: deploy
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+    paths:
+      - backend/**
+      - nginx/**
+      - .github/**
+
+jobs:
+  set_environment:
+    uses: ./.github/workflows/set-environment.yml
+
+  test_backend:
+    needs: set_environment
+    uses: ./.github/workflows/test-backend.yml
+    with:
+      environment: ${{ needs.set_environment.outputs.environment }}
+    secrets: inherit
+
+  deploy_app:
+    needs: [set_environment, test_backend]
+    uses: ./.github/workflows/deploy-app.yml
+    with:
+      environment: ${{ needs.set_environment.outputs.environment }}
+    secrets: inherit

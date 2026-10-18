@@ -1,0 +1,55 @@
+name: Build and deploy app
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: shadowarcanist/tasklytics
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT_TOKEN }}
+      
+      - name: Generate .env file
+        run: |
+
+          rm -f .env
+          rm -f backend/.env
+          touch .env
+
+          echo '# docker settings' >> .env
+          echo 'DOCKER_IMAGE_BACKEND=${{ vars.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ vars.DOCKER_IMAGE_BACKEND }}:'${GITHUB_REF_NAME////-} >> .env
+          echo 'DOCKER_IMAGE_CELERY=${{ vars.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ vars.DOCKER_IMAGE_NGINX }}:'${GITHUB_REF_NAME////-} >> .env
+
+          echo '' >> .env
+
+      - name: Build containers
+        run: |
+          docker compose -f compose.prod.yml --env-file .env build
+      
+      - name: Push docker images to ACR
+        run: |
+          docker compose -f compose.prod.yml push
+
+      - name: Trigger Coolify deployment
+        run: |
+          curl --fail --request POST '${{ secrets.COOLIFY_WEBHOOK }}' \
+            --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
