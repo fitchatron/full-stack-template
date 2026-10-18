@@ -1,0 +1,46 @@
+name: create-release
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "*.*.*"
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: [self-hosted, Linux]
+
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate release note
+        id: validate_release_note
+        run: |
+          if [ ! -f "release_notes/${{ github.ref_name }}.md" ]; 
+          then 
+            exit 1; 
+          fi
+
+      - name: Build release note
+        id: build_release_note
+        run: |
+          rm -f release.md
+          cat release_notes/${{ github.ref_name }}.md >> release.md
+          echo "  " >> release.md
+          echo "## Commits" >> release.md
+          echo "  " >> release.md
+          git log `git tag | sort -r | head -2 | tail -1`..${{ github.ref_name }} --no-merges --oneline >> release.md
+          cat release.md
+
+      - name: Create release
+        id: create_release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref }}
+          body_path: release.md
+          token: ${{ github.token }}
