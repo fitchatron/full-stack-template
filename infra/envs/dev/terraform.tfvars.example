@@ -1,2 +1,9 @@
 # non-sensitive variables for this environment
 app_name = "myapp"
+
+# Leave commented out for the first apply; set after the first deploy.
+# domain = "https://app.example.com"
+
+# app_env = {
+#   LOG_LEVEL = "INFO"
+# }

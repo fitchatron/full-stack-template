@@ -1,20 +1,21 @@
 # Infra
 
 Terraform for the Coolify setup: one project with a `dev` and a `production`
-environment, each with its own Postgres.
+environment, each with its own Postgres and app.
 
-The app itself is **not** in Terraform. It's a git-based Docker Compose
-application created once in the Coolify UI. On every deploy, Coolify reads
-`compose.prod.yml` from the repo, so compose changes ship with the merge
-that makes them.
+The app is a git-based Docker Compose application cloned through a GitHub
+App. Terraform manages the Coolify resource and its env vars; on every
+deploy, Coolify reads `compose.prod.yml` from the repo, so compose changes
+ship with the merge that makes them.
 
 ## Who owns what
 
 | Thing | Owner | Changes when |
 |---|---|---|
+| GitHub App source | Coolify UI (once per Coolify instance) | basically never |
 | Project, environments | Terraform `shared/` | basically never |
 | Postgres + backups per environment | Terraform `envs/*` | sizing or schedule changes |
-| The app resource, its domain and env vars | Coolify UI (once per environment) | you add a setting |
+| The app resource, its domain and env vars | Terraform `envs/*` | you add a setting |
 | `compose.prod.yml` | the repo | any merge |
 | Images and deploys | GitHub Actions | every push to main (dev) / tag (prod) |
 
@@ -23,11 +24,12 @@ that makes them.
 ```
 infra/
 ├── modules/
-│   └── database/        # Postgres + backup schedule for one environment
+│   ├── database/        # Postgres + backup schedule for one environment
+│   └── app/             # the compose app + its env vars for one environment
 ├── shared/              # the Coolify project + dev environment
 └── envs/
-    ├── dev/             # calls the module for dev
-    └── prod/            # calls the module for production
+    ├── dev/             # calls the modules for dev
+    └── prod/            # calls the modules for production
 ```
 
 Three roots, three state files. `envs/dev` and `envs/prod` read `shared`'s
@@ -41,12 +43,15 @@ dev and vice versa.
    - **Security → API Tokens:** create a token for Terraform with these
      permissions:
      - `read`
-     - `write`: create and update projects, environments and databases
+     - `write`: create and update projects, environments, databases and
+       applications
      - `read:sensitive`: lets the DB connection URL read back, which avoids
        spurious diffs
 
      `root` also works but grants more than this needs.
    - **Servers:** note your server's UUID.
+   - **Sources → + Add → GitHub App:** create the app, install it on this
+     repo, and note the source's UUID. Terraform doesn't manage this.
 
    GitHub Actions gets its own token later, with `deploy` only.
 
@@ -86,49 +91,39 @@ dev and vice versa.
    terraform init && terraform apply
    ```
 
-4. Each environment's database:
+4. Each environment (database + app). See the next section for why the
+   domain waits:
    ```sh
    cd ../envs/dev
-   cp terraform.tfvars.example terraform.tfvars   # fill in
+   cp terraform.tfvars.example terraform.tfvars   # fill in, leave domain unset
    terraform init && terraform apply
    ```
    Same for `envs/prod` when you're ready for production.
 
-5. Create the app in Coolify (once per environment). See the next section.
+## The app
 
-## Creating the app in Coolify
+`modules/app` creates the Coolify application with Docker Compose from
+`/compose.prod.yml`, the predefined network on (so the stack reaches
+Postgres by name) and auto deploy off (CI deploys through the webhook after
+pushing images; auto deploy would ship the previous images on every push).
 
-In the project, open the environment (`dev` or `production`), then:
+It also sets the app's env vars. The database values come straight from the
+database module, and `SECRET_KEY` is generated. Add anything else with `app_env` in `terraform.tfvars` or
+`app_secrets` in `secrets.auto.tfvars`. Terraform owns the whole set: a
+variable added in the Coolify UI is removed on the next apply.
 
-1. **+ New → Private Repository (with GitHub App)**, pick the repo and
-   branch `main`. (First time only: add the GitHub App under **Sources**
-   and grant it access to this repo.)
-   - **Build Pack:** Docker Compose
-   - **Base Directory:** `/`
-   - **Docker Compose Location:** `/compose.prod.yml`
-   - **Advanced → Auto Deploy:** off. CI triggers deploys through the
-     webhook after the images are pushed; leaving this on deploys stale
-     images on every push.
+**The domain takes two applies.** Coolify won't accept a compose domain
+until a deploy has read the compose file from the repo, so:
 
-2. **Domains:** set the domain on the `nginx` service only.
-3. **Advanced → Docker Compose:** Set Predefined network to *Connect to predefined network*. Without it the stack can't reach the Postgres container by name.
-4. **Environment Variables:** fill in what the compose file references.
-   The database values come from Terraform:
-   ```sh
-   cd infra/envs/dev
-   terraform output -raw database_url
-   terraform output -raw postgres_password
-   terraform output postgres_user postgres_db
-   ```
-   Also set `IMAGE_TAG` (`dev` for dev) and the backend's other required
-   settings (`SECRET_KEY`, `PROJECT_NAME`, `FIRST_SUPERUSER`,
-   `FIRST_SUPERUSER_PASSWORD`).
-5. **Webhooks:** copy the **Deploy Webhook** URL. It goes into the GitHub
-   environment as the `COOLIFY_WEBHOOK` secret, alongside a `COOLIFY_TOKEN`
-   with `deploy` permission.
+1. `terraform apply` with `domain` unset.
+2. Deploy once, from the UI or with the webhook below. The images must
+   already be in GHCR.
+3. Set `domain = "https://..."` in `terraform.tfvars` and apply again. It's
+   attached to the `nginx` service.
 
-Don't deploy from the UI until the images exist in GHCR. The first push to
-main builds them and triggers the deploy.
+**Deploy webhook:** `terraform output deploy_webhook` is the
+`COOLIFY_WEBHOOK` secret for the GitHub environment, alongside a
+`COOLIFY_TOKEN` with `deploy` permission.
 
 ## What compose.prod.yml needs to look like
 
@@ -148,14 +143,13 @@ services:
     image: ghcr.io/fitchatron/full-stack-template-backend:${IMAGE_TAG}
     pull_policy: always
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       SECRET_KEY: ${SECRET_KEY}
       PROJECT_NAME: ${PROJECT_NAME}
-      FIRST_SUPERUSER: ${FIRST_SUPERUSER}
-      FIRST_SUPERUSER_PASSWORD: ${FIRST_SUPERUSER_PASSWORD}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
 ```
 
@@ -184,8 +178,9 @@ webhook, or Coolify deploys the previous build.
   files up somewhere safe; losing them means re-importing everything.
 - **`prevent_destroy`** is on both databases and the dev environment.
   Comment it out deliberately if you ever want to tear something down.
-- **Changing the DB password** (e.g. by tainting `random_password.db`) does
-  not update the app. Re-copy the outputs into Coolify afterwards.
+- **Changing the DB password** (e.g. by tainting `random_password.db`)
+  updates the app's env vars in the same apply, but the running app keeps
+  the old one until you redeploy.
 - **Admin database access:** both databases are public on the server's IP
   (dev `5433`, prod `5434`, see `terraform output public_port`) so admins
   can connect with psql or a GUI. Allow those ports only from known IPs in

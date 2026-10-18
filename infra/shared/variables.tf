@@ -18,3 +18,14 @@ variable "coolify_token" {
   default     = null
   sensitive   = true
 }
+# The GitHub App is added once under Sources in the Coolify UI; both
+# environments' apps clone through it.
+variable "github_app_uuid" {
+  description = "UUID of the GitHub App source in Coolify (Sources > the app)."
+  type        = string
+}
+
+variable "git_repository" {
+  description = "Repository the apps deploy from, as owner/name."
+  type        = string
+}

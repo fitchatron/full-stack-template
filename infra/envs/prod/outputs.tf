@@ -26,3 +26,12 @@ output "postgres_password" {
   value     = module.database.postgres_password
   sensitive = true
 }
+
+output "application_uuid" {
+  value = module.app.application_uuid
+}
+
+# COOLIFY_WEBHOOK for this environment's GitHub Actions deploy job.
+output "deploy_webhook" {
+  value = "${local.shared.coolify_endpoint}/api/v1/deploy?uuid=${module.app.application_uuid}&force=false"
+}

@@ -9,3 +9,27 @@ variable "coolify_token" {
   default     = null
   sensitive   = true
 }
+
+variable "git_branch" {
+  type    = string
+  default = "main"
+}
+
+variable "domain" {
+  description = "Public URL for the app, e.g. https://app.example.com. Leave unset until the first deploy (see README)."
+  type        = string
+  default     = null
+}
+
+variable "app_env" {
+  description = "Extra non-secret env vars for the app, e.g. { LOG_LEVEL = \"DEBUG\" }."
+  type        = map(string)
+  default     = {}
+}
+
+variable "app_secrets" {
+  description = "Extra secret env vars for the app. Set in secrets.auto.tfvars."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
