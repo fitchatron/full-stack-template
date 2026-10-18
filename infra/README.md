@@ -5,7 +5,7 @@ environment, each with its own Postgres.
 
 The app itself is **not** in Terraform. It's a git-based Docker Compose
 application created once in the Coolify UI. On every deploy, Coolify reads
-`compose.prod.yaml` from the repo, so compose changes ship with the merge
+`compose.prod.yml` from the repo, so compose changes ship with the merge
 that makes them.
 
 ## Who owns what
@@ -15,7 +15,7 @@ that makes them.
 | Project, environments | Terraform `shared/` | basically never |
 | Postgres + backups per environment | Terraform `envs/*` | sizing or schedule changes |
 | The app resource, its domain and env vars | Coolify UI (once per environment) | you add a setting |
-| `compose.prod.yaml` | the repo | any merge |
+| `compose.prod.yml` | the repo | any merge |
 | Images and deploys | GitHub Actions | every push to main (dev) / tag (prod) |
 
 ## Layout
@@ -100,13 +100,18 @@ dev and vice versa.
 
 In the project, open the environment (`dev` or `production`), then:
 
-1. **+ New → Public Repository** with the repo URL and branch `main`.
+1. **+ New → Private Repository (with GitHub App)**, pick the repo and
+   branch `main`. (First time only: add the GitHub App under **Sources**
+   and grant it access to this repo.)
    - **Build Pack:** Docker Compose
    - **Base Directory:** `/`
-   - **Docker Compose Location:** `/compose.prod.yaml`
+   - **Docker Compose Location:** `/compose.prod.yml`
+   - **Advanced → Auto Deploy:** off. CI triggers deploys through the
+     webhook after the images are pushed; leaving this on deploys stale
+     images on every push.
+
 2. **Domains:** set the domain on the `nginx` service only.
-3. **Connect to Predefined Network:** turn this on. Without it the stack
-   can't reach the Postgres container by name.
+3. **Advanced → Docker Compose:** Set Predefined network to *Connect to predefined network*. Without it the stack can't reach the Postgres container by name.
 4. **Environment Variables:** fill in what the compose file references.
    The database values come from Terraform:
    ```sh
@@ -125,7 +130,7 @@ In the project, open the environment (`dev` or `production`), then:
 Don't deploy from the UI until the images exist in GHCR. The first push to
 main builds them and triggers the deploy.
 
-## What compose.prod.yaml needs to look like
+## What compose.prod.yml needs to look like
 
 ```yaml
 services:
@@ -168,7 +173,7 @@ On push to main, the workflow:
    curl -fsS "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
    ```
 
-Coolify then pulls the repo at the latest `main`, reads `compose.prod.yaml`,
+Coolify then pulls the repo at the latest `main`, reads `compose.prod.yml`,
 pulls the images and restarts the stack. Push the images before calling the
 webhook, or Coolify deploys the previous build.
 
@@ -181,6 +186,11 @@ webhook, or Coolify deploys the previous build.
   Comment it out deliberately if you ever want to tear something down.
 - **Changing the DB password** (e.g. by tainting `random_password.db`) does
   not update the app. Re-copy the outputs into Coolify afterwards.
+- **Admin database access:** both databases are public on the server's IP
+  (dev `5433`, prod `5434`, see `terraform output public_port`) so admins
+  can connect with psql or a GUI. Allow those ports only from known IPs in
+  the firewall. The app never uses them; `DATABASE_URL` is always the
+  internal URL. Set `is_public = false` in `envs/*/main.tf` to close them.
 - **Private GHCR images:** the Coolify server has to be able to pull them.
   Either make the packages public or `docker login ghcr.io` on the server
   with a read-only token.
