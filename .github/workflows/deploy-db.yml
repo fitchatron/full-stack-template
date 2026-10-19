@@ -1,0 +1,36 @@
+name: deploy-db
+
+# Runs migrations before the app deploys, so a failed migration stops the
+# deploy and the current app keeps running.
+#
+# Runs on the environment's own runner (infra/modules/runner), a Coolify
+# service on the Coolify network. The runner's env carries the DB settings
+# from Terraform, so this job needs no DB secrets.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  deploy_db:
+    runs-on: [self-hosted, coolify, "${{ inputs.environment }}"]
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.12.10"
+
+      - name: Upgrade database
+        env:
+          # Settings validates these on import; migrations don't use them.
+          PROJECT_NAME: migrations
+          SECRET_KEY: unused-by-migrations-but-settings-requires-32-chars
+        run: |
+          cd backend
+          uv run alembic upgrade head

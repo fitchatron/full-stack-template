@@ -13,9 +13,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    concurrency:
-      group: deploy-${{ inputs.environment }}
-      cancel-in-progress: true
 
     permissions:
       contents: write # move the production branch

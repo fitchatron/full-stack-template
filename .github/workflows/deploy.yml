@@ -13,6 +13,12 @@ on:
       - compose.prod.yml
       - .github/**
 
+# One deploy per environment at a time. Never cancel a running one: it could
+# be halfway through a migration.
+concurrency:
+  group: deploy-${{ github.ref_type == 'tag' && 'production' || 'development' }}
+  cancel-in-progress: false
+
 jobs:
   set_environment:
     uses: ./.github/workflows/set-environment.yml
@@ -24,8 +30,16 @@ jobs:
       environment: ${{ needs.set_environment.outputs.environment }}
     secrets: inherit
 
-  deploy_app:
+  deploy_db:
     needs: [set_environment, test_backend]
+    uses: ./.github/workflows/deploy-db.yml
+    with:
+      environment: ${{ needs.set_environment.outputs.environment }}
+    secrets: inherit
+
+  # Only runs if the migrations succeeded.
+  deploy_app:
+    needs: [set_environment, deploy_db]
     permissions:
       contents: write
     uses: ./.github/workflows/deploy-app.yml

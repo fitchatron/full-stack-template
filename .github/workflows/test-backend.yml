@@ -23,6 +23,8 @@ jobs:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
         run: |
 
           rm -f .env
@@ -39,8 +41,9 @@ jobs:
           printf 'POSTGRES_USER=%s\n' "$POSTGRES_USER" >> .env
           printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD" >> .env
           printf 'POSTGRES_DB=%s\n' "$POSTGRES_DB" >> .env
+          printf 'POSTGRES_HOST=%s\n' "$POSTGRES_HOST" >> .env
           urlencode() { python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1"; }
-          printf 'DATABASE_URL=postgresql+psycopg://%s:%s@localhost:5432/%s\n' "$(urlencode "$POSTGRES_USER")" "$(urlencode "$POSTGRES_PASSWORD")" "$POSTGRES_DB" >> .env
+          printf 'DATABASE_URL=postgresql+psycopg://%s:%s@%s:%s/%s\n' "$(urlencode "$POSTGRES_USER")" "$(urlencode "$POSTGRES_PASSWORD")" "$(urlencode "$POSTGRES_HOST")" "$POSTGRES_PORT" "$POSTGRES_DB" >> .env
 
           echo '' >> .env
 

@@ -34,3 +34,9 @@ variable "app_secrets" {
   default     = {}
   sensitive   = true
 }
+
+variable "github_runner_token" {
+  description = "Fine-grained PAT for this repo with Administration: read and write, used by the runner to register. Set in secrets.auto.tfvars."
+  type        = string
+  sensitive   = true
+}

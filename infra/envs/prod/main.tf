@@ -50,3 +50,27 @@ module "app" {
   app_env     = var.app_env
   app_secrets = var.app_secrets
 }
+
+# Runs this environment's migrations (.github/workflows/deploy-db.yml).
+module "runner" {
+  source = "../../modules/runner"
+
+  app_name         = var.app_name
+  env_name         = "prod"
+  project_uuid     = local.shared.project_uuid
+  server_uuid      = local.shared.server_uuid
+  environment_name = "production"
+
+  git_repository = local.shared.git_repository
+  github_token   = var.github_runner_token
+  # The second label matches the GitHub environment name.
+  labels = ["coolify", "production"]
+
+  job_env = {
+    POSTGRES_HOST     = module.database.database_uuid
+    POSTGRES_USER     = module.database.postgres_user
+    POSTGRES_PASSWORD = module.database.postgres_password
+    POSTGRES_DB       = module.database.postgres_db
+    DATABASE_URL      = module.database.database_url
+  }
+}

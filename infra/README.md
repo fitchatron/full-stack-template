@@ -16,6 +16,7 @@ ship with the merge that makes them.
 | Project, environments | Terraform `shared/` | basically never |
 | Postgres + backups per environment | Terraform `envs/*` | sizing or schedule changes |
 | The app resource, its domain and env vars | Terraform `envs/*` | you add a setting |
+| The migrations runner | Terraform `envs/*` | image bumps |
 | `compose.prod.yml` | the repo | any merge |
 | When to deploy | GitHub Actions | every push to main (dev) / release tag (prod) |
 
@@ -25,7 +26,8 @@ ship with the merge that makes them.
 infra/
 ├── modules/
 │   ├── database/        # Postgres + backup schedule for one environment
-│   └── app/             # the compose app + its env vars for one environment
+│   ├── app/             # the compose app + its env vars for one environment
+│   └── runner/          # self-hosted Actions runner for one environment
 ├── shared/              # the Coolify project + dev environment
 └── envs/
     ├── dev/             # calls the modules for dev
@@ -147,6 +149,21 @@ runs the tests, then calls the environment's deploy webhook:
 curl -fsS "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
 ```
 Coolify then pulls the branch, builds and restarts the stack.
+
+**Migrations** run first, in `deploy-db.yml`. If `alembic upgrade head`
+fails, the deploy doesn't run and the current app stays up.
+
+They run on the environment's own self-hosted runner (`modules/runner`), a
+Coolify service on the Coolify network with labels `coolify` plus the
+GitHub environment name. Terraform puts the DB settings in the runner's
+env, so jobs reach Postgres by its internal hostname and GitHub holds no DB
+credentials. The runner is ephemeral: it re-registers with a clean
+workspace after every job.
+
+It registers itself with `github_runner_token` in each env's
+`secrets.auto.tfvars`: a fine-grained PAT for this repo only, with
+**Administration: Read and write**. Every job on the runner can read the
+DB settings, so only use it for deploy workflows, never pull requests.
 
 **Releasing:** tag on `main` as usual (`git tag 1.2.0 && git push --tags`).
 CI fast-forwards `production` to the tagged commit and deploys prod.
