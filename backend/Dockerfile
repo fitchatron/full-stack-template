@@ -72,7 +72,7 @@ EXPOSE 8000
 
 # Let Docker know when the app is actually serving requests.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -fsS http://localhost:8000/docs > /dev/null || exit 1
+  CMD curl -fsS http://localhost:8000/health > /dev/null || exit 1
 
 # Run the application.
 CMD ["fastapi", "run"]

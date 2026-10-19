@@ -60,7 +60,7 @@ async def request_context(request: Request, call_next):
         request_id_ctx.reset(token)
 
 
-app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(api_router)
 
 register_exception_handlers(app)
 
