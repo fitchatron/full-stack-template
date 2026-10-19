@@ -2,7 +2,7 @@
 # "production" environment with every project, so only dev is declared here.
 
 resource "coolify_project" "this" {
-  name        = var.project_name
+  name        = var.project_id
   description = "Managed by Terraform"
 }
 

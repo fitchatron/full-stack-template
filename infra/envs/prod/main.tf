@@ -5,7 +5,7 @@ locals {
 module "database" {
   source = "../../modules/database"
 
-  app_name     = var.app_name
+  project_id   = local.shared.project_id
   env_name     = "prod"
   project_uuid = local.shared.project_uuid
   server_uuid  = local.shared.server_uuid
@@ -31,6 +31,7 @@ module "database" {
 module "app" {
   source = "../../modules/app"
 
+  project_id       = local.shared.project_id
   app_name         = var.app_name
   env_name         = "prod"
   project_uuid     = local.shared.project_uuid
@@ -55,7 +56,7 @@ module "app" {
 module "runner" {
   source = "../../modules/runner"
 
-  app_name         = var.app_name
+  project_id       = local.shared.project_id
   env_name         = "prod"
   project_uuid     = local.shared.project_uuid
   server_uuid      = local.shared.server_uuid

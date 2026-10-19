@@ -4,7 +4,7 @@
 # env, so GitHub never holds DB credentials.
 
 locals {
-  prefix = "${var.app_name}-${var.env_name}"
+  prefix = "${var.project_id}-${var.env_name}"
 
   # Coolify turns each ${VAR} in the compose file into a service env var,
   # which coolify_envs_bulk below fills in.
@@ -20,6 +20,7 @@ locals {
             REPO_URL             = "https://github.com/${var.git_repository}"
             RUNNER_SCOPE         = "repo"
             RUNNER_NAME_PREFIX   = local.prefix
+            RUNNER_WORKDIR       = "/_work"
             RANDOM_RUNNER_SUFFIX = "true"
             LABELS               = join(",", var.labels)
             # Re-registers with a clean workspace after every job.

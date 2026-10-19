@@ -6,6 +6,10 @@ output "server_uuid" {
   value = var.server_uuid
 }
 
+output "project_id" {
+  value = var.project_id
+}
+
 output "project_uuid" {
   value = coolify_project.this.uuid
 }

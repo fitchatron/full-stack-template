@@ -3,7 +3,7 @@
 # manages the Coolify resource around it.
 
 locals {
-  prefix = "${var.app_name}-${var.env_name}"
+  prefix = "${var.project_id}-${var.env_name}"
 }
 
 # Generated here so nobody ever types it. Lands in state, so treat the

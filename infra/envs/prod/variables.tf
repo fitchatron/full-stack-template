@@ -1,5 +1,5 @@
 variable "app_name" {
-  description = "Short app name, used as a prefix for Coolify resource names."
+  description = "Human-friendly app name, shown in the API docs and frontend (PROJECT_NAME). Resource names use project_id from shared."
   type        = string
 }
 

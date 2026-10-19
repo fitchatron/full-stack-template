@@ -4,7 +4,7 @@
 # details via outputs.
 
 locals {
-  prefix = "${var.app_name}-${var.env_name}"
+  prefix = "${var.project_id}-${var.env_name}"
 
   # Coolify hands back postgres://user:pass@<host>:5432/db; swap the scheme
   # for the SQLAlchemy driver the backend uses.

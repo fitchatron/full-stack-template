@@ -1,5 +1,5 @@
 # non-sensitive variables for this environment
-app_name = "myapp"
+app_name = "My App"
 
 # Leave commented out for the first apply; set after the first deploy.
 # domain = "https://app.example.com"

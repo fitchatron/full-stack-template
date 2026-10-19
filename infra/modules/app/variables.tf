@@ -1,7 +1,12 @@
 # --- Where it lives -----------------------------------------------------------
 
+variable "project_id" {
+  description = "Kebab-case project identifier (from the shared root), used as a prefix for Coolify resource names."
+  type        = string
+}
+
 variable "app_name" {
-  description = "Short app name, used as a prefix for Coolify resource names and as PROJECT_NAME."
+  description = "Human-friendly name, passed to the app as PROJECT_NAME (docs title, frontend)."
   type        = string
 }
 

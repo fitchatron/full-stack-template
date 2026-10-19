@@ -1,6 +1,6 @@
 # non-sensitive variables for the shared environment
 coolify_endpoint = "https://coolify.example.com"
 server_uuid      = "replace-with-server-uuid"
-project_name     = "myapp"
+project_id       = "myapp"
 github_app_uuid  = "replace-with-github-app-source-uuid"
 git_repository   = "fitchatron/full-stack-template"
