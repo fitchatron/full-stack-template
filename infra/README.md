@@ -134,7 +134,8 @@ compose file keeps its `build:` keys and there's no registry.
 - No `ports:` on nginx. Coolify's proxy (Traefik) routes the domain to it.
 - No Postgres service. Terraform's database runs separately.
 - No `container_name:`. Coolify names containers itself.
-- `DATABASE_URL` is built from the `POSTGRES_*` env vars Terraform sets.
+- No database settings. Terraform sets `DATABASE_URL` and the `POSTGRES_*`
+  values as the app's env vars, and `env_file: .env` passes them through.
 
 ## Deploying
 

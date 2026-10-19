@@ -9,8 +9,6 @@ services:
       - 8000
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
 
   nginx:
     build:
@@ -19,5 +17,3 @@ services:
     depends_on:
       - backend
     restart: always
-    environment:
-      - NGINX_PORT=80

@@ -42,6 +42,7 @@ module "app" {
   postgres_user     = module.database.postgres_user
   postgres_password = module.database.postgres_password
   postgres_db       = module.database.postgres_db
+  database_url      = module.database.database_url
 
   app_env     = var.app_env
   app_secrets = var.app_secrets

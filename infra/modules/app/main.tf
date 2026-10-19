@@ -49,7 +49,6 @@ resource "coolify_envs_bulk" "this" {
   resource_type = "application"
   resource_uuid = coolify_application_github_app.this.uuid
 
-  # compose.prod.yml builds DATABASE_URL from the POSTGRES_* values.
   variables = merge(
     {
       PROJECT_NAME      = var.app_name
@@ -58,6 +57,7 @@ resource "coolify_envs_bulk" "this" {
       POSTGRES_USER     = var.postgres_user
       POSTGRES_PASSWORD = var.postgres_password
       POSTGRES_DB       = var.postgres_db
+      DATABASE_URL      = var.database_url
     },
     var.app_env,
     var.app_secrets,

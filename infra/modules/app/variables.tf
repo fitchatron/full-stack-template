@@ -63,6 +63,12 @@ variable "domain" {
 
 # --- Env vars -----------------------------------------------------------------
 
+variable "database_url" {
+  description = "Internal connection string (the database module's database_url)."
+  type        = string
+  sensitive   = true
+}
+
 variable "postgres_host" {
   description = "Postgres hostname on the Coolify network (the database UUID)."
   type        = string
