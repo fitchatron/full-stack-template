@@ -17,12 +17,14 @@ jobs:
         with:
           version: "0.12.10"
 
+      # Throwaway Postgres container and test-only key: nothing here is a
+      # secret, so the job needs nothing from the GitHub environment.
       - name: Generate .env file
         env:
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          SECRET_KEY: test-only-secret-key-not-used-outside-ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test-only-password
+          POSTGRES_DB: app
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
         run: |
