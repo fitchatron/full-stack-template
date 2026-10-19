@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-    # Same pattern as create-release. Path filters don't apply to tags.
+      - task/coolify-infra # TEMP: remove before merging
     tags:
       - "*.*.*"
     paths:
