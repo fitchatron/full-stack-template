@@ -1,5 +1,7 @@
-name: Build and deploy app
+name: Deploy app
 
+# Coolify builds from the branch each app tracks: dev tracks main, prod
+# tracks production. This job only decides when, after the tests pass.
 on:
   workflow_call:
     inputs:
@@ -7,49 +9,31 @@ on:
         required: true
         type: string
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: shadowarcanist/tasklytics
-
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: true
+
     permissions:
-      contents: read
-      packages: write
+      contents: write # move the production branch
 
     steps:
       - uses: actions/checkout@v7
+        if: inputs.environment == 'production'
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v4.6.0
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT_TOKEN }}
-      
-      - name: Generate .env file
-        run: |
-
-          rm -f .env
-          rm -f backend/.env
-          touch .env
-
-          echo '# docker settings' >> .env
-          echo 'DOCKER_IMAGE_BACKEND=${{ vars.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ vars.DOCKER_IMAGE_BACKEND }}:'${GITHUB_REF_NAME////-} >> .env
-          echo 'DOCKER_IMAGE_CELERY=${{ vars.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ vars.DOCKER_IMAGE_NGINX }}:'${GITHUB_REF_NAME////-} >> .env
-
-          echo '' >> .env
-
-      - name: Build containers
-        run: |
-          docker compose -f compose.prod.yml --env-file .env build
-      
-      - name: Push docker images to ACR
-        run: |
-          docker compose -f compose.prod.yml push
+      # production only ever follows main, so this is a fast-forward to the
+      # tagged commit. Without -f it fails rather than rewrite history.
+      # Pushes made with GITHUB_TOKEN don't trigger workflows, so no loop.
+      - name: Move production to the release
+        if: inputs.environment == 'production'
+        run: git push origin "${GITHUB_SHA}:refs/heads/production"
 
       - name: Trigger Coolify deployment
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
         run: |
-          curl --fail --request POST '${{ secrets.COOLIFY_WEBHOOK }}' \
-            --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
+          curl -fsS "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"

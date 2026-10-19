@@ -10,9 +10,10 @@ variable "coolify_token" {
   sensitive   = true
 }
 
+# CI moves production to each release tag; nobody commits to it.
 variable "git_branch" {
   type    = string
-  default = "main"
+  default = "production"
 }
 
 variable "domain" {

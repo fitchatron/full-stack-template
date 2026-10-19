@@ -33,7 +33,7 @@ jobs:
           echo "  " >> release.md
           echo "## Commits" >> release.md
           echo "  " >> release.md
-          git log `git tag | sort -r | head -2 | tail -1`..${{ github.ref_name }} --no-merges --oneline >> release.md
+          git log `git tag --sort=-v:refname | head -2 | tail -1`..${{ github.ref_name }} --no-merges --oneline >> release.md
           cat release.md
 
       - name: Create release

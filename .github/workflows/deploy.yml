@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - main
+    # Same pattern as create-release. Path filters don't apply to tags.
     tags:
-      - "*"
+      - "*.*.*"
     paths:
       - backend/**
       - nginx/**
+      - compose.prod.yml
       - .github/**
 
 jobs:
@@ -24,6 +26,8 @@ jobs:
 
   deploy_app:
     needs: [set_environment, test_backend]
+    permissions:
+      contents: write
     uses: ./.github/workflows/deploy-app.yml
     with:
       environment: ${{ needs.set_environment.outputs.environment }}

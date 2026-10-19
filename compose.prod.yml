@@ -1,8 +1,6 @@
 name: full-stack-template
 services:
   backend:
-    image: ${DOCKER_IMAGE_BACKEND:ghcr.io/fitchatron/fst-backend:latest}
-    container_name: backend
     build:
       context: backend
       dockerfile: Dockerfile
@@ -15,16 +13,11 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
 
   nginx:
-    image: ${DOCKER_IMAGE_NGINX:ghcr.io/fitchatron/fst-nginx-proxy:latest}
-    container_name: nginx-proxy
     build:
       context: nginx
       dockerfile: Dockerfile
     depends_on:
       - backend
     restart: always
-    # ports:
-    #   - "80:80"
-    #   - "443:443"
     environment:
       - NGINX_PORT=80

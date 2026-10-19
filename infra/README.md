@@ -17,7 +17,7 @@ ship with the merge that makes them.
 | Postgres + backups per environment | Terraform `envs/*` | sizing or schedule changes |
 | The app resource, its domain and env vars | Terraform `envs/*` | you add a setting |
 | `compose.prod.yml` | the repo | any merge |
-| Images and deploys | GitHub Actions | every push to main (dev) / tag (prod) |
+| When to deploy | GitHub Actions | every push to main (dev) / release tag (prod) |
 
 ## Layout
 
@@ -116,8 +116,7 @@ variable added in the Coolify UI is removed on the next apply.
 until a deploy has read the compose file from the repo, so:
 
 1. `terraform apply` with `domain` unset.
-2. Deploy once, from the UI or with the webhook below. The images must
-   already be in GHCR.
+2. Deploy once, from the UI or with the webhook below.
 3. Set `domain = "https://..."` in `terraform.tfvars` and apply again. It's
    attached to the `nginx` service.
 
@@ -127,49 +126,46 @@ until a deploy has read the compose file from the repo, so:
 
 ## What compose.prod.yml needs to look like
 
-```yaml
-services:
-  nginx:
-    image: ghcr.io/fitchatron/full-stack-template-nginx:${IMAGE_TAG}
-    pull_policy: always
-    depends_on: [frontend, backend]
-    # no ports: Coolify's proxy (Traefik) routes the domain to this container
+Coolify clones the branch and builds the images on the server, so the
+compose file keeps its `build:` keys and there's no registry.
 
-  frontend:
-    image: ghcr.io/fitchatron/full-stack-template-frontend:${IMAGE_TAG}
-    pull_policy: always
-
-  backend:
-    image: ghcr.io/fitchatron/full-stack-template-backend:${IMAGE_TAG}
-    pull_policy: always
-    environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      SECRET_KEY: ${SECRET_KEY}
-      PROJECT_NAME: ${PROJECT_NAME}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
-```
-
-- No `build:` keys. Images come from GHCR, so Coolify only pulls.
+- No `ports:` on nginx. Coolify's proxy (Traefik) routes the domain to it.
 - No Postgres service. Terraform's database runs separately.
-- `pull_policy: always` matters. Dev reuses the `dev` tag, and without it
-  Docker keeps the image it already has instead of pulling the new one.
+- No `container_name:`. Coolify names containers itself.
+- `DATABASE_URL` is built from the `POSTGRES_*` env vars Terraform sets.
 
 ## Deploying
 
-On push to main, the workflow:
-1. builds and pushes the images to GHCR tagged `dev`
-2. calls the dev deploy webhook:
-   ```sh
-   curl -fsS "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
-   ```
+| Environment | Coolify app tracks | Deploys when |
+|---|---|---|
+| dev | `main` | a push to `main` passes the tests |
+| prod | `production` | a release tag (`x.y.z`) passes the tests |
 
-Coolify then pulls the repo at the latest `main`, reads `compose.prod.yml`,
-pulls the images and restarts the stack. Push the images before calling the
-webhook, or Coolify deploys the previous build.
+Auto deploy is off, so pushes alone don't deploy. `.github/workflows/deploy.yml`
+runs the tests, then calls the environment's deploy webhook:
+```sh
+curl -fsS "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
+```
+Coolify then pulls the branch, builds and restarts the stack.
+
+**Releasing:** tag on `main` as usual (`git tag 1.2.0 && git push --tags`).
+CI fast-forwards `production` to the tagged commit and deploys prod.
+`production` is only a marker for what prod runs: never commit to it.
+
+**Rolling back prod:** point `production` at an older tag and redeploy:
+```sh
+git push -f origin 1.1.0:production
+curl -fsS "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
+```
+
+**Setup, once:**
+- Create the branch before applying `envs/prod`:
+  `git push origin main:production`.
+- Protect `production` so only GitHub Actions can push to it.
+- Create GitHub environments named `development` and `production` (what
+  `set-environment.yml` outputs). Each gets `COOLIFY_WEBHOOK`
+  (`terraform output deploy_webhook`) and a `COOLIFY_TOKEN` with `deploy`
+  permission.
 
 ## Things to know
 
@@ -186,9 +182,6 @@ webhook, or Coolify deploys the previous build.
   can connect with psql or a GUI. Allow those ports only from known IPs in
   the firewall. The app never uses them; `DATABASE_URL` is always the
   internal URL. Set `is_public = false` in `envs/*/main.tf` to close them.
-- **Private GHCR images:** the Coolify server has to be able to pull them.
-  Either make the packages public or `docker login ghcr.io` on the server
-  with a read-only token.
 - **Postgres version:** the module defaults to `postgres:17`; local dev uses
   18. Bump `postgres_image` once you've confirmed Coolify's Postgres resource
   handles 18's new data directory layout.
