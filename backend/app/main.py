@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 # only trust inbound request ids that can't inject anything into log lines
 REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 
+# hit every few seconds by Docker and monitors; logging each success would
+# bury real traffic. Failures are still logged.
+UNLOGGED_PATHS = frozenset({"/health", "/health/ready"})
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
@@ -47,13 +51,14 @@ async def request_context(request: Request, call_next):
                 status_code=500, content={"detail": "Internal server error"}
             )
         duration_ms = (time.perf_counter() - start) * 1000
-        logger.info(
-            "%s %s -> %s (%.1fms)",
-            request.method,
-            request.url.path,
-            response.status_code,
-            duration_ms,
-        )
+        if request.url.path not in UNLOGGED_PATHS or response.status_code >= 400:
+            logger.info(
+                "%s %s -> %s (%.1fms)",
+                request.method,
+                request.url.path,
+                response.status_code,
+                duration_ms,
+            )
         response.headers["X-Request-ID"] = request_id
         return response
     finally:
