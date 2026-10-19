@@ -29,7 +29,13 @@ locals {
           },
           { for k in local.passthrough : k => "$${${k}}" },
         )
+        # Lets jobs reach Postgres by name. Coolify's API rejects
+        # connect_to_docker_network on services, so join it here instead.
+        networks = [var.docker_network]
       }
+    }
+    networks = {
+      (var.docker_network) = { external = true }
     }
   })
 }
@@ -43,9 +49,6 @@ resource "coolify_service" "this" {
   environment_name = var.environment_name
 
   docker_compose_raw = local.compose
-
-  # Lets jobs reach Postgres by name.
-  connect_to_docker_network = true
 
   # Started below, once its env vars are set.
   instant_deploy = false

@@ -50,7 +50,13 @@ variable "labels" {
 variable "runner_image" {
   description = "Runner image. Pin a specific tag from Docker Hub."
   type        = string
-  default     = "myoung34/github-runner:ubuntu-noble"
+  default     = "myoung34/github-runner:2.338.0-ubuntu-noble"
+}
+
+variable "docker_network" {
+  description = "Docker network the databases are on: the server's Coolify destination network."
+  type        = string
+  default     = "coolify"
 }
 
 variable "job_env" {
