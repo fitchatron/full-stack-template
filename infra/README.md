@@ -1,7 +1,7 @@
 # Infra
 
 Terraform for the Coolify setup: one project with a `dev` and a `production`
-environment, each with its own Postgres and app.
+environment, each with its own Postgres, app and migrations runner.
 
 The app is a git-based Docker Compose application cloned through a GitHub
 App. Terraform manages the Coolify resource and its env vars; on every
@@ -45,8 +45,8 @@ dev and vice versa.
    - **Security → API Tokens:** create a token for Terraform with these
      permissions:
      - `read`
-     - `write`: create and update projects, environments, databases and
-       applications
+     - `write`: create and update projects, environments, databases,
+       applications and services (the runner)
      - `read:sensitive`: lets the DB connection URL read back, which avoids
        spurious diffs
 
@@ -86,41 +86,59 @@ dev and vice versa.
    - To switch from A to B, delete the `coolify_token` line from each
      `secrets.auto.tfvars`.
 
+   Each env's `secrets.auto.tfvars` also needs `github_runner_token` (see
+   [The migrations runner](#the-migrations-runner)).
+
 3. Shared:
    ```sh
    cd shared
    cp terraform.tfvars.example terraform.tfvars   # fill in
    terraform init && terraform apply
    ```
+   `project_id` (kebab-case, e.g. `full-stack-template`) names every Coolify
+   resource, so keep it stable: changing it renames them all. The
+   human-friendly name is `app_name` in `envs/*/terraform.tfvars`, passed to
+   the app as `PROJECT_NAME`.
 
-4. Each environment (database + app). See the next section for why the
-   domain waits:
+4. Each environment (database, app and runner). See [The app](#the-app) for
+   why the domain waits:
    ```sh
    cd ../envs/dev
    cp terraform.tfvars.example terraform.tfvars   # fill in, leave domain unset
    terraform init && terraform apply
    ```
-   Same for `envs/prod` when you're ready for production.
+   Same for `envs/prod` when you're ready for production; the `production`
+   branch must exist first (see [Setup, once](#setup-once)).
 
 ## The app
 
 `modules/app` creates the Coolify application with Docker Compose from
 `/compose.prod.yml`, the predefined network on (so the stack reaches
-Postgres by name) and auto deploy off (CI deploys through the webhook after
-pushing images; auto deploy would ship the previous images on every push).
+Postgres by name) and auto deploy off (CI deploys through the webhook once
+tests and migrations pass; auto deploy would ship every push untested).
+`terraform apply` doesn't deploy it.
 
-It also sets the app's env vars. The database values come straight from the
-database module, and `SECRET_KEY` is generated. Add anything else with `app_env` in `terraform.tfvars` or
+It also sets the app's env vars: `DATABASE_URL` and the `POSTGRES_*` values
+straight from the database module, a generated `SECRET_KEY`, and `app_name`
+as `PROJECT_NAME`. Add anything else with `app_env` in `terraform.tfvars` or
 `app_secrets` in `secrets.auto.tfvars`. Terraform owns the whole set: a
-variable added in the Coolify UI is removed on the next apply.
+variable added or changed in the Coolify UI is reverted on the next apply,
+so change them here.
 
 **The domain takes two applies.** Coolify won't accept a compose domain
 until a deploy has read the compose file from the repo, so:
 
-1. `terraform apply` with `domain` unset.
-2. Deploy once, from the UI or with the webhook below.
-3. Set `domain = "https://..."` in `terraform.tfvars` and apply again. It's
+1. Point a DNS record for the domain at the server.
+2. `terraform apply` with `domain` unset.
+3. Deploy once, from the UI or with the webhook below.
+4. Set `domain = "https://..."` in `terraform.tfvars` and apply again. It's
    attached to the `nginx` service.
+
+Traefik then gets a Let's Encrypt certificate, usually within a minute.
+Until it does, it serves its own untrusted "TRAEFIK DEFAULT CERT", and
+browsers may keep showing that warning until restarted. If it persists,
+check **Servers → Proxy → Logs** for ACME errors (DNS not resolving yet, or
+port 80 blocked).
 
 **Deploy webhook:** `terraform output deploy_webhook` is the
 `COOLIFY_WEBHOOK` secret for the GitHub environment, alongside a
@@ -136,6 +154,12 @@ compose file keeps its `build:` keys and there's no registry.
 - No `container_name:`. Coolify names containers itself.
 - No database settings. Terraform sets `DATABASE_URL` and the `POSTGRES_*`
   values as the app's env vars, and `env_file: .env` passes them through.
+- A healthcheck on every service, or Coolify's status badge reads "Running
+  (no healthcheck)". The Dockerfile `HEALTHCHECK`s count: the backend checks
+  `/health` (process up, no DB), nginx checks `/nginx-health`. nginx waits
+  for a healthy backend (`condition: service_healthy`).
+- `/health/ready` (backend up and DB reachable) isn't routed by nginx yet;
+  add a `location` for it before pointing an external monitor or CI at it.
 
 ## Deploying
 
@@ -145,64 +169,100 @@ compose file keeps its `build:` keys and there's no registry.
 | prod | `production` | a release tag (`x.y.z`) passes the tests |
 
 Auto deploy is off, so pushes alone don't deploy. `.github/workflows/deploy.yml`
-runs the tests, then calls the environment's deploy webhook:
-```sh
-curl -fsS "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
-```
-Coolify then pulls the branch, builds and restarts the stack.
+runs, one deploy per environment at a time (a newer run waits; a running
+one is never cancelled, as it may be mid-migration):
 
-**Migrations** run first, in `deploy-db.yml`. If `alembic upgrade head`
-fails, the deploy doesn't run and the current app stays up.
+1. `set-environment.yml`: a tag means `production`, anything else
+   `development`. This picks the GitHub environment and the runner.
+2. `test-backend.yml`: lint and tests against a throwaway Postgres. Its
+   settings are hardcoded test values, so it needs no secrets.
+3. `deploy-db.yml`: `alembic upgrade head`. If it fails, nothing is
+   deployed and the current app stays up.
+4. `deploy-app.yml`: for prod, fast-forwards `production` to the tag; then
+   calls the environment's deploy webhook:
+   ```sh
+   curl -fsS -X POST "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
+   ```
 
-They run on the environment's own self-hosted runner (`modules/runner`), a
-Coolify service on the Coolify network with labels `coolify` plus the
-GitHub environment name. Terraform puts the DB settings in the runner's
-env, so jobs reach Postgres by its internal hostname and GitHub holds no DB
+Coolify then clones the head of the tracked branch at that moment, builds
+the images on the server and restarts the stack. The workflow finishes when
+Coolify accepts the request, not when the deploy does: watch the deploy in
+Coolify, or turn on its failed-deployment notifications.
+
+On `main`, only changes under `backend/`, `nginx/`, `.github/` or to
+`compose.prod.yml` trigger a deploy; tag pushes always do.
+
+Everything runs on GitHub-hosted runners except migrations.
+
+### The migrations runner
+
+Migrations run on the environment's own self-hosted runner
+(`modules/runner`), a Coolify service that joins the `coolify` Docker
+network through its compose file, with labels `coolify` plus the GitHub
+environment name. Terraform puts the DB settings in the runner's env, so
+jobs reach Postgres by its internal hostname and GitHub holds no DB
 credentials. The runner is ephemeral: it re-registers with a clean
 workspace after every job.
 
 It registers itself with `github_runner_token` in each env's
 `secrets.auto.tfvars`: a fine-grained PAT for this repo only, with
-**Administration: Read and write**. Every job on the runner can read the
-DB settings, so only use it for deploy workflows, never pull requests.
+**Administration: Read and write**. Fine-grained PATs expire; when it
+does, the runner goes offline and `deploy-db` jobs queue indefinitely, so
+set a reminder. Pin `runner_image` to a specific tag.
+
+Every job on the runner can read the DB settings, so only use it for
+deploy workflows, never pull requests.
+
+### Releasing and rolling back
 
 **Releasing:** tag on `main` as usual (`git tag 1.2.0 && git push --tags`).
 CI fast-forwards `production` to the tagged commit and deploys prod.
-`production` is only a marker for what prod runs: never commit to it.
+`production` is only a marker for what prod runs: never commit to it. If it
+has diverged from `main`, the fast-forward fails and nothing deploys.
+`create-release.yml` runs separately on the same tag and needs
+`release_notes/<tag>.md`.
 
 **Rolling back prod:** point `production` at an older tag and redeploy:
 ```sh
 git push -f origin 1.1.0:production
-curl -fsS "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
+curl -fsS -X POST "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
 ```
 
-**Setup, once:**
+### Setup, once
+
 - Create the branch before applying `envs/prod`:
   `git push origin main:production`.
 - Protect `production` so only GitHub Actions can push to it.
+- **Settings → Actions → General → Workflow permissions:** read and write,
+  or CI can't move `production`.
 - Create GitHub environments named `development` and `production` (what
   `set-environment.yml` outputs). Each gets `COOLIFY_WEBHOOK`
-  (`terraform output deploy_webhook`) and a `COOLIFY_TOKEN` with `deploy`
-  permission.
+  (`terraform output deploy_webhook`) and a `COOLIFY_TOKEN` (created in
+  Coolify under **Security → API Tokens**) with `deploy` permission.
 
 ## Things to know
 
-- **State is a secret.** It holds the generated DB passwords in plain text.
+- **State is a secret.** It holds the generated DB passwords, `SECRET_KEY`
+  and the runner's PAT in plain text.
   Keep the machine's disk encrypted and back the three `terraform.tfstate`
   files up somewhere safe; losing them means re-importing everything.
 - **`prevent_destroy`** is on both databases and the dev environment.
   Comment it out deliberately if you ever want to tear something down.
 - **Changing the DB password** (e.g. by tainting `random_password.db`)
-  updates the app's env vars in the same apply, but the running app keeps
-  the old one until you redeploy.
+  updates the app's and runner's env vars in the same apply, but the
+  running app keeps the old one until you redeploy.
+- **Using a different DB user:** the app and migrations connect as the user
+  Coolify created, a superuser. To switch, create the role (e.g. with the
+  `cyrilgdn/postgresql` provider over the public port or an SSH tunnel) and
+  change the values passed to `module.app` and `module.runner` in
+  `envs/*/main.tf`. Don't edit them in Coolify: Terraform reverts that.
 - **Admin database access:** both databases are public on the server's IP
   (dev `5433`, prod `5434`, see `terraform output public_port`) so admins
   can connect with psql or a GUI. Allow those ports only from known IPs in
   the firewall. The app never uses them; `DATABASE_URL` is always the
   internal URL. Set `is_public = false` in `envs/*/main.tf` to close them.
-- **Postgres version:** the module defaults to `postgres:17`; local dev uses
-  18. Bump `postgres_image` once you've confirmed Coolify's Postgres resource
-  handles 18's new data directory layout.
+- **Postgres version:** the module defaults to `postgres:18`, matching local
+  dev. Override `postgres_image` per environment if you need to pin.
 - **Provider is pre-1.0.** Pinned to `0.1.26`; read the changelog before
   bumping.
 - **Moving state later:** add a `backend` block to each root, run
