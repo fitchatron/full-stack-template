@@ -50,6 +50,17 @@ resource "coolify_database_postgresql" "this" {
   }
 }
 
+# Coolify reports the database created before Postgres accepts connections.
+# Anything that logs in to it (the db-roles module) waits on this. Only
+# sleeps when the database is first created.
+resource "time_sleep" "ready" {
+  create_duration = var.ready_wait
+
+  triggers = {
+    database_uuid = coolify_database_postgresql.this.uuid
+  }
+}
+
 resource "coolify_database_backup" "this" {
   count = var.backup_schedule == null ? 0 : 1
 

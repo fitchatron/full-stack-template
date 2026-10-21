@@ -27,3 +27,8 @@ output "postgres_password" {
   value     = random_password.db.result
   sensitive = true
 }
+
+# Depend on this (not just the UUID) before logging in to the database.
+output "ready" {
+  value = time_sleep.ready.id
+}

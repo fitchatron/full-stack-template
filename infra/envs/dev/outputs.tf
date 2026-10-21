@@ -35,3 +35,8 @@ output "application_uuid" {
 output "deploy_webhook" {
   value = "${local.shared.coolify_endpoint}/api/v1/deploy?uuid=${module.app.application_uuid}&force=false"
 }
+# Admin access for reviewing data: connect as readonly on public_port.
+output "readonly_password" {
+  value     = module.db_roles.readonly_password
+  sensitive = true
+}

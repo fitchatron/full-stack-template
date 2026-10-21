@@ -69,6 +69,12 @@ variable "public_port" {
   default     = null
 }
 
+variable "ready_wait" {
+  description = "How long to wait after creating the database before logging in to it."
+  type        = string
+  default     = "45s"
+}
+
 variable "database_url_scheme" {
   description = "Scheme for DATABASE_URL. The backend uses SQLAlchemy with psycopg 3."
   type        = string

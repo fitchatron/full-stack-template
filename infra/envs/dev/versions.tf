@@ -10,6 +10,14 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.6"
     }
+    postgresql = {
+      source  = "cyrilgdn/postgresql"
+      version = "1.27.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "0.14.2"
+    }
   }
 
   # Local state: envs/dev/terraform.tfstate. Separate from prod on purpose.

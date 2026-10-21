@@ -13,8 +13,8 @@ module "database" {
 
   db_memory_limit = "512m"
 
-  # Admin access from outside the server. Restrict this port to known IPs
-  # in the firewall; the app itself uses the internal URL.
+  # Admin and Terraform access, through an SSH tunnel only: block this port
+  # from the internet in the VPS firewall. The app uses the internal URL.
   is_public   = true
   public_port = 5433
 
@@ -22,6 +22,34 @@ module "database" {
   backup_schedule     = "0 3 * * *"
   backup_retain_local = 3
 }
+
+# Logs in as the superuser through an SSH tunnel to the public port, e.g.
+#   ssh -N -L <public_port>:127.0.0.1:<public_port> <server>
+# On a new environment Terraform configures this once the database exists,
+# so one apply creates everything (open the tunnel first; it only connects
+# through when used).
+provider "postgresql" {
+  host     = var.db_admin_host
+  port     = coalesce(var.db_admin_port, module.database.public_port)
+  database = module.database.postgres_db
+  username = module.database.postgres_user
+  password = module.database.postgres_password
+  # SSH encrypts the connection; Coolify can't enable Postgres TLS through
+  # its API.
+  sslmode         = "disable"
+  connect_timeout = 15
+}
+
+module "db_roles" {
+  source = "../../modules/db-roles"
+
+  database = module.database.postgres_db
+  host     = module.database.database_uuid
+
+  # Postgres is up, not just created.
+  depends_on = [module.database.ready]
+}
+
 
 module "app" {
   source = "../../modules/app"
@@ -39,10 +67,10 @@ module "app" {
   domain          = var.domain
 
   postgres_host     = module.database.database_uuid
-  postgres_user     = module.database.postgres_user
-  postgres_password = module.database.postgres_password
+  postgres_user     = module.db_roles.app.user
+  postgres_password = module.db_roles.app.password
   postgres_db       = module.database.postgres_db
-  database_url      = module.database.database_url
+  database_url      = module.db_roles.app.database_url
 
   app_env     = var.app_env
   app_secrets = var.app_secrets
@@ -65,9 +93,9 @@ module "runner" {
 
   job_env = {
     POSTGRES_HOST     = module.database.database_uuid
-    POSTGRES_USER     = module.database.postgres_user
-    POSTGRES_PASSWORD = module.database.postgres_password
+    POSTGRES_USER     = module.db_roles.migrator.user
+    POSTGRES_PASSWORD = module.db_roles.migrator.password
     POSTGRES_DB       = module.database.postgres_db
-    DATABASE_URL      = module.database.database_url
+    DATABASE_URL      = module.db_roles.migrator.database_url
   }
 }
