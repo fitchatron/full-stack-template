@@ -46,8 +46,9 @@ provider "postgresql" {
 module "db_roles" {
   source = "../../modules/db-roles"
 
-  database = module.database.postgres_db
-  host     = module.database.database_uuid
+  database  = module.database.postgres_db
+  host      = module.database.database_uuid
+  superuser = module.database.postgres_user
 
   # Postgres is accepting connections, not just created.
   depends_on = [module.database.ready]

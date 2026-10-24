@@ -265,14 +265,14 @@ curl -fsS -X POST "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
   | Role | Used by | Can |
   |---|---|---|
   | `migrator` | the runner (migrations) | owns the schema: DDL and DML |
-  | `app` | the backend | read and write rows; no DDL |
+  | `backend` | the backend | read and write rows; no DDL |
   | `readonly` | admins | `SELECT` only (`terraform output -raw readonly_password`) |
-  | superuser | Terraform, break-glass | everything; nothing automatic uses it |
+  | superuser (`postgres_user`, default `app`) | Terraform, break-glass | everything; nothing automatic uses it |
 
-  `app` and `readonly` reach tables migrator creates later through default
+  `backend` and `readonly` reach tables migrator creates later through default
   privileges, which only cover objects **migrator** owns. Never run
   migrations by hand as the superuser: tables it creates stay invisible to
-  `app`.
+  `backend`.
 
   **Moving an existing environment onto the roles** (one that ran as the
   superuser before): anything the superuser created still belongs to it, so

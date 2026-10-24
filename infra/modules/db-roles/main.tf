@@ -1,6 +1,6 @@
 # Least-privilege roles inside one environment's Postgres:
 #   migrator - owns the schema; runs migrations (the runner)
-#   app      - reads and writes rows, no DDL (the backend)
+#   backend  - reads and writes rows, no DDL (the app)
 #   readonly - SELECT only, for admins reviewing data
 # The superuser Coolify created stays for Terraform and break-glass use.
 #
@@ -27,6 +27,19 @@ resource "random_password" "this" {
   special = false
 }
 
+# The superuser's name comes from the database module (postgres_user); a
+# role with the same name would collide with it.
+resource "terraform_data" "role_names" {
+  input = ["migrator", "backend", "readonly"]
+
+  lifecycle {
+    precondition {
+      condition     = !contains(["migrator", "backend", "readonly"], var.superuser)
+      error_message = "The database superuser (${var.superuser}) can't share a name with a db-roles role (migrator, backend, readonly)."
+    }
+  }
+}
+
 resource "postgresql_role" "migrator" {
   name     = "migrator"
   login    = true
@@ -34,7 +47,7 @@ resource "postgresql_role" "migrator" {
 }
 
 resource "postgresql_role" "app" {
-  name     = "app"
+  name     = "backend"
   login    = true
   password = random_password.this["app"].result
 }

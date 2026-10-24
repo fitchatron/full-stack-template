@@ -8,6 +8,11 @@ variable "host" {
   type        = string
 }
 
+variable "superuser" {
+  description = "Name of the superuser Coolify created (the database module's postgres_user), to check the role names don't collide with it."
+  type        = string
+}
+
 variable "database_url_scheme" {
   description = "Scheme for the connection strings. The backend uses SQLAlchemy with psycopg 3."
   type        = string
