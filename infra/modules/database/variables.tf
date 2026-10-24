@@ -69,10 +69,22 @@ variable "public_port" {
   default     = null
 }
 
-variable "ready_wait" {
-  description = "How long to wait after creating the database before logging in to it."
+variable "coolify_endpoint" {
+  description = "Coolify base URL, for the readiness check."
   type        = string
-  default     = "45s"
+}
+
+variable "coolify_token" {
+  description = "Coolify API token for the readiness check. null falls back to the COOLIFY_TOKEN env var."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "ready_timeout" {
+  description = "Seconds to keep checking (every 2s) for Coolify to report the new database healthy before failing."
+  type        = number
+  default     = 45
 }
 
 variable "database_url_scheme" {

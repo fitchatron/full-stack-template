@@ -30,5 +30,5 @@ output "postgres_password" {
 
 # Depend on this (not just the UUID) before logging in to the database.
 output "ready" {
-  value = time_sleep.ready.id
+  value = terraform_data.ready.id
 }

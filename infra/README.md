@@ -113,8 +113,9 @@ dev and vice versa.
    hands each the credentials it needs. Terraform creates the roles by
    logging in to Postgres, so open an SSH tunnel first (see
    [Database access](#database-access)); it can be open before the database
-   exists. It waits `ready_wait` (45s) after creating the database so
-   Postgres is accepting connections.
+   exists. Before creating the roles it polls Coolify every 2s, for up to
+   45s (`ready_timeout`), until the new database's healthcheck passes. That
+   needs only `curl`.
    Same for `envs/prod` when you're ready for production; the `production`
    branch must exist first (see [Setup, once](#setup-once)).
 

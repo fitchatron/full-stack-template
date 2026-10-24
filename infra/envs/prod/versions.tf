@@ -14,10 +14,6 @@ terraform {
       source  = "cyrilgdn/postgresql"
       version = "1.27.0"
     }
-    time = {
-      source  = "hashicorp/time"
-      version = "0.14.2"
-    }
   }
 
   # Local state: envs/prod/terraform.tfstate. Separate from dev on purpose.

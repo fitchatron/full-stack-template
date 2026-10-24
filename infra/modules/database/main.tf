@@ -50,14 +50,37 @@ resource "coolify_database_postgresql" "this" {
   }
 }
 
-# Coolify reports the database created before Postgres accepts connections.
-# Anything that logs in to it (the db-roles module) waits on this. Only
-# sleeps when the database is first created.
-resource "time_sleep" "ready" {
-  create_duration = var.ready_wait
+# Coolify reports a new database created before Postgres accepts
+# connections, and anything that logs in to it straight after (the db-roles
+# module) would fail. Poll Coolify until its healthcheck (pg_isready inside
+# the container) passes: every 2s, failing after ready_timeout. Needs only
+# curl. Runs once per database.
+resource "terraform_data" "ready" {
+  triggers_replace = [coolify_database_postgresql.this.uuid]
 
-  triggers = {
-    database_uuid = coolify_database_postgresql.this.uuid
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    # The token falls back to the COOLIFY_TOKEN env var, like the provider.
+    environment = merge(
+      {
+        COOLIFY_URL = trimsuffix(var.coolify_endpoint, "/")
+        DB_UUID     = coolify_database_postgresql.this.uuid
+        TIMEOUT     = tostring(var.ready_timeout)
+      },
+      var.coolify_token == null ? {} : { COOLIFY_TOKEN = var.coolify_token },
+    )
+    command = <<-EOT
+      deadline=$((SECONDS + TIMEOUT))
+      until curl -fsS "$COOLIFY_URL/api/v1/databases/$DB_UUID" \
+              -H "Authorization: Bearer $COOLIFY_TOKEN" 2>/dev/null \
+            | grep -Eq '"status": ?"running:healthy"'; do
+        if (( SECONDS >= deadline )); then
+          echo "Database $DB_UUID not healthy in Coolify after $${TIMEOUT}s" >&2
+          exit 1
+        fi
+        sleep 2
+      done
+    EOT
   }
 }
 

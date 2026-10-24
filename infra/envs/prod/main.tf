@@ -5,6 +5,9 @@ locals {
 module "database" {
   source = "../../modules/database"
 
+  coolify_endpoint = local.shared.coolify_endpoint
+  coolify_token    = var.coolify_token
+
   project_id   = local.shared.project_id
   env_name     = "prod"
   project_uuid = local.shared.project_uuid
@@ -51,7 +54,7 @@ module "db_roles" {
   database = module.database.postgres_db
   host     = module.database.database_uuid
 
-  # Postgres is up, not just created.
+  # Postgres is accepting connections, not just created.
   depends_on = [module.database.ready]
 }
 
