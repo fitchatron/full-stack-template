@@ -8,12 +8,12 @@ output "migrator" {
   sensitive = true
 }
 
-output "app" {
+output "backend" {
   description = "Credentials and internal connection string for the backend."
   value = {
-    user         = postgresql_role.app.name
-    password     = random_password.this["app"].result
-    database_url = "${local.url_prefix}${postgresql_role.app.name}:${random_password.this["app"].result}${local.url_suffix}"
+    user         = postgresql_role.backend.name
+    password     = random_password.this["backend"].result
+    database_url = "${local.url_prefix}${postgresql_role.backend.name}:${random_password.this["backend"].result}${local.url_suffix}"
   }
   sensitive = true
 }

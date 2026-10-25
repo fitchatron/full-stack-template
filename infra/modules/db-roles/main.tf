@@ -5,39 +5,28 @@
 # The superuser Coolify created stays for Terraform and break-glass use.
 #
 # Tables are created by migrator during migrations, so the default
-# privileges below are what let app and readonly use tables that don't
+# privileges below are what let backend and readonly use tables that don't
 # exist yet. Always run migrations as migrator: objects created by anyone
 # else aren't covered.
 
 locals {
+  roles = ["migrator", "backend", "readonly"]
+
   url_prefix = "${var.database_url_scheme}://"
   url_suffix = "@${var.host}:5432/${var.database}"
 
-  app_table_privileges = ["SELECT", "INSERT", "UPDATE", "DELETE"]
+  backend_table_privileges = ["SELECT", "INSERT", "UPDATE", "DELETE"]
   # identity/serial columns need USAGE to insert
-  app_sequence_privileges = ["USAGE", "SELECT"]
+  backend_sequence_privileges = ["USAGE", "SELECT"]
 }
 
 # Generated here so nobody ever types them. special = false avoids
 # URL-encoding in the connection strings.
 resource "random_password" "this" {
-  for_each = toset(["migrator", "app", "readonly"])
+  for_each = toset(local.roles)
 
   length  = 32
   special = false
-}
-
-# The superuser's name comes from the database module (postgres_user); a
-# role with the same name would collide with it.
-resource "terraform_data" "role_names" {
-  input = ["migrator", "backend", "readonly"]
-
-  lifecycle {
-    precondition {
-      condition     = !contains(["migrator", "backend", "readonly"], var.superuser)
-      error_message = "The database superuser (${var.superuser}) can't share a name with a db-roles role (migrator, backend, readonly)."
-    }
-  }
 }
 
 resource "postgresql_role" "migrator" {
@@ -46,10 +35,10 @@ resource "postgresql_role" "migrator" {
   password = random_password.this["migrator"].result
 }
 
-resource "postgresql_role" "app" {
+resource "postgresql_role" "backend" {
   name     = "backend"
   login    = true
-  password = random_password.this["app"].result
+  password = random_password.this["backend"].result
 }
 
 resource "postgresql_role" "readonly" {
@@ -70,9 +59,9 @@ resource "postgresql_grant" "connect_migrator" {
   privileges  = ["CONNECT"]
 }
 
-resource "postgresql_grant" "connect_app" {
+resource "postgresql_grant" "connect_backend" {
   database    = var.database
-  role        = postgresql_role.app.name
+  role        = postgresql_role.backend.name
   object_type = "database"
   privileges  = ["CONNECT"]
 
@@ -85,7 +74,7 @@ resource "postgresql_grant" "connect_readonly" {
   object_type = "database"
   privileges  = ["CONNECT"]
 
-  depends_on = [postgresql_grant.connect_app]
+  depends_on = [postgresql_grant.connect_backend]
 }
 
 # Postgres 15+ denies CREATE in public to ordinary roles, so only migrator
@@ -100,10 +89,10 @@ resource "postgresql_grant" "schema_migrator" {
   depends_on = [postgresql_grant.connect_readonly]
 }
 
-resource "postgresql_grant" "schema_app" {
+resource "postgresql_grant" "schema_backend" {
   database    = var.database
   schema      = "public"
-  role        = postgresql_role.app.name
+  role        = postgresql_role.backend.name
   object_type = "schema"
   privileges  = ["USAGE"]
 
@@ -117,17 +106,17 @@ resource "postgresql_grant" "schema_readonly" {
   object_type = "schema"
   privileges  = ["USAGE"]
 
-  depends_on = [postgresql_grant.schema_app]
+  depends_on = [postgresql_grant.schema_backend]
 }
 
 # Objects that already exist (e.g. alembic_version once migrator owns it).
 
-resource "postgresql_grant" "tables_app" {
+resource "postgresql_grant" "tables_backend" {
   database    = var.database
   schema      = "public"
-  role        = postgresql_role.app.name
+  role        = postgresql_role.backend.name
   object_type = "table"
-  privileges  = local.app_table_privileges
+  privileges  = local.backend_table_privileges
 
   depends_on = [postgresql_grant.schema_readonly]
 }
@@ -139,15 +128,15 @@ resource "postgresql_grant" "tables_readonly" {
   object_type = "table"
   privileges  = ["SELECT"]
 
-  depends_on = [postgresql_grant.tables_app]
+  depends_on = [postgresql_grant.tables_backend]
 }
 
-resource "postgresql_grant" "sequences_app" {
+resource "postgresql_grant" "sequences_backend" {
   database    = var.database
   schema      = "public"
-  role        = postgresql_role.app.name
+  role        = postgresql_role.backend.name
   object_type = "sequence"
-  privileges  = local.app_sequence_privileges
+  privileges  = local.backend_sequence_privileges
 
   depends_on = [postgresql_grant.tables_readonly]
 }
@@ -159,18 +148,18 @@ resource "postgresql_grant" "sequences_readonly" {
   object_type = "sequence"
   privileges  = ["SELECT"]
 
-  depends_on = [postgresql_grant.sequences_app]
+  depends_on = [postgresql_grant.sequences_backend]
 }
 
 # Objects migrator creates later.
 
-resource "postgresql_default_privileges" "tables_app" {
+resource "postgresql_default_privileges" "tables_backend" {
   database    = var.database
   schema      = "public"
   owner       = postgresql_role.migrator.name
-  role        = postgresql_role.app.name
+  role        = postgresql_role.backend.name
   object_type = "table"
-  privileges  = local.app_table_privileges
+  privileges  = local.backend_table_privileges
 
   depends_on = [postgresql_grant.sequences_readonly]
 }
@@ -183,16 +172,16 @@ resource "postgresql_default_privileges" "tables_readonly" {
   object_type = "table"
   privileges  = ["SELECT"]
 
-  depends_on = [postgresql_default_privileges.tables_app]
+  depends_on = [postgresql_default_privileges.tables_backend]
 }
 
-resource "postgresql_default_privileges" "sequences_app" {
+resource "postgresql_default_privileges" "sequences_backend" {
   database    = var.database
   schema      = "public"
   owner       = postgresql_role.migrator.name
-  role        = postgresql_role.app.name
+  role        = postgresql_role.backend.name
   object_type = "sequence"
-  privileges  = local.app_sequence_privileges
+  privileges  = local.backend_sequence_privileges
 
   depends_on = [postgresql_default_privileges.tables_readonly]
 }
@@ -205,5 +194,5 @@ resource "postgresql_default_privileges" "sequences_readonly" {
   object_type = "sequence"
   privileges  = ["SELECT"]
 
-  depends_on = [postgresql_default_privileges.sequences_app]
+  depends_on = [postgresql_default_privileges.sequences_backend]
 }

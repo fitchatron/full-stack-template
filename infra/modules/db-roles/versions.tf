@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.6"
+  required_version = ">= 1.9" # validation referencing locals
 
   # Modules state a minimum; the roots pin the exact version.
   required_providers {

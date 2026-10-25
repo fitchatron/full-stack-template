@@ -1,5 +1,9 @@
 locals {
   shared = data.terraform_remote_state.shared.outputs
+
+  # null when the database isn't public and no tunnel port is set; the
+  # guard below turns that into a clear error.
+  db_admin_port = var.db_admin_port != null ? var.db_admin_port : module.database.public_port
 }
 
 module "database" {
@@ -33,7 +37,7 @@ module "database" {
 # through when used).
 provider "postgresql" {
   host     = var.db_admin_host
-  port     = coalesce(var.db_admin_port, module.database.public_port)
+  port     = local.db_admin_port
   database = module.database.postgres_db
   username = module.database.postgres_user
   password = module.database.postgres_password
@@ -50,8 +54,20 @@ module "db_roles" {
   host      = module.database.database_uuid
   superuser = module.database.postgres_user
 
-  # Postgres is accepting connections, not just created.
-  depends_on = [module.database.ready]
+  # Postgres is accepting connections, not just created, and Terraform has a
+  # port to reach it on.
+  depends_on = [module.database.ready, terraform_data.db_admin_port]
+}
+
+# The roles are managed over the public port (through the tunnel). Without
+# one, fail here instead of the provider guessing port 5432.
+resource "terraform_data" "db_admin_port" {
+  lifecycle {
+    precondition {
+      condition     = local.db_admin_port != null
+      error_message = "Terraform needs a port to manage the database roles: set is_public = true on the database module, or db_admin_port to a tunnel that reaches Postgres."
+    }
+  }
 }
 
 
@@ -71,10 +87,10 @@ module "app" {
   domain          = var.domain
 
   postgres_host     = module.database.database_uuid
-  postgres_user     = module.db_roles.app.user
-  postgres_password = module.db_roles.app.password
+  postgres_user     = module.db_roles.backend.user
+  postgres_password = module.db_roles.backend.password
   postgres_db       = module.database.postgres_db
-  database_url      = module.db_roles.app.database_url
+  database_url      = module.db_roles.backend.database_url
 
   app_env     = var.app_env
   app_secrets = var.app_secrets

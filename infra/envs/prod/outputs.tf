@@ -1,4 +1,7 @@
-# Values for the app's environment variables in Coolify.
+# Terraform already sets the app's and runner's env vars, using the
+# backend and migrator roles. database_url, postgres_user and
+# postgres_password below are the superuser's: for break-glass admin only,
+# never for the app.
 # Read sensitive ones with: terraform output -raw <name>
 
 output "database_uuid" {

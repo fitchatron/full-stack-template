@@ -69,13 +69,41 @@ resource "terraform_data" "ready" {
       },
       var.coolify_token == null ? {} : { COOLIFY_TOKEN = var.coolify_token },
     )
+    # Auth and lookup errors fail at once; anything else (Coolify
+    # unreachable, image still pulling) is retried until the deadline, and
+    # the last thing seen is reported.
     command = <<-EOT
+      if [[ -z "$${COOLIFY_TOKEN:-}" ]]; then
+        echo "No Coolify token: set coolify_token or the COOLIFY_TOKEN env var." >&2
+        exit 1
+      fi
+      body=$(mktemp) err=$(mktemp)
+      trap 'rm -f "$body" "$err"' EXIT
       deadline=$((SECONDS + TIMEOUT))
-      until curl -fsS "$COOLIFY_URL/api/v1/databases/$DB_UUID" \
-              -H "Authorization: Bearer $COOLIFY_TOKEN" 2>/dev/null \
-            | grep -Eq '"status": ?"running:healthy"'; do
+      last="no response yet"
+      while true; do
+        code=$(curl -sS -o "$body" -w '%%{http_code}' \
+                 "$COOLIFY_URL/api/v1/databases/$DB_UUID" \
+                 -H "Authorization: Bearer $COOLIFY_TOKEN" 2>"$err")
+        case "$code" in
+          200)
+            status=$(grep -Eo '"status": ?"[^"]*"' "$body" | head -n1 | cut -d'"' -f4)
+            [[ "$status" == "running:healthy" ]] && exit 0
+            last="Coolify reports status '$${status:-unknown}'" ;;
+          401|403)
+            echo "Coolify rejected the token (HTTP $code) checking database $DB_UUID." >&2
+            exit 1 ;;
+          404)
+            echo "Coolify has no database $DB_UUID (HTTP 404)." >&2
+            exit 1 ;;
+          000)
+            last="couldn't reach $COOLIFY_URL: $(<"$err")" ;;
+          *)
+            last="Coolify returned HTTP $code" ;;
+        esac
         if (( SECONDS >= deadline )); then
-          echo "Database $DB_UUID not healthy in Coolify after $${TIMEOUT}s" >&2
+          echo "Database $DB_UUID not healthy after $${TIMEOUT}s: $last." >&2
+          echo "A first create can take longer while the image pulls; raise ready_timeout or re-apply once it's up." >&2
           exit 1
         fi
         sleep 2

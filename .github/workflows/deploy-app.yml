@@ -20,6 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         if: inputs.environment == 'production'
+        with:
+          # A shallow clone can't push: "shallow update not allowed".
+          fetch-depth: 0
 
       # production only ever follows main, so this is a fast-forward to the
       # tagged commit. Without -f it fails rather than rewrite history.

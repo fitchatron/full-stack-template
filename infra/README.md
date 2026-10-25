@@ -27,7 +27,7 @@ ship with the merge that makes them.
 infra/
 ├── modules/
 │   ├── database/        # Postgres + backup schedule for one environment
-│   ├── db-roles/        # migrator / app / readonly Postgres roles
+│   ├── db-roles/        # migrator / backend / readonly Postgres roles
 │   ├── app/             # the compose app + its env vars for one environment
 │   └── runner/          # self-hosted Actions runner for one environment
 ├── shared/              # the Coolify project + dev environment
