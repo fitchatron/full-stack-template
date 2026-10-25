@@ -7,3 +7,7 @@ app_name = "My App"
 # app_env = {
 #   LOG_LEVEL = "INFO"
 # }
+
+# Terraform manages DB roles through an SSH tunnel to 127.0.0.1 on the
+# database's public port; override if your tunnel listens elsewhere.
+# db_admin_port = 15433

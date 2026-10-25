@@ -8,9 +8,10 @@ output "public_port" {
   value       = var.is_public ? coolify_database_postgresql.this.public_port : null
 }
 
-# The backend reads these four. Paste them into the app's env vars in Coolify.
+# The superuser's connection details. The roots use them only for Terraform's
+# own admin connection; the app and runner get db-roles roles instead.
 output "database_url" {
-  description = "Internal connection string for the app."
+  description = "Internal connection string for the superuser."
   value       = local.database_url
   sensitive   = true
 }
@@ -26,4 +27,9 @@ output "postgres_db" {
 output "postgres_password" {
   value     = random_password.db.result
   sensitive = true
+}
+
+# Depend on this (not just the UUID) before logging in to the database.
+output "ready" {
+  value = terraform_data.ready.id
 }

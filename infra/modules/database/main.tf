@@ -50,6 +50,68 @@ resource "coolify_database_postgresql" "this" {
   }
 }
 
+# Coolify reports a new database created before Postgres accepts
+# connections, and anything that logs in to it straight after (the db-roles
+# module) would fail. Poll Coolify until its healthcheck (pg_isready inside
+# the container) passes: every 2s, failing after ready_timeout. Needs only
+# curl. Runs once per database.
+resource "terraform_data" "ready" {
+  triggers_replace = [coolify_database_postgresql.this.uuid]
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    # The token falls back to the COOLIFY_TOKEN env var, like the provider.
+    environment = merge(
+      {
+        COOLIFY_URL = trimsuffix(var.coolify_endpoint, "/")
+        DB_UUID     = coolify_database_postgresql.this.uuid
+        TIMEOUT     = tostring(var.ready_timeout)
+      },
+      var.coolify_token == null ? {} : { COOLIFY_TOKEN = var.coolify_token },
+    )
+    # Auth and lookup errors fail at once; anything else (Coolify
+    # unreachable, image still pulling) is retried until the deadline, and
+    # the last thing seen is reported.
+    command = <<-EOT
+      if [[ -z "$${COOLIFY_TOKEN:-}" ]]; then
+        echo "No Coolify token: set coolify_token or the COOLIFY_TOKEN env var." >&2
+        exit 1
+      fi
+      body=$(mktemp) err=$(mktemp)
+      trap 'rm -f "$body" "$err"' EXIT
+      deadline=$((SECONDS + TIMEOUT))
+      last="no response yet"
+      while true; do
+        code=$(curl -sS -o "$body" -w '%%{http_code}' \
+                 "$COOLIFY_URL/api/v1/databases/$DB_UUID" \
+                 -H "Authorization: Bearer $COOLIFY_TOKEN" 2>"$err")
+        case "$code" in
+          200)
+            status=$(grep -Eo '"status": ?"[^"]*"' "$body" | head -n1 | cut -d'"' -f4)
+            [[ "$status" == "running:healthy" ]] && exit 0
+            last="Coolify reports status '$${status:-unknown}'" ;;
+          401|403)
+            echo "Coolify rejected the token (HTTP $code) checking database $DB_UUID." >&2
+            exit 1 ;;
+          404)
+            echo "Coolify has no database $DB_UUID (HTTP 404)." >&2
+            exit 1 ;;
+          000)
+            last="couldn't reach $COOLIFY_URL: $(<"$err")" ;;
+          *)
+            last="Coolify returned HTTP $code" ;;
+        esac
+        if (( SECONDS >= deadline )); then
+          echo "Database $DB_UUID not healthy after $${TIMEOUT}s: $last." >&2
+          echo "A first create can take longer while the image pulls; raise ready_timeout or re-apply once it's up." >&2
+          exit 1
+        fi
+        sleep 2
+      done
+    EOT
+  }
+}
+
 resource "coolify_database_backup" "this" {
   count = var.backup_schedule == null ? 0 : 1
 

@@ -1,4 +1,7 @@
-# Values for the app's environment variables in Coolify.
+# Terraform already sets the app's and runner's env vars, using the
+# backend and migrator roles. database_url, postgres_user and
+# postgres_password below are the superuser's: for break-glass admin only,
+# never for the app.
 # Read sensitive ones with: terraform output -raw <name>
 
 output "database_uuid" {
@@ -34,4 +37,9 @@ output "application_uuid" {
 # COOLIFY_WEBHOOK for this environment's GitHub Actions deploy job.
 output "deploy_webhook" {
   value = "${local.shared.coolify_endpoint}/api/v1/deploy?uuid=${module.app.application_uuid}&force=false"
+}
+# Admin access for reviewing data: connect as readonly on public_port.
+output "readonly_password" {
+  value     = module.db_roles.readonly_password
+  sensitive = true
 }

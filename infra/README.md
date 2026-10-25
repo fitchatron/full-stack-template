@@ -15,6 +15,7 @@ ship with the merge that makes them.
 | GitHub App source | Coolify UI (once per Coolify instance) | basically never |
 | Project, environments | Terraform `shared/` | basically never |
 | Postgres + backups per environment | Terraform `envs/*` | sizing or schedule changes |
+| Postgres roles and grants | Terraform `envs/*` (`modules/db-roles`) | rarely |
 | The app resource, its domain and env vars | Terraform `envs/*` | you add a setting |
 | The migrations runner | Terraform `envs/*` | image bumps |
 | `compose.prod.yml` | the repo | any merge |
@@ -26,6 +27,7 @@ ship with the merge that makes them.
 infra/
 ├── modules/
 │   ├── database/        # Postgres + backup schedule for one environment
+│   ├── db-roles/        # migrator / backend / readonly Postgres roles
 │   ├── app/             # the compose app + its env vars for one environment
 │   └── runner/          # self-hosted Actions runner for one environment
 ├── shared/              # the Coolify project + dev environment
@@ -100,13 +102,20 @@ dev and vice versa.
    human-friendly name is `app_name` in `envs/*/terraform.tfvars`, passed to
    the app as `PROJECT_NAME`.
 
-4. Each environment (database, app and runner). See [The app](#the-app) for
-   why the domain waits:
+4. Each environment (database, roles, app and runner). See
+   [The app](#the-app) for why the domain waits:
    ```sh
    cd ../envs/dev
    cp terraform.tfvars.example terraform.tfvars   # fill in, leave domain unset
    terraform init && terraform apply
    ```
+   One apply creates the database, its roles, the app and the runner, and
+   hands each the credentials it needs. Terraform creates the roles by
+   logging in to Postgres, so open an SSH tunnel first (see
+   [Database access](#database-access)); it can be open before the database
+   exists. Before creating the roles it polls Coolify every 2s, for up to
+   45s (`ready_timeout`), until the new database's healthcheck passes. That
+   needs only `curl`.
    Same for `envs/prod` when you're ready for production; the `production`
    branch must exist first (see [Setup, once](#setup-once)).
 
@@ -251,16 +260,45 @@ curl -fsS -X POST "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
 - **Changing the DB password** (e.g. by tainting `random_password.db`)
   updates the app's and runner's env vars in the same apply, but the
   running app keeps the old one until you redeploy.
-- **Using a different DB user:** the app and migrations connect as the user
-  Coolify created, a superuser. To switch, create the role (e.g. with the
-  `cyrilgdn/postgresql` provider over the public port or an SSH tunnel) and
-  change the values passed to `module.app` and `module.runner` in
-  `envs/*/main.tf`. Don't edit them in Coolify: Terraform reverts that.
-- **Admin database access:** both databases are public on the server's IP
-  (dev `5433`, prod `5434`, see `terraform output public_port`) so admins
-  can connect with psql or a GUI. Allow those ports only from known IPs in
-  the firewall. The app never uses them; `DATABASE_URL` is always the
-  internal URL. Set `is_public = false` in `envs/*/main.tf` to close them.
+- **Database roles** (`modules/db-roles`):
+
+  | Role | Used by | Can |
+  |---|---|---|
+  | `migrator` | the runner (migrations) | owns the schema: DDL and DML |
+  | `backend` | the backend | read and write rows; no DDL |
+  | `readonly` | admins | `SELECT` only (`terraform output -raw readonly_password`) |
+  | superuser (`postgres_user`, default `app`) | Terraform, break-glass | everything; nothing automatic uses it |
+
+  `backend` and `readonly` reach tables migrator creates later through default
+  privileges, which only cover objects **migrator** owns. Never run
+  migrations by hand as the superuser: tables it creates stay invisible to
+  `backend`.
+
+  **Moving an existing environment onto the roles** (one that ran as the
+  superuser before): anything the superuser created still belongs to it, so
+  after the apply and before the next deploy, hand it to migrator, e.g.
+  `ALTER TABLE alembic_version OWNER TO migrator;` (or drop it while there
+  are no migrations). Don't use `REASSIGN OWNED BY postgres`: it owns system
+  objects too.
+- <a id="database-access"></a>**Database access (Terraform and admins):**
+  each database is published on the server (dev `5433`, prod `5434`, see
+  `terraform output public_port`), but only reachable through SSH:
+  - **Block those ports from the internet in the VPS provider's firewall.**
+    `ufw` isn't enough: Docker publishes ports through its own iptables
+    rules, which bypass `ufw`.
+  - Tunnel to them:
+    ```sh
+    ssh -N -L 5433:127.0.0.1:5433 <user>@<server>   # dev; 5434 for prod
+    ```
+    Terraform then connects to `127.0.0.1:5433` (`db_admin_host` /
+    `db_admin_port` if your tunnel differs). Admin GUIs (DBeaver,
+    TablePlus, pgAdmin) have SSH tunnel settings built in; connect as
+    `readonly`.
+  - Postgres TLS isn't used: Coolify's API can't enable it, and SSH
+    already encrypts the connection.
+
+  The app never uses these ports; `DATABASE_URL` is always the internal
+  URL.
 - **Postgres version:** the module defaults to `postgres:18`, matching local
   dev. Override `postgres_image` per environment if you need to pin.
 - **Provider is pre-1.0.** Pinned to `0.1.26`; read the changelog before
