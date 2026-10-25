@@ -40,14 +40,8 @@ variable "github_runner_token" {
   sensitive   = true
 }
 
-variable "db_admin_host" {
-  description = "Where Terraform reaches Postgres to manage roles: the local end of the SSH tunnel."
-  type        = string
-  default     = "127.0.0.1"
-}
-
 variable "db_admin_port" {
-  description = "Local port of the SSH tunnel. null uses the database's public port (tunnel the same port number through)."
+  description = "Local port of the SSH tunnel Terraform reaches Postgres through. null means the same as the public port."
   type        = number
   default     = null
 }

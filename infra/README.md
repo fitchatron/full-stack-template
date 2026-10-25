@@ -111,11 +111,12 @@ dev and vice versa.
    ```
    One apply creates the database, its roles, the app and the runner, and
    hands each the credentials it needs. Terraform creates the roles by
-   logging in to Postgres, so open an SSH tunnel first (see
+   logging in to Postgres through an SSH tunnel, so open it first (see
    [Database access](#database-access)); it can be open before the database
-   exists. Before creating the roles it polls Coolify every 2s, for up to
-   45s (`ready_timeout`), until the new database's healthcheck passes. That
-   needs only `curl`.
+   exists. Before creating the roles it checks every 2s, for up to 45s
+   (`ready_timeout`), that a real Postgres answers through the tunnel: a new
+   database's public port opens a little after Coolify reports it running.
+   That needs only `bash`.
    Same for `envs/prod` when you're ready for production; the `production`
    branch must exist first (see [Setup, once](#setup-once)).
 
@@ -128,7 +129,7 @@ tests and migrations pass; auto deploy would ship every push untested).
 `terraform apply` doesn't deploy it.
 
 It also sets the app's env vars: `DATABASE_URL` and the `POSTGRES_*` values
-straight from the database module, a generated `SECRET_KEY`, and `app_name`
+for the `backend` database role, a generated `SECRET_KEY`, and `app_name`
 as `PROJECT_NAME`. Add anything else with `app_env` in `terraform.tfvars` or
 `app_secrets` in `secrets.auto.tfvars`. Terraform owns the whole set: a
 variable added or changed in the Coolify UI is reverted on the next apply,
@@ -282,7 +283,8 @@ curl -fsS -X POST "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
   objects too.
 - <a id="database-access"></a>**Database access (Terraform and admins):**
   each database is published on the server (dev `5433`, prod `5434`, see
-  `terraform output public_port`), but only reachable through SSH:
+  `terraform output public_port`), and Terraform assumes it's only
+  reachable through SSH:
   - **Block those ports from the internet in the VPS provider's firewall.**
     `ufw` isn't enough: Docker publishes ports through its own iptables
     rules, which bypass `ufw`.
@@ -290,8 +292,8 @@ curl -fsS -X POST "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
     ```sh
     ssh -N -L 5433:127.0.0.1:5433 <user>@<server>   # dev; 5434 for prod
     ```
-    Terraform then connects to `127.0.0.1:5433` (`db_admin_host` /
-    `db_admin_port` if your tunnel differs). Admin GUIs (DBeaver,
+    Terraform always connects through the tunnel, to `127.0.0.1` on the
+    public port (`db_admin_port` if your tunnel's local port differs). Admin GUIs (DBeaver,
     TablePlus, pgAdmin) have SSH tunnel settings built in; connect as
     `readonly`.
   - Postgres TLS isn't used: Coolify's API can't enable it, and SSH

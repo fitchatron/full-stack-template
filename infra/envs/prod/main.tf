@@ -1,16 +1,15 @@
 locals {
   shared = data.terraform_remote_state.shared.outputs
 
-  # null when the database isn't public and no tunnel port is set; the
-  # guard below turns that into a clear error.
-  db_admin_port = var.db_admin_port != null ? var.db_admin_port : module.database.public_port
+  # Local end of the SSH tunnel; by default the same number as the public
+  # port.
+  db_admin_port = coalesce(var.db_admin_port, module.database.public_port)
 }
 
 module "database" {
   source = "../../modules/database"
 
-  coolify_endpoint = local.shared.coolify_endpoint
-  coolify_token    = var.coolify_token
+  admin_port = var.db_admin_port
 
   project_id   = local.shared.project_id
   env_name     = "prod"
@@ -22,9 +21,7 @@ module "database" {
 
   db_memory_limit = "1g"
 
-  # Admin and Terraform access, through an SSH tunnel only: block this port
-  # from the internet in the VPS firewall. The app uses the internal URL.
-  is_public   = true
+  # Reached through an SSH tunnel only; block it in the VPS firewall.
   public_port = 5434
 
   backup_schedule     = "0 2 * * *"
@@ -41,7 +38,7 @@ module "database" {
 # so one apply creates everything (open the tunnel first; it only connects
 # through when used).
 provider "postgresql" {
-  host     = var.db_admin_host
+  host     = "127.0.0.1"
   port     = local.db_admin_port
   database = module.database.postgres_db
   username = module.database.postgres_user
@@ -59,20 +56,8 @@ module "db_roles" {
   host      = module.database.database_uuid
   superuser = module.database.postgres_user
 
-  # Postgres is accepting connections, not just created, and Terraform has a
-  # port to reach it on.
-  depends_on = [module.database.ready, terraform_data.db_admin_port]
-}
-
-# The roles are managed over the public port (through the tunnel). Without
-# one, fail here instead of the provider guessing port 5432.
-resource "terraform_data" "db_admin_port" {
-  lifecycle {
-    precondition {
-      condition     = local.db_admin_port != null
-      error_message = "Terraform needs a port to manage the database roles: set is_public = true on the database module, or db_admin_port to a tunnel that reaches Postgres."
-    }
-  }
+  # Postgres answers through the tunnel, not just created.
+  depends_on = [module.database.ready]
 }
 
 

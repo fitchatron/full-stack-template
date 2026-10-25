@@ -4,8 +4,8 @@ output "database_uuid" {
 }
 
 output "public_port" {
-  description = "Host port for admin access, or null when the database isn't public."
-  value       = var.is_public ? coolify_database_postgresql.this.public_port : null
+  description = "Port Postgres is published on, on the server: the far end of the SSH tunnel."
+  value       = var.public_port
 }
 
 # The superuser's connection details. The roots use them only for Terraform's

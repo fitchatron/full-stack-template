@@ -57,32 +57,19 @@ variable "db_memory_limit" {
   default     = null
 }
 
-variable "is_public" {
-  description = "Expose Postgres on the server's IP for admin access. The app never uses this."
-  type        = bool
-  default     = false
+variable "public_port" {
+  description = "Port Coolify publishes Postgres on, on the server. Reached through an SSH tunnel; block it from the internet."
+  type        = number
 }
 
-variable "public_port" {
-  description = "Host port for public access. null lets Coolify pick one. Ignored unless is_public."
+variable "admin_port" {
+  description = "Local port of the SSH tunnel, for the readiness check. null means the same as public_port."
   type        = number
   default     = null
 }
 
-variable "coolify_endpoint" {
-  description = "Coolify base URL, for the readiness check."
-  type        = string
-}
-
-variable "coolify_token" {
-  description = "Coolify API token for the readiness check. null falls back to the COOLIFY_TOKEN env var."
-  type        = string
-  default     = null
-  sensitive   = true
-}
-
 variable "ready_timeout" {
-  description = "Seconds to keep checking (every 2s) for Coolify to report the new database healthy before failing."
+  description = "Seconds to keep checking (every 2s) that the new database answers through the SSH tunnel before failing."
   type        = number
   default     = 45
 }
