@@ -1,1 +1,24 @@
-Generic single-database configuration.
+# Alembic Commands
+
+## Generate Alembic Migrations Scripts
+
+- Generate an alembic migration file by automatically detecting changes in the SQLAlchemy models with `alembic revision --autogenerate -m "<<your message here>>"`.
+- Generate a blank migration file with `alembic revision -m "<<your message here>>"`
+
+## Applying Alembic Migration Script
+
+Apply the migration scripts with 
+
+```
+alembic upgrade head
+```
+
+## Downgrade Changes
+
+Downgrade the revisions with `alembic downgrade -n` where `n` is the number of revisions you want to go back by.
+
+This will run the downgrades in each script.
+
+```
+alembic downgrade -1
+```
