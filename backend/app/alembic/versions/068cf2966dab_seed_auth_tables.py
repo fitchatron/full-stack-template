@@ -233,8 +233,7 @@ def upgrade() -> None:
       SELECT permission_id
         ,'admin' AS role_id
       FROM public.permissions
-      WHERE 1 = 1
-        AND action = '*'
+      WHERE action = '*'
         AND resource = '*';
     """)
     op.execute(insert_admin_role_permissions)
@@ -247,8 +246,7 @@ def upgrade() -> None:
       SELECT permission_id
         ,'user_admin' AS role_id
       FROM public.permissions
-      WHERE 1 = 1
-        AND action = '*'
+      WHERE action = '*'
         AND resource IN (
           'users'
           ,'user_roles'
@@ -264,40 +262,29 @@ def upgrade() -> None:
       SELECT permission_id
         ,'public' AS role_id
       FROM public.permissions
-      WHERE 1 = 1
-        AND (
-          action = 'read'
-          AND resource = 'users'
-          )
-        AND (
-          action = 'update'
-          AND resource = 'users'
-          )
-        AND (
-          action = 'read'
-          AND resource = 'user_roles'
-          );
+      WHERE (action = 'read' AND resource = 'users')
+        OR ( action = 'update' AND resource = 'users')
+        OR (action = 'read' AND resource = 'user_roles');
     """)
     op.execute(insert_public_role_permissions)
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-
-    delete_admin_role_permissions = sa.text("""
+    
+    delete_public_role_permissions = sa.text("""
       DELETE
-      FROM role_permissions
-      WHERE 1 = 1
-        AND role_id = 'admin'
+      FROM public.role_permissions
+      WHERE role_id = 'public'
         AND permission_id IN (
           SELECT permission_id
-          FROM permissions
-          WHERE 1 = 1
-            AND action = '*'
-            AND resource = '*'
+          FROM public.permissions
+          WHERE (action = 'read' AND resource = 'users')
+            OR ( action = 'update' AND resource = 'users')
+            OR (action = 'read' AND resource = 'user_roles')
         );
     """)
-    op.execute(delete_admin_role_permissions)
+    op.execute(delete_public_role_permissions)
     
     delete_user_admin_role_permissions = sa.text("""
       DELETE
@@ -307,8 +294,7 @@ def downgrade() -> None:
         AND permission_id IN (
           SELECT permission_id
           FROM permissions
-          WHERE 1 = 1
-            AND action = '*'
+          WHERE action = '*'
             AND resource IN (
               'users'
               ,'user_roles'
@@ -316,28 +302,55 @@ def downgrade() -> None:
         );
     """)
     op.execute(delete_user_admin_role_permissions)
-    
-    delete_public_role_permissions = sa.text("""
+
+    delete_admin_role_permissions = sa.text("""
       DELETE
-      FROM public.role_permissions
+      FROM role_permissions
       WHERE 1 = 1
-        AND role_id = 'public'
+        AND role_id = 'admin'
         AND permission_id IN (
           SELECT permission_id
-          FROM public.permissions
-          WHERE 1 = 1
-            AND (
-              action = 'read'
-              AND resource = 'users'
-              )
-            AND (
-              action = 'update'
-              AND resource = 'users'
-              )
-            AND (
-              action = 'read'
-              AND resource = 'user_roles'
-              )
-            );
+          FROM permissions
+          WHERE action = '*'
+            AND resource = '*'
+        );
     """)
-    op.execute(delete_public_role_permissions)
+    op.execute(delete_admin_role_permissions)
+    
+    delete_roles = sa.text("""
+      DELETE
+      FROM public.roles
+      WHERE role_id IN ('admin', 'user_admin', 'public');
+    """)
+    op.execute(delete_roles)
+    
+    delete_permissions = sa.text("""
+      DELETE 
+      FROM public.permissions
+      WHERE (action, resource) IN (
+        ('*', '*'),
+        ('*', 'users'),
+        ('*', 'user_roles'),
+        ('create', 'users'),
+        ('read', 'users'),
+        ('update', 'users'),
+        ('delete', 'users'),
+        ('create', 'permissions'),
+        ('read', 'permissions'),
+        ('update', 'permissions'),
+        ('delete', 'permissions'),
+        ('create', 'roles'),
+        ('read', 'roles'),
+        ('update', 'roles'),
+        ('delete', 'roles'),
+        ('create', 'role_permissions'),
+        ('read', 'role_permissions'),
+        ('update', 'role_permissions'),
+        ('delete', 'role_permissions'),
+        ('create', 'user_roles'),
+        ('read', 'user_roles'),
+        ('update', 'user_roles'),
+        ('delete', 'user_roles')
+      );
+    """)
+    op.execute(delete_permissions)
