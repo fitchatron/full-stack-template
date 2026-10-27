@@ -112,7 +112,7 @@ class Role(AuditMixin, Base):
 
     __tablename__ = "roles"
     role_id: Mapped[str] = mapped_column(Text, primary_key=True)
-    name: Mapped[str] = mapped_column(Text, index=True)
+    name: Mapped[str] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text)
 
     # MARK: Relationships

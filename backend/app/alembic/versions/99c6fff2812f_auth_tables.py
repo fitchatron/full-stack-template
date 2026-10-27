@@ -76,7 +76,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('role_id', name=op.f('pk__roles')),
     sa.UniqueConstraint('name', name=op.f('uq__roles__name'))
     )
-    op.create_index(op.f('ix__roles__name'), 'roles', ['name'], unique=False)
     
     # MARK: - Role Permissions Table
     op.create_table('role_permissions',
@@ -129,7 +128,6 @@ def downgrade() -> None:
     op.drop_index(op.f('ix__role_permissions__role_id'), table_name='role_permissions')
     op.drop_index(op.f('ix__role_permissions__permission_id'), table_name='role_permissions')
     op.drop_table('role_permissions')
-    op.drop_index(op.f('ix__roles__name'), table_name='roles')
     op.drop_table('roles')
     op.drop_index(op.f('ix__permissions__permission_id'), table_name='permissions')
     op.drop_table('permissions')
