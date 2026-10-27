@@ -135,4 +135,5 @@ def downgrade() -> None:
     op.drop_table('permissions')
     op.drop_index(op.f('ix__users__user_id'), table_name='users')
     op.drop_table('users')
+    sa.Enum(name='authorization_action').drop(op.get_bind(), checkfirst=True)
     # ### end Alembic commands ###
