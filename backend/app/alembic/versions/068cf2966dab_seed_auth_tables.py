@@ -22,7 +22,7 @@ def upgrade() -> None:
     """Upgrade schema."""
 
     insert_permissions = sa.text("""
-      INSERT INTO permissions (
+      INSERT INTO public.permissions (
         action
         ,resource
         ,description
@@ -194,7 +194,7 @@ def upgrade() -> None:
     op.execute(insert_permissions)
 
     insert_roles = sa.text("""
-      INSERT INTO roles (
+      INSERT INTO public.roles (
         role_id
         ,name
         ,description
@@ -217,7 +217,7 @@ def upgrade() -> None:
         )
         ,(
         'public'
-        ,'Public '
+        ,'Public'
         ,'Default public role'
         ,NULL
         ,NULL
@@ -226,13 +226,13 @@ def upgrade() -> None:
     op.execute(insert_roles)
 
     insert_admin_role_permissions = sa.text("""
-      INSERT INTO role_permissions (
+      INSERT INTO public.role_permissions (
         permission_id
         ,role_id
         )
       SELECT permission_id
         ,'admin' AS role_id
-      FROM PUBLIC.permissions
+      FROM public.permissions
       WHERE 1 = 1
         AND action = '*'
         AND resource = '*';
@@ -240,13 +240,13 @@ def upgrade() -> None:
     op.execute(insert_admin_role_permissions)
     
     insert_user_admin_role_permissions = sa.text("""
-      INSERT INTO role_permissions (
+      INSERT INTO public.role_permissions (
         permission_id
         ,role_id
         )
       SELECT permission_id
         ,'user_admin' AS role_id
-      FROM PUBLIC.permissions
+      FROM public.permissions
       WHERE 1 = 1
         AND action = '*'
         AND resource IN (
@@ -257,13 +257,13 @@ def upgrade() -> None:
     op.execute(insert_user_admin_role_permissions)
     
     insert_public_role_permissions = sa.text("""
-      INSERT INTO role_permissions (
+      INSERT INTO public.role_permissions (
         permission_id
         ,role_id
         )
       SELECT permission_id
         ,'public' AS role_id
-      FROM PUBLIC.permissions
+      FROM public.permissions
       WHERE 1 = 1
         AND (
           action = 'read'
@@ -283,6 +283,61 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.execute(sa.text("RUNCATE TABLE role_permissions;"))
-    op.execute(sa.text("RUNCATE TABLE roles;"))
-    op.execute(sa.text("RUNCATE TABLE permissions;"))
+
+    delete_admin_role_permissions = sa.text("""
+      DELETE
+      FROM role_permissions
+      WHERE 1 = 1
+        AND role_id = 'admin'
+        AND permission_id IN (
+          SELECT permission_id
+          FROM permissions
+          WHERE 1 = 1
+            AND action = '*'
+            AND resource = '*'
+        );
+    """)
+    op.execute(delete_admin_role_permissions)
+    
+    delete_user_admin_role_permissions = sa.text("""
+      DELETE
+      FROM role_permissions
+      WHERE 1 = 1
+        AND role_id = 'user_admin'
+        AND permission_id IN (
+          SELECT permission_id
+          FROM permissions
+          WHERE 1 = 1
+            AND action = '*'
+            AND resource IN (
+              'users'
+              ,'user_roles'
+              )
+        );
+    """)
+    op.execute(delete_user_admin_role_permissions)
+    
+    delete_public_role_permissions = sa.text("""
+      DELETE
+      FROM public.role_permissions
+      WHERE 1 = 1
+        AND role_id = 'public'
+        AND permission_id IN (
+          SELECT permission_id
+          FROM public.permissions
+          WHERE 1 = 1
+            AND (
+              action = 'read'
+              AND resource = 'users'
+              )
+            AND (
+              action = 'update'
+              AND resource = 'users'
+              )
+            AND (
+              action = 'read'
+              AND resource = 'user_roles'
+              )
+            );
+    """)
+    op.execute(delete_public_role_permissions)
