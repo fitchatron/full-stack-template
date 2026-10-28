@@ -23,11 +23,7 @@ jobs:
     uses: ./.github/workflows/set-environment.yml
 
   test_backend:
-    needs: set_environment
     uses: ./.github/workflows/test-backend.yml
-    with:
-      environment: ${{ needs.set_environment.outputs.environment }}
-    secrets: inherit
 
   deploy_db:
     needs: [set_environment, test_backend]
