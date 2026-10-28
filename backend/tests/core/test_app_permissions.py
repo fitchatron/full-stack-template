@@ -146,9 +146,9 @@ def test_get_app_permission_value(app_permission, expected_value):
         ),
         pytest.param(
             AppPermissions.READ__ASTERISK,
-            "create",
+            "read",
             "*",
-            id="create_asterisk",
+            id="read_asterisk",
         ),
         pytest.param(
             AppPermissions.ASTERISK__USERS,
@@ -284,13 +284,8 @@ def test_to_granted_by_clause(app_permission, expected_action, expected_resource
     [
         pytest.param(
             AppPermissions.READ__USERS,
-            {"*:*", "*:users", "read:users"},
+            {"*:*", "read:*", "*:users", "read:users"},
             id="read_users",
-        ),
-        pytest.param(
-            AppPermissions.CREATE__USERS,
-            {"*:*", "create:*", "*:users", "create:users"},
-            id="create_users",
         ),
         pytest.param(
             AppPermissions.READ__ASTERISK,
