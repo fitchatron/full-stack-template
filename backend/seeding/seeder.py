@@ -35,14 +35,8 @@ FIXED_ROLE_GRANTS: dict[str, list[AppPermissions]] = {
         AppPermissions.UPDATE__USERS,
     ],
     "user_admin": [
-        AppPermissions.CREATE__USERS,
-        AppPermissions.READ__USERS,
-        AppPermissions.UPDATE__USERS,
-        AppPermissions.DELETE__USERS,
-        AppPermissions.CREATE__USER_ROLES,
-        AppPermissions.READ__USER_ROLES,
-        AppPermissions.UPDATE__USER_ROLES,
-        AppPermissions.DELETE__USER_ROLES,
+        AppPermissions.ASTERISK__USERS,
+        AppPermissions.ASTERISK__USER_ROLES,
     ],
     "admin": list(AppPermissions),
 }
@@ -65,7 +59,8 @@ class DatabaseSeeder:
 
     def seed(self, plan: SeedPlan | None = None) -> SeedResult:
         plan = plan or SeedPlan()
-        core = self.seed_core_data()
+
+        core = self.seed_core_data() if plan.include_core_data else None
 
         admin_user = self._seed_admin_user(core.roles) if plan.admin_user else None
 
@@ -73,8 +68,8 @@ class DatabaseSeeder:
 
         self.session.commit()
         return SeedResult(
-            roles=core.roles,
-            permissions=core.permissions,
+            roles=core.get("roles", None),
+            permissions=core.get("permissions", None),
             admin_user=admin_user,
             users=users,
         )

@@ -10,6 +10,7 @@ DEFAULT_SEED = 1234
 @dataclass
 class SeedPlan:
     include_mock_data: bool = False
+    include_core_data: bool = True
     admin_user: bool = True
     user_count: int = 200
     faker_seed: int = DEFAULT_SEED
@@ -18,7 +19,7 @@ class SeedPlan:
 
 @dataclass
 class SeedResult:
-    roles: dict[str, Role]
-    permissions: dict[tuple[str, str], Permission]
+    roles: dict[str, Role] | None
+    permissions: dict[tuple[str, str], Permission] | None
     admin_user: User | None
     users: list[User]

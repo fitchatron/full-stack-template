@@ -38,7 +38,7 @@ def create_local_db(
     try:
         result = manager.reset(
             seed=lambda session: DatabaseSeeder(session).seed(
-                SeedPlan(include_mock_data=mock_data)
+                SeedPlan(include_mock_data=mock_data, include_core_data=mode==TestDataMode.mock)
             )
         )
         assert result is not None
