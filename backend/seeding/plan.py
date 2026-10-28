@@ -19,7 +19,7 @@ class SeedPlan:
 
 @dataclass
 class SeedResult:
-    roles: dict[str, Role] | None
-    permissions: dict[tuple[str, str], Permission] | None
+    roles: dict[str, Role]
+    permissions: dict[tuple[str, str], Permission]
     admin_user: User | None
     users: list[User]

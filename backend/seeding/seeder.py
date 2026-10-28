@@ -60,7 +60,7 @@ class DatabaseSeeder:
     def seed(self, plan: SeedPlan | None = None) -> SeedResult:
         plan = plan or SeedPlan()
 
-        core = self.seed_core_data() if plan.include_core_data else None
+        core = self._seed_core_data() if plan.include_core_data else self._load_core_data()
 
         admin_user = self._seed_admin_user(core.roles) if plan.admin_user else None
 
@@ -68,13 +68,20 @@ class DatabaseSeeder:
 
         self.session.commit()
         return SeedResult(
-            roles=core.get("roles", None),
-            permissions=core.get("permissions", None),
+            roles=core.roles,
+            permissions=core.permissions,
             admin_user=admin_user,
             users=users,
         )
 
-    def seed_core_data(self) -> CoreSeedResult:
+    def _load_core_data(self) -> CoreSeedResult:
+        roles = {r.role_id: r for r in self.session.scalars(select(Role))}
+        permissions = {
+            (p.action, p.resource): p for p in self.session.scalars(select(Permission))
+        }
+        return CoreSeedResult(roles=roles, permissions=permissions)
+        
+    def _seed_core_data(self) -> CoreSeedResult:
         permissions = self._seed_permissions()
         roles = self._seed_roles(permissions)
         return CoreSeedResult(roles=roles, permissions=permissions)
