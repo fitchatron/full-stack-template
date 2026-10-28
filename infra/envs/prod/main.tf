@@ -1,6 +1,10 @@
 locals {
   shared = data.terraform_remote_state.shared.outputs
 
+  # git_repository is owner/name; the github provider takes them apart.
+  github_owner      = split("/", local.shared.git_repository)[0]
+  github_repository = split("/", local.shared.git_repository)[1]
+
   # Local end of the SSH tunnel; by default the same number as the public
   # port.
   db_admin_port = coalesce(var.db_admin_port, module.database.public_port)
@@ -117,12 +121,26 @@ module "runner" {
   github_token   = var.github_runner_token
   # The second label matches the GitHub environment name.
   labels = ["coolify", "production"]
+}
 
-  job_env = {
-    POSTGRES_HOST     = module.database.database_uuid
-    POSTGRES_USER     = module.db_roles.migrator.user
+# The GitHub environment deploy jobs run in, holding the migrator
+# credentials for deploy-db.yml. The runner above only gives those jobs a
+# route to Postgres.
+module "github_environment" {
+  source = "../../modules/github-environment"
+
+  repository  = local.github_repository
+  environment = "production"
+  # Release tags deploy prod (deploy.yml); nothing else may read its secrets.
+  tag_patterns = ["*.*.*"]
+
+  secrets = {
     POSTGRES_PASSWORD = module.db_roles.migrator.password
-    POSTGRES_DB       = module.database.postgres_db
     DATABASE_URL      = module.db_roles.migrator.database_url
+  }
+  variables = {
+    POSTGRES_HOST = module.database.database_uuid
+    POSTGRES_USER = module.db_roles.migrator.user
+    POSTGRES_DB   = module.database.postgres_db
   }
 }

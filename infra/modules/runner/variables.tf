@@ -63,10 +63,3 @@ variable "docker_network" {
   description = "Docker network of destination_uuid, which this environment's database is on."
   type        = string
 }
-
-variable "job_env" {
-  description = "Env vars every job on this runner sees, e.g. the DB settings migrations need."
-  type        = map(string)
-  default     = {}
-  sensitive   = true
-}

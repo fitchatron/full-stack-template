@@ -41,6 +41,13 @@ variable "github_runner_token" {
   sensitive   = true
 }
 
+variable "github_token" {
+  description = "Fine-grained PAT for this repo with Administration, Environments, Secrets and Variables: read and write, used to manage the GitHub environment. Leave unset to use the GITHUB_TOKEN env var instead."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 variable "db_admin_port" {
   description = "Local port of the SSH tunnel Terraform reaches Postgres through. null means the same as the public port."
   type        = number

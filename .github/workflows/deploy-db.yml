@@ -4,8 +4,9 @@ name: deploy-db
 # deploy and the current app keeps running.
 #
 # Runs on the environment's own runner (infra/modules/runner), a Coolify
-# service on the environment's network. The runner's env carries the DB settings
-# from Terraform, so this job needs no DB secrets.
+# service on the environment's network, so it can reach Postgres. The
+# migrator credentials come from the GitHub environment (Terraform sets
+# them), which only hands them to jobs its deployment rules allow.
 on:
   workflow_call:
     inputs:
@@ -28,6 +29,11 @@ jobs:
 
       - name: Upgrade database
         env:
+          POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           # Settings validates these on import; migrations don't use them.
           PROJECT_NAME: migrations
           SECRET_KEY: unused-by-migrations-but-settings-requires-32-chars

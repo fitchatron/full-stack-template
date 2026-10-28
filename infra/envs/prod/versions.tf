@@ -14,6 +14,10 @@ terraform {
       source  = "cyrilgdn/postgresql"
       version = "1.27.0"
     }
+    github = {
+      source  = "integrations/github"
+      version = "6.13.0"
+    }
   }
 
   # Local state: envs/prod/terraform.tfstate. Separate from dev on purpose.
@@ -29,4 +33,9 @@ data "terraform_remote_state" "shared" {
 provider "coolify" {
   endpoint = data.terraform_remote_state.shared.outputs.coolify_endpoint
   token    = var.coolify_token
+}
+
+provider "github" {
+  owner = local.github_owner
+  token = var.github_token
 }

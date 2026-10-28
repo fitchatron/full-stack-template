@@ -18,6 +18,8 @@ ship with the merge that makes them.
 | Postgres roles and grants | Terraform `envs/*` (`modules/db-roles`) | rarely |
 | The app resource, its domain and env vars | Terraform `envs/*` | you add a setting |
 | The migrations runner | Terraform `envs/*` | image bumps |
+| GitHub environments, their deployment rules and DB secrets | Terraform `envs/*` (`modules/github-environment`) | rarely |
+| `COOLIFY_WEBHOOK` / `COOLIFY_TOKEN` environment secrets | you, in GitHub | the app is replaced or the token rotates |
 | `compose.prod.yml` | the repo | any merge |
 | When to deploy | GitHub Actions | every push to main (dev) / release tag (prod) |
 
@@ -29,7 +31,8 @@ infra/
 │   ├── database/        # Postgres + backup schedule for one environment
 │   ├── db-roles/        # migrator / backend / readonly Postgres roles
 │   ├── app/             # the compose app + its env vars for one environment
-│   └── runner/          # self-hosted Actions runner for one environment
+│   ├── runner/          # self-hosted Actions runner for one environment
+│   └── github-environment/  # GitHub environment + deploy secrets
 ├── shared/              # the Coolify project + dev environment
 └── envs/
     ├── dev/             # calls the modules for dev
@@ -89,7 +92,11 @@ dev and vice versa.
      `secrets.auto.tfvars`.
 
    Each env's `secrets.auto.tfvars` also needs `github_runner_token` (see
-   [The migrations runner](#the-migrations-runner)).
+   [The migrations runner](#the-migrations-runner)) and `github_token`: a
+   fine-grained PAT for this repo only with **Administration**,
+   **Environments**, **Secrets** and **Variables**: read and write, which
+   Terraform uses to manage the GitHub environment. Leave `github_token`
+   out to use the `GITHUB_TOKEN` env var instead.
 
 3. Shared:
    ```sh
@@ -227,11 +234,21 @@ Everything runs on GitHub-hosted runners except migrations.
 ### The migrations runner
 
 Migrations run on the environment's own self-hosted runner
-(`modules/runner`), a Coolify service that joins the `coolify` Docker
+(`modules/runner`), a Coolify service that joins the environment's Docker
 network through its compose file, with labels `coolify` plus the GitHub
-environment name. Terraform puts the DB settings in the runner's env, so
-jobs reach Postgres by its internal hostname and GitHub holds no DB
-credentials. The runner is ephemeral: it re-registers with a clean
+environment name, so jobs reach Postgres by its internal hostname.
+
+The runner holds no DB credentials. Any workflow on any branch can pick a
+self-hosted runner by its labels, and GitHub's environment rules don't
+apply to a job that leaves out `environment:`, so anything in the runner's
+env would be readable by any job. Instead, Terraform
+(`modules/github-environment`) creates the GitHub environment with a
+deployment rule (`main` only for `development`, release tags only for
+`production`) and stores the `migrator` role's settings there:
+`POSTGRES_PASSWORD` and `DATABASE_URL` as secrets, `POSTGRES_HOST`,
+`POSTGRES_USER` and `POSTGRES_DB` as variables. `deploy-db.yml` maps them
+into the migration step. To require approval for deploys, set
+`reviewer_user_ids` on the module, not in the UI. The runner is ephemeral: it re-registers with a clean
 workspace after every job.
 
 It registers itself with `github_runner_token` in each env's
@@ -240,8 +257,13 @@ It registers itself with `github_runner_token` in each env's
 does, the runner goes offline and `deploy-db` jobs queue indefinitely, so
 set a reminder. Pin `runner_image` to a specific tag.
 
-Every job on the runner can read the DB settings, so only use it for
-deploy workflows, never pull requests.
+Its PAT is in the container's env, but jobs can't read it: the image's
+`UNSET_CONFIG_VARS` clears it before the runner starts, and the runner user
+is taken out of the image's passwordless `sudo` group, so it can't read it
+back from PID 1. Jobs on the runner can still reach Postgres over the
+network, so keep it for deploy workflows only. If the repo is public, set
+**Settings → Actions → General → Fork pull request workflows** to require
+approval for all outside collaborators.
 
 ### Releasing and rolling back
 
@@ -265,21 +287,25 @@ curl -fsS -X POST "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
 - Protect `production` so only GitHub Actions can push to it.
 - **Settings → Actions → General → Workflow permissions:** read and write,
   or CI can't move `production`.
-- Create GitHub environments named `development` and `production` (what
-  `set-environment.yml` outputs). Each gets `COOLIFY_WEBHOOK`
-  (`terraform output deploy_webhook`) and a `COOLIFY_TOKEN` (created in
-  Coolify under **Security → API Tokens**) with `deploy` permission.
+- Terraform creates the GitHub environments `development` and
+  `production` (what `set-environment.yml` outputs). Add two secrets to
+  each yourself: `COOLIFY_WEBHOOK` (`terraform output deploy_webhook`) and
+  a `COOLIFY_TOKEN` (created in Coolify under **Security → API Tokens**)
+  with `deploy` permission. If the environments already exist, Terraform
+  adopts them; remove any deployment rules or reviewers you added by hand,
+  or set them through the module.
 
 ## Things to know
 
 - **State is a secret.** It holds the generated DB passwords, `SECRET_KEY`
-  and the runner's PAT in plain text.
+  and both PATs in plain text.
   Keep the machine's disk encrypted and back the three `terraform.tfstate`
   files up somewhere safe; losing them means re-importing everything.
 - **`prevent_destroy`** is on both databases and the dev environment.
   Comment it out deliberately if you ever want to tear something down.
 - **Changing the DB password** (e.g. by tainting `random_password.db`)
-  updates the app's and runner's env vars in the same apply, but the
+  updates the app's env vars and the GitHub environment's secrets in the
+  same apply, but the
   running app keeps the old one until you redeploy.
 - **Database roles** (`modules/db-roles`):
 
