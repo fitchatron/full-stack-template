@@ -2,6 +2,7 @@ import random
 from dataclasses import dataclass
 
 import factory.random
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.app_permissions import AppPermissions
@@ -80,7 +81,7 @@ class DatabaseSeeder:
             (p.action, p.resource): p for p in self.session.scalars(select(Permission))
         }
         return CoreSeedResult(roles=roles, permissions=permissions)
-        
+
     def _seed_core_data(self) -> CoreSeedResult:
         permissions = self._seed_permissions()
         roles = self._seed_roles(permissions)
