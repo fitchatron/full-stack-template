@@ -5,6 +5,7 @@ services:
       context: backend
       dockerfile: Dockerfile
     restart: always
+    networks: [default, coolify]
     expose:
       - 8000
     env_file:
