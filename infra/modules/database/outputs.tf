@@ -1,5 +1,5 @@
 output "database_uuid" {
-  description = "Coolify Postgres UUID (also its hostname on the Coolify network)."
+  description = "Coolify Postgres UUID (also its hostname on the environment's network)."
   value       = coolify_database_postgresql.this.uuid
 }
 

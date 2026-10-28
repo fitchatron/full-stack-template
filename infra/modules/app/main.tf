@@ -20,6 +20,7 @@ resource "coolify_application_github_app" "this" {
   server_uuid      = var.server_uuid
   environment_uuid = var.environment_uuid
   environment_name = var.environment_name
+  destination_uuid = var.destination_uuid
 
   github_app_uuid = var.github_app_uuid
   git_repository  = var.git_repository
@@ -36,7 +37,9 @@ resource "coolify_application_github_app" "this" {
     { name = "nginx", domain = var.domain },
   ])
 
-  # "Connect To Predefined Network": lets the stack reach Postgres by name.
+  # "Connect To Predefined Network": joins the destination's network, so the
+  # stack reaches Postgres by name. Only this environment is on it, so
+  # service names like `backend` can't resolve to the other environment.
   connect_to_docker_network = true
 
   # CI deploys through the webhook after pushing images. Auto deploy would

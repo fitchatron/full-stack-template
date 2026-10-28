@@ -38,6 +38,12 @@ variable "environment_name" {
   default     = null
 }
 
+# Create-only: changing it replaces the resource.
+variable "destination_uuid" {
+  description = "Coolify destination (Docker network) this environment's resources share."
+  type        = string
+}
+
 # --- Source -------------------------------------------------------------------
 
 variable "github_app_uuid" {
@@ -70,7 +76,7 @@ variable "database_url" {
 }
 
 variable "postgres_host" {
-  description = "Postgres hostname on the Coolify network (the database UUID)."
+  description = "Postgres hostname on the environment's network (the database UUID)."
   type        = string
 }
 

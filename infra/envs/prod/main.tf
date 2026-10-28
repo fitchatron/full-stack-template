@@ -6,15 +6,29 @@ locals {
   db_admin_port = coalesce(var.db_admin_port, module.database.public_port)
 }
 
+# This environment's own Docker network. Its database, app and runner join
+# it instead of the server's shared `coolify` network, so the other
+# environment (and anything else on the server) can't reach them, and
+# compose service names can't resolve across environments. Every resource
+# on the server then needs destination_uuid, or Coolify falls back to
+# `coolify`. Renaming the network replaces everything on it.
+resource "coolify_destination" "this" {
+  server_uuid = local.shared.server_uuid
+  network     = "${local.shared.project_id}-prod"
+  name        = "${local.shared.project_id}-prod"
+  type        = "standalone"
+}
+
 module "database" {
   source = "../../modules/database"
 
   admin_port = var.db_admin_port
 
-  project_id   = local.shared.project_id
-  env_name     = "prod"
-  project_uuid = local.shared.project_uuid
-  server_uuid  = local.shared.server_uuid
+  project_id       = local.shared.project_id
+  env_name         = "prod"
+  project_uuid     = local.shared.project_uuid
+  server_uuid      = local.shared.server_uuid
+  destination_uuid = coolify_destination.this.uuid
 
   # Coolify auto-creates "production" with the project; reference it by name.
   environment_name = "production"
@@ -69,6 +83,7 @@ module "app" {
   env_name         = "prod"
   project_uuid     = local.shared.project_uuid
   server_uuid      = local.shared.server_uuid
+  destination_uuid = coolify_destination.this.uuid
   environment_name = "production"
 
   github_app_uuid = local.shared.github_app_uuid
@@ -94,6 +109,8 @@ module "runner" {
   env_name         = "prod"
   project_uuid     = local.shared.project_uuid
   server_uuid      = local.shared.server_uuid
+  destination_uuid = coolify_destination.this.uuid
+  docker_network   = coolify_destination.this.network
   environment_name = "production"
 
   git_repository = local.shared.git_repository

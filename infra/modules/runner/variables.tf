@@ -29,6 +29,12 @@ variable "environment_name" {
   default = null
 }
 
+# Create-only: changing it replaces the resource.
+variable "destination_uuid" {
+  description = "Coolify destination (Docker network) this environment's resources share."
+  type        = string
+}
+
 # --- Runner -------------------------------------------------------------------
 
 variable "git_repository" {
@@ -54,9 +60,8 @@ variable "runner_image" {
 }
 
 variable "docker_network" {
-  description = "Docker network the databases are on: the server's Coolify destination network."
+  description = "Docker network of destination_uuid, which this environment's database is on."
   type        = string
-  default     = "coolify"
 }
 
 variable "job_env" {

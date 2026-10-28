@@ -29,6 +29,7 @@ resource "coolify_database_postgresql" "this" {
   server_uuid      = var.server_uuid
   environment_uuid = var.environment_uuid
   environment_name = var.environment_name
+  destination_uuid = var.destination_uuid
 
   image             = var.postgres_image
   postgres_db       = var.postgres_db

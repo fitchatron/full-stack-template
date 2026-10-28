@@ -4,7 +4,7 @@ variable "database" {
 }
 
 variable "host" {
-  description = "Postgres hostname on the Coolify network (the database UUID), for the connection strings."
+  description = "Postgres hostname on the environment's network (the database UUID), for the connection strings."
   type        = string
 }
 

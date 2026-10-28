@@ -1,7 +1,7 @@
 # A self-hosted GitHub Actions runner for one environment, running as a
-# Coolify service on the Coolify network. Jobs on it reach Postgres by its
-# internal hostname and get the environment's DB settings from the runner's
-# env, so GitHub never holds DB credentials.
+# Coolify service on the environment's network. Jobs on it reach Postgres by
+# its internal hostname and get the environment's DB settings from the
+# runner's env, so GitHub never holds DB credentials.
 
 locals {
   prefix = "${var.project_id}-${var.env_name}"
@@ -48,6 +48,7 @@ resource "coolify_service" "this" {
   server_uuid      = var.server_uuid
   environment_uuid = var.environment_uuid
   environment_name = var.environment_name
+  destination_uuid = var.destination_uuid
 
   docker_compose_raw = local.compose
 

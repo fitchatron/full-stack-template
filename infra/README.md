@@ -42,7 +42,7 @@ dev and vice versa.
 
 ## First run
 
-1. In Coolify:
+1. In Coolify (v4.2.0 or later, for per-environment networks):
    - **Settings → Advanced:** enable API access.
    - **Security → API Tokens:** create a token for Terraform with these
      permissions:
@@ -124,7 +124,8 @@ dev and vice versa.
 
 `modules/app` creates the Coolify application with Docker Compose from
 `/compose.prod.yml`, the predefined network on (so the stack reaches
-Postgres by name) and auto deploy off (CI deploys through the webhook once
+Postgres by name; that's the environment's own network, see
+[Networks](#networks)) and auto deploy off (CI deploys through the webhook once
 tests and migrations pass; auto deploy would ship every push untested).
 `terraform apply` doesn't deploy it.
 
@@ -159,6 +160,8 @@ port 80 blocked).
 Coolify clones the branch and builds the images on the server, so the
 compose file keeps its `build:` keys and there's no registry.
 
+- No `networks:`. Coolify puts every service on the app's private network
+  and the environment's network (see [Networks](#networks)).
 - No `ports:` on nginx. Coolify's proxy (Traefik) routes the domain to it.
 - No Postgres service. Terraform's database runs separately.
 - No `container_name:`. Coolify names containers itself.
@@ -170,6 +173,23 @@ compose file keeps its `build:` keys and there's no registry.
   for a healthy backend (`condition: service_healthy`).
 - `/health/ready` (backend up and DB reachable) isn't routed by nginx yet;
   add a `location` for it before pointing an external monitor or CI at it.
+
+## Networks
+
+Each environment root creates its own Coolify destination, a Docker network
+named `<project_id>-dev` or `<project_id>-prod`, and puts its database, app
+and runner on it. Nothing from the other environment, or from other apps on
+the server's shared `coolify` network, can reach them, and a compose service
+name like `backend` only ever resolves within its own environment.
+
+- **Everything on the server needs a `destination_uuid`** once it has more
+  than one destination; a resource without one falls back to `coolify`.
+- **`destination_uuid` is create-only.** Changing it (or the network name)
+  replaces the database, app and runner. The database's `prevent_destroy`
+  blocks that, so moving an environment with data means backing up,
+  removing `prevent_destroy`, applying, and restoring.
+- **A replaced app gets a new UUID**, so update the environment's
+  `COOLIFY_WEBHOOK` secret from `terraform output deploy_webhook`.
 
 ## Deploying
 
