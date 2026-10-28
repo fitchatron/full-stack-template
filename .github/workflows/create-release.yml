@@ -1,6 +1,5 @@
 name: create-release
 on:
-  workflow_dispatch:
   push:
     tags:
       - "*.*.*"
@@ -33,7 +32,13 @@ jobs:
           echo "  " >> release.md
           echo "## Commits" >> release.md
           echo "  " >> release.md
-          git log `git tag --sort=-v:refname | head -2 | tail -1`..${{ github.ref_name }} --no-merges --oneline >> release.md
+          tag="$GITHUB_REF_NAME"
+          if prev=$(git describe --tags --abbrev=0 --match '*.*.*' "${tag}^" 2>/dev/null); then
+            range="${prev}..${tag}"
+          else
+            range="$tag"   # first release: every commit up to this tag
+          fi
+          git log "$range" --no-merges --oneline >> release.md
           cat release.md
 
       - name: Create release
