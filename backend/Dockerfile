@@ -62,9 +62,12 @@ COPY app/ ./app/
 # Switch to the non-privileged user to run the application.
 USER appuser
 
-# Trust X-Forwarded-* headers from the reverse proxy so client
-# IPs and https scheme are correct. 
-# Safe only while the container is reachable solely through the proxy.
+# Trust X-Forwarded-* headers so client IPs and the https scheme are
+# correct; nginx sets them. Coolify picks the subnet nginx is on, so this
+# can't be pinned to it, and anything else on the environment's network
+# (its runner) can forge them. They only reach access logs and redirect
+# URLs today; revisit before anything (rate limiting, audit logs) relies on
+# the client IP.
 ENV FORWARDED_ALLOW_IPS="*"
 
 # Expose the port that the application listens on.
