@@ -8,7 +8,7 @@ variable "environment" {
   type        = string
 }
 
-# Set at least one pattern, or nothing can deploy to the environment.
+# Leave both pattern lists empty to let any branch or tag deploy.
 variable "branch_patterns" {
   description = "Branches allowed to deploy to this environment, e.g. [\"main\"]."
   type        = list(string)

@@ -15,10 +15,14 @@ resource "github_repository_environment" "this" {
     }
   }
 
-  # Only the refs below may deploy here (and so read the secrets).
-  deployment_branch_policy {
-    protected_branches     = false
-    custom_branch_policies = true
+  # Only the refs below may deploy here (and so read the secrets). No
+  # patterns means any branch or tag may.
+  dynamic "deployment_branch_policy" {
+    for_each = length(var.branch_patterns) + length(var.tag_patterns) > 0 ? [1] : []
+    content {
+      protected_branches     = false
+      custom_branch_policies = true
+    }
   }
 }
 

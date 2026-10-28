@@ -243,8 +243,8 @@ self-hosted runner by its labels, and GitHub's environment rules don't
 apply to a job that leaves out `environment:`, so anything in the runner's
 env would be readable by any job. Instead, Terraform
 (`modules/github-environment`) creates the GitHub environment with a
-deployment rule (`main` only for `development`, release tags only for
-`production`) and stores the `migrator` role's settings there:
+deployment rule for `production` (release tags only; `development` has
+none, so it can be deployed by hand from any branch) and stores the `migrator` role's settings there:
 `POSTGRES_PASSWORD` and `DATABASE_URL` as secrets, `POSTGRES_HOST`,
 `POSTGRES_USER` and `POSTGRES_DB` as variables. `deploy-db.yml` maps them
 into the migration step. To require approval for deploys, set

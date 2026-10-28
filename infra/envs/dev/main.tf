@@ -126,8 +126,10 @@ module "github_environment" {
 
   repository  = local.github_repository
   environment = "development"
-  # Pushes to main deploy dev (deploy.yml); nothing else may read its secrets.
-  branch_patterns = ["main"]
+  # No deployment rule: dev can be deployed by hand from any branch
+  # (workflow_dispatch), so any branch's jobs may read its secrets. Dev is
+  # disposable; a branch that migrates it ahead of main is rolled back by
+  # hand or restored from a backup.
 
   secrets = {
     POSTGRES_PASSWORD = module.db_roles.migrator.password
