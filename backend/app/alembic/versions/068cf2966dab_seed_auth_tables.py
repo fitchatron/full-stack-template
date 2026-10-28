@@ -44,6 +44,13 @@ def upgrade() -> None:
         ,NULL
         )
         ,(
+        'read'
+        ,'*'
+        ,'Full read access to all entities in the app.'
+        ,NULL
+        ,NULL
+        )
+        ,(
         '*'
         ,'user_roles'
         ,'Full CRUD access to user roles.'
@@ -331,6 +338,7 @@ def downgrade() -> None:
         ('*', '*'),
         ('*', 'users'),
         ('*', 'user_roles'),
+        ('read', '*'),
         ('create', 'users'),
         ('read', 'users'),
         ('update', 'users'),

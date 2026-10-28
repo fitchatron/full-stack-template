@@ -40,6 +40,8 @@ class AppPermissions(StrEnum):
     CREATE__ASTERISK = auto()
 
     ASTERISK__USERS = auto()
+    ASTERISK__USER_ROLES = auto()
+    READ__ASTERISK = auto()
 
     CREATE__USERS = auto()
     READ__USERS = auto()
