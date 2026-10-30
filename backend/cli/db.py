@@ -7,6 +7,15 @@ from seeding import DatabaseManager, DatabaseSeeder, NonLocalDatabaseError, Seed
 
 app = typer.Typer()
 
+def _init_db_manager(mode: TestDataMode | None = None):
+    _mode = mode if mode else TestDataMode.mock
+    
+    try:
+        manager = DatabaseManager.from_settings(_mode)
+        return manager
+    except NonLocalDatabaseError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
 
 @app.command("create-local-db")
 def create_local_db(
@@ -29,11 +38,7 @@ def create_local_db(
     usage: uv run -m cli.main db create-local-db --mock-data/--no-mock-data
     """
 
-    try:
-        manager = DatabaseManager.from_settings(TestDataMode.mock)
-    except NonLocalDatabaseError as e:
-        typer.secho(str(e), fg=typer.colors.RED, err=True)
-        raise typer.Exit(code=1)
+    manager = _init_db_manager(mode=mode)
 
     try:
         result = manager.reset(
@@ -62,19 +67,18 @@ def create_local_db(
 @app.command("create-blank-db")
 def create_blank_db():
     """
-    Drop all tables, and then set the database to a blank state.
+    Delete (of exists) and create the database. Effectively sets the database to a blank state.
 
     usage: uv run -m cli.main db create-blank-db
     """
 
-    try:
-        manager = DatabaseManager.from_settings(mode)
-    except NonLocalDatabaseError as e:
-        typer.secho(str(e), fg=typer.colors.RED, err=True)
-        raise typer.Exit(code=1)
+    manager = _init_db_manager()
 
     try:
-        manager.recreate_database()
+        manager.reset(
+            seed=None,
+            recreate_db=True
+        )
 
         typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
         message = "Done: database reset"
