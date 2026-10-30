@@ -59,5 +59,33 @@ def create_local_db(
         manager.dispose()
 
 
+@app.command("create-blank-db")
+def create_blank_db():
+    """
+    Drop all tables, and then set the database to a blank state.
+
+    usage: uv run -m cli.main db create-blank-db
+    """
+
+    try:
+        manager = DatabaseManager.from_settings(mode)
+    except NonLocalDatabaseError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
+
+    try:
+        manager.recreate_database()
+
+        typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
+        message = "Done: database reset"
+        typer.secho(message, fg=typer.colors.YELLOW)
+
+    except Exception as e:
+        typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
+    finally:
+        manager.dispose()
+
+
 if __name__ == "__main__":
     app()
