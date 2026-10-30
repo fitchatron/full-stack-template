@@ -7,11 +7,9 @@ from seeding import DatabaseManager, DatabaseSeeder, NonLocalDatabaseError, Seed
 
 app = typer.Typer()
 
-def _init_db_manager(mode: TestDataMode | None = None):
-    _mode = mode if mode else TestDataMode.mock
-    
+def _init_db_manager(mode: TestDataMode = TestDataMode.mock) -> DatabaseManager:    
     try:
-        manager = DatabaseManager.from_settings(_mode)
+        manager = DatabaseManager.from_settings(mode)
         return manager
     except NonLocalDatabaseError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
@@ -65,20 +63,21 @@ def create_local_db(
 
 
 @app.command("create-blank-db")
-def create_blank_db():
+def create_blank_db(
+    yes: Annotated[bool, typer.Option("--yes", "-y", help="Skip confirmation.")] = False,
+):
     """
-    Delete (of exists) and create the database. Effectively sets the database to a blank state.
+    Delete (if exists) and create the database. Effectively sets the database to a blank state. This will close other open connections.
 
     usage: uv run -m cli.main db create-blank-db
     """
 
+    if not yes:
+        typer.confirm("This drops and recreates the local database. Continue?", abort=True)
     manager = _init_db_manager()
 
     try:
-        manager.reset(
-            seed=None,
-            recreate_db=True
-        )
+        manager.reset(recreate_db=True)
 
         typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
         message = "Done: database reset"
