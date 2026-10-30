@@ -30,7 +30,7 @@ def create_local_db(
     """
 
     try:
-        manager = DatabaseManager.from_settings(mode)
+        manager = DatabaseManager.from_settings(TestDataMode.mock)
     except NonLocalDatabaseError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1)
