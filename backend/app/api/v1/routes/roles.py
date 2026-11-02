@@ -15,6 +15,7 @@ from app.schemas.role import (
     RoleSchemaPUTRequest,
 )
 from app.schemas.user import UserResponseSchema
+from app.services.role import RoleService
 
 router = APIRouter(prefix="/roles", tags=["Roles"])
 
@@ -36,7 +37,8 @@ def get_all_roles(
     """
     sort_by = [OrderByCondition(column="role_id", orientation=OrderOperator.asc_)]
     
-    raise NotImplementedError("Method not implemented")
+    return RoleService(session).read_all(sort_by=sort_by)
+
 
 
 @router.post(
@@ -58,7 +60,7 @@ def create_role(
     Create a new role
     """
     
-    raise NotImplementedError("Method not implemented")
+    return RoleService.create_role(current_user=current_user, request_body=body)
 
 
 @router.get(
@@ -72,13 +74,13 @@ def get_role_by_id(
         UserResponseSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.READ__ROLES])),
     ],
-    role_id: Annotated[UUID, Path(description="ID of the target role")],
+    role_id: Annotated[str, Path(description="ID of the target role")],
 ) -> RoleSchema:
     """
     Get a role by ID.
     """
 
-    raise NotImplementedError("Method not implemented")
+    return RoleService(session).read_by_id(role_id=role_id)
 
 
 @router.put(
@@ -92,7 +94,7 @@ def update_role_by_id(
         UserResponseSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.UPDATE__ROLES])),
     ],
-    role_id: Annotated[UUID, Path(description="ID of the target role to be updated")],
+    role_id: Annotated[str, Path(description="ID of the target role to be updated")],
     body: Annotated[
         RoleSchemaPUTRequest, Body(description="Request body for updating the role")
     ],
@@ -101,7 +103,7 @@ def update_role_by_id(
     Update a role by ID.
     """
 
-    raise NotImplementedError("Method not implemented")
+    return RoleService(session).update_by_id(current_user=current_user, role_id=role_id, request_body=body)
 
 
 @router.patch(
@@ -115,7 +117,7 @@ def patch_role_by_id(
         UserResponseSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.UPDATE__ROLES])),
     ],
-    role_id: Annotated[UUID, Path(description="ID of the target role to be patched")],
+    role_id: Annotated[str, Path(description="ID of the target role to be patched")],
     body: Annotated[
         RoleSchemaPATCHRequest, Body(description="Request body for patching the role")
     ],
@@ -124,7 +126,7 @@ def patch_role_by_id(
     Patch a role by ID.
     """
 
-    raise NotImplementedError("Method not implemented")
+    return RoleService(session).patch_by_id(current_user=current_user, role_id=role_id, request_body=body)
 
 
 @router.delete(
@@ -134,8 +136,8 @@ def patch_role_by_id(
 )
 def delete_role_by_id(
     session: SessionDep,
-    role_id: Annotated[UUID, Path(description="ID of the target role to be deleted")],
-    current_user: Annotated[
+    role_id: Annotated[str, Path(description="ID of the target role to be deleted")],
+    _current_user: Annotated[
         UserResponseSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.DELETE__ROLES])),
     ],
@@ -144,4 +146,4 @@ def delete_role_by_id(
     Delete a role by ID.
     """
 
-    raise NotImplementedError("Method not implemented")
+    return RoleService(session).delete_by_id(role_id=role_id)
