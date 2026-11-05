@@ -1,7 +1,8 @@
+from typing import Any
 import uuid
 from datetime import datetime
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.schemas.base import BaseSchemaModel
 from app.schemas.pagination import OptionalPage
@@ -51,6 +52,15 @@ class RoleSchemaPATCHRequest(BaseSchemaModel):
 
     name: str | None = Field(None, description="Client friendly name of the role")
     description: str | None = Field(None, description="Role description")
+
+    @field_validator("name", "description")
+    @classmethod
+    def reject_null(cls, value: Any) -> Any:
+        # Fields may be omitted, but these columns are non-nullable so an explicit null is rejected
+        if value is None:
+            raise ValueError("field cannot be null")
+
+        return value
 
 
 class RoleSchemaPaginated(OptionalPage[RoleSchema]):

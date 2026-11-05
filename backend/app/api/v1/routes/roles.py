@@ -41,7 +41,7 @@ def get_all_roles(
 
 @router.post(
     "",
-    status_code=status.HTTP_200_OK,
+    status_code=status.HTTP_201_CREATED,
     responses=settings.HTTP_EXCEPTION_RESPONSES_SET["post"],
 )
 def create_role(

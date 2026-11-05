@@ -15,7 +15,7 @@ from app.schemas.role import (
 from app.schemas.user import (
     UserResponseSchema,
 )
-from app.utils.exception import NotFoundError
+from app.utils.exception import ConflictError, NotFoundError
 
 
 class RoleService:
@@ -63,6 +63,12 @@ class RoleService:
         """
         Create a new role object
         """
+
+        existing_role = self.repository.read_by_pk(request_body.role_id)
+
+        if existing_role is not None:
+            raise ConflictError("Role ID already in use")
+
         role = self.repository.create_single_item(
             values=request_body.model_dump()
             | {"created_by": current_user.user_id, "modified_by": current_user.user_id},
