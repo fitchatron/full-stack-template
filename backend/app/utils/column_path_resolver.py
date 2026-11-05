@@ -7,7 +7,6 @@ ModelType = TypeVar("ModelType")
 
 
 class ColumnPathResolver:
-
     PATH_SYNTAX = {
         "join_delimiter": ".",  # denotes how joined tables are defined and split from column names e.g. roles.name
         "json_delimiter": "->",  # denotes how a column splits to a JSON key e.g. user.email == user["email"]

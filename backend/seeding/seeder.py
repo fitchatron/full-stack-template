@@ -61,7 +61,9 @@ class DatabaseSeeder:
     def seed(self, plan: SeedPlan | None = None) -> SeedResult:
         plan = plan or SeedPlan()
 
-        core = self._seed_core_data() if plan.include_core_data else self._load_core_data()
+        core = (
+            self._seed_core_data() if plan.include_core_data else self._load_core_data()
+        )
 
         admin_user = self._seed_admin_user(core.roles) if plan.admin_user else None
 

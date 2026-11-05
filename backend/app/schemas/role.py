@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
-from typing import Any, Self
 
-from pydantic import EmailStr, Field, SecretStr, field_validator, model_validator
+from pydantic import Field
 
 from app.schemas.base import BaseSchemaModel
 from app.schemas.pagination import OptionalPage
@@ -24,6 +23,7 @@ class RoleSchema(BaseSchemaModel):
     modified_by: uuid.UUID | None = Field(
         description="User ID that modified the user details"
     )
+
 
 class RoleSchemaPOSTRequest(BaseSchemaModel):
     """
@@ -52,9 +52,11 @@ class RoleSchemaPATCHRequest(BaseSchemaModel):
     name: str | None = Field(None, description="Client friendly name of the role")
     description: str | None = Field(None, description="Role description")
 
+
 class RoleSchemaPaginated(OptionalPage[RoleSchema]):
     """
     Paginated role schema. This is required for documentation purposes by FastAPI.
     Without this, the schema will be called "Page_<schema name>_" instead of "<schema name>Paginated"
     """
+
     pass

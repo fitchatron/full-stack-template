@@ -42,7 +42,6 @@ def parse_param_to_order_by_condition(
 
 
 class OrderByGenerator[ModelType, Schema]:
-
     def __init__(
         self,
         model: type[ModelType],

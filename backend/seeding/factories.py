@@ -55,7 +55,6 @@ class SQLAlchemyModelFactory[ModelT](_SQLAlchemyModelFactory):
 
 
 class UserFactory(SQLAlchemyModelFactory[User]):
-
     class Meta:
         model = User
 
@@ -87,7 +86,6 @@ class UserFactory(SQLAlchemyModelFactory[User]):
 
 
 class RoleFactory(SQLAlchemyModelFactory[Role]):
-
     class Meta:
         model = Role
 
@@ -97,7 +95,6 @@ class RoleFactory(SQLAlchemyModelFactory[Role]):
 
 
 class UserRoleFactory(SQLAlchemyModelFactory[UserRole]):
-
     class Meta:
         model = UserRole
 
@@ -127,7 +124,6 @@ class PermissionFactory(SQLAlchemyModelFactory[Permission]):
 
 
 class RolePermissionFactory(SQLAlchemyModelFactory[RolePermission]):
-
     class Meta:
         model = RolePermission
 
