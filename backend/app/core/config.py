@@ -63,6 +63,8 @@ class Settings(BaseSettings):
             400: {"model": HTTPExceptionSchema},
             401: {"model": HTTPExceptionSchema},
             403: {"model": HTTPExceptionSchema},
+            404: {"model": HTTPExceptionSchema},
+            409: {"model": HTTPExceptionSchema},
             500: {"model": HTTPExceptionSchema},
         },
         "put": {
