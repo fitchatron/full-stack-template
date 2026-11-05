@@ -22,13 +22,13 @@ class AuditMixin:
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    @declared_attr
-    def created_by(cls) -> Mapped[uuid.UUID | None]:
-        return mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"))
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL")
+    )
 
-    @declared_attr
-    def modified_by(cls) -> Mapped[uuid.UUID | None]:
-        return mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"))
+    modified_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL")
+    )
 
     @declared_attr
     @classmethod
