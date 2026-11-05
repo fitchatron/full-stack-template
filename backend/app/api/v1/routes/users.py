@@ -38,6 +38,24 @@ def get_all_users(
 
 
 @router.get(
+    "/me",
+    status_code=status.HTTP_200_OK,
+    responses=settings.HTTP_EXCEPTION_RESPONSES_SET["get"],
+)
+def get_user_by_current_user(
+    current_user: Annotated[
+        UserResponseSchema,
+        Depends(AuthorizeUser(required_permissions=None)),
+    ],
+) -> UserResponseSchema:
+    """
+    Get current user.
+    """
+
+    return current_user
+
+
+@router.get(
     "/{user_id}",
     status_code=status.HTTP_200_OK,
     responses=settings.HTTP_EXCEPTION_RESPONSES_SET["get"],

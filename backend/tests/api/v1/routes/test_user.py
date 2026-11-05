@@ -47,6 +47,36 @@ def test_get_all_users(
     assert validated_body.size == size
 
 
+def test_get_current_user_authC(client, act_as_user, auth_headers):
+    """
+    WHEN a valid user attempts to retrieve their details,
+    THEN the response should include the user's details if the user exists,
+    EXPECT the response status code to be 200 for existing users and 401 for unauthenticated users.
+    """
+
+    response = client.get(f"{BASE_URL}/me", headers=auth_headers)
+
+    assert response.status_code == 200
+
+    validated_body = UserResponseSchema.model_validate(response.json())
+
+    assert validated_body.user_id == act_as_user.user_id
+    assert validated_body.username == act_as_user.username
+    assert validated_body.email == act_as_user.email
+
+
+def test_get_current_user_unauthC(client):
+    """
+    WHEN a valid user attempts to retrieve their details,
+    THEN the response should include the user's details if the user exists,
+    EXPECT the response status code to be 200 for existing users and 401 for unauthenticated users.
+    """
+
+    response = client.get(f"{BASE_URL}/me")
+
+    assert response.status_code == 401
+
+
 @pytest.mark.parametrize(
     "user_exists, expected_status_code",
     [
