@@ -1,15 +1,9 @@
 name: test-backend
 on:
   workflow_call:
-    inputs:
-      environment:
-        required: true
-        type: string
 jobs:
   test_backend:
     runs-on: ubuntu-latest
-    # No `environment:`: the job needs nothing from it, and PR checks would
-    # fail the environments' deployment rules.
 
     steps:
       - uses: actions/checkout@v7
