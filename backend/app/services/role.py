@@ -1,24 +1,21 @@
 from uuid import UUID
 
-from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 
-from app.core.app_permissions import AppPermissions
-from app.models.model import Permission, User, UserRole, Role
+from app.models.model import Role
 from app.repositories.generic import CRUDRepository
-from app.repositories.permission import PermissionRepository
-from app.repositories.user import UserRepository
 from app.schemas.order_by_generator import OrderByCondition
-from app.schemas.permission import (
-    PermissionSchema,
+from app.schemas.role import (
+    RoleSchema,
+    RoleSchemaPaginated,
+    RoleSchemaPATCHRequest,
+    RoleSchemaPOSTRequest,
+    RoleSchemaPUTRequest,
 )
 from app.schemas.user import (
     UserResponseSchema,
-    UserResponseSchemaPaginated,
-    UserSchemaPATCHRequest,
-    UserSchemaPUTRequest,
 )
-from app.utils.exception import ForbiddenError, NotFoundError
+from app.utils.exception import NotFoundError
 
 
 class RoleService:
@@ -28,7 +25,7 @@ class RoleService:
         """
         self.repository = CRUDRepository(session, Role)
 
-    def _update_by_id(self, role_id: str, current_user_user_id: UUID, values: dict) -> RoleSchema:
+    def _update_by_id(self, role_id: str, values: dict) -> RoleSchema:
         """
         Internal method to update a role by ID with the given values.
         """
@@ -38,7 +35,7 @@ class RoleService:
 
         if not role:
             raise NotFoundError("Role not found")
-        return RoleSchema.model_validate(user)
+        return RoleSchema.model_validate(role)
 
     def read_all(self, sort_by: list[OrderByCondition]) -> RoleSchemaPaginated:
         """
@@ -66,10 +63,11 @@ class RoleService:
         """
         Create a new role object
         """
-        return self.repository.create_single_item(
-            values=request_body.model_dump() | {"created_by": current_user.user_id, "modified_by": current_user.user_id},
-            
+        role = self.repository.create_single_item(
+            values=request_body.model_dump()
+            | {"created_by": current_user.user_id, "modified_by": current_user.user_id},
         )
+        return RoleSchema.model_validate(role)
 
     def update_by_id(
         self,
@@ -82,22 +80,6 @@ class RoleService:
         """
         return self._update_by_id(
             role_id=role_id,
-            current_user_user_id=current_user.user_id,
-            values=request_body.model_dump() | {"modified_by": current_user.user_id},
-        )
-
-    def update_by_id(
-        self,
-        current_user: UserResponseSchema,
-        role_id: str,
-        request_body: RoleSchemaPUTRequest,
-    ) -> RoleSchema:
-        """
-        Update an entire existing role object by ID
-        """
-        return self._update_by_id(
-            role_id=role_id,
-            current_user_user_id=current_user.user_id,
             values=request_body.model_dump() | {"modified_by": current_user.user_id},
         )
 
@@ -112,7 +94,6 @@ class RoleService:
         """
         return self._update_by_id(
             role_id=role_id,
-            current_user_user_id=current_user.user_id,
             values=request_body.model_dump(exclude_unset=True)
             | {"modified_by": current_user.user_id},
         )

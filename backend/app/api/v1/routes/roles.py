@@ -1,5 +1,4 @@
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Path, status
 
@@ -36,9 +35,8 @@ def get_all_roles(
     Get a list of all roles.
     """
     sort_by = [OrderByCondition(column="role_id", orientation=OrderOperator.asc_)]
-    
-    return RoleService(session).read_all(sort_by=sort_by)
 
+    return RoleService(session).read_all(sort_by=sort_by)
 
 
 @router.post(
@@ -48,7 +46,7 @@ def get_all_roles(
 )
 def create_role(
     session: SessionDep,
-    _current_user: Annotated[
+    current_user: Annotated[
         UserResponseSchema,
         Depends(AuthorizeUser(required_permissions=[AppPermissions.CREATE__ROLES])),
     ],
@@ -59,8 +57,10 @@ def create_role(
     """
     Create a new role
     """
-    
-    return RoleService.create_role(current_user=current_user, request_body=body)
+
+    return RoleService(session).create_role(
+        current_user=current_user, request_body=body
+    )
 
 
 @router.get(
@@ -103,7 +103,9 @@ def update_role_by_id(
     Update a role by ID.
     """
 
-    return RoleService(session).update_by_id(current_user=current_user, role_id=role_id, request_body=body)
+    return RoleService(session).update_by_id(
+        current_user=current_user, role_id=role_id, request_body=body
+    )
 
 
 @router.patch(
@@ -126,7 +128,9 @@ def patch_role_by_id(
     Patch a role by ID.
     """
 
-    return RoleService(session).patch_by_id(current_user=current_user, role_id=role_id, request_body=body)
+    return RoleService(session).patch_by_id(
+        current_user=current_user, role_id=role_id, request_body=body
+    )
 
 
 @router.delete(
