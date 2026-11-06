@@ -1,13 +1,11 @@
 import uuid
 from datetime import datetime
-from typing import Any, Self
 
 from pydantic import (
     AwareDatetime,
     ConfigDict,
     Field,
     field_validator,
-    model_validator,
 )
 
 from app.schemas.base import BaseSchemaModel, reject_null
