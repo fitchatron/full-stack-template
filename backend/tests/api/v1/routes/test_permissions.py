@@ -376,17 +376,7 @@ def test_put_update_permission_conflicting_action_and_resource(
     "permission_exists, request_body, expected_status_code",
     [
         pytest.param(True, {"description": "Patched"}, 200, id="single-field"),
-        pytest.param(
-            True,
-            {
-                "action": "delete",
-                "resource": "patched-resource",
-                "description": "Patched description",
-            },
-            200,
-            id="multiple-fields",
-        ),
-        pytest.param(True, {}, 200, id="empty-body"),
+        pytest.param(True, {}, 422, id="empty-body"),
         pytest.param(False, {"description": "Patched"}, 404, id="missing-permission"),
         pytest.param(True, {"action": None}, 422, id="null-action"),
         pytest.param(True, {"resource": None}, 422, id="null-resource"),
@@ -438,35 +428,6 @@ def test_patch_update_permission_by_id(
     assert validated_body.resource == expected["resource"]
     assert validated_body.description == expected["description"]
     assert validated_body.modified_by == act_as_admin.user_id
-
-
-@pytest.mark.usefixtures("act_as_admin")
-def test_patch_update_permission_conflicting_action_and_resource(
-    db_session, client, auth_headers
-):
-    """
-    WHEN a valid user attempts to patch a permission so that its action and resource
-    pair is already held by another permission,
-    THEN the response should indicate a conflict,
-    EXPECT the response to be 409 with a message naming the conflicting fields.
-    """
-
-    permission = PermissionFactory.build()
-    conflicting_permission = PermissionFactory.build()
-    db_session.add_all([permission, conflicting_permission])
-    db_session.flush()
-
-    # reuse a value already held by another permission
-    request_body = {"resource": conflicting_permission.resource}
-
-    response = client.patch(
-        f"{BASE_URL}/{permission.permission_id}",
-        json=request_body,
-        headers=auth_headers,
-    )
-
-    assert response.status_code == 409
-    assert "Permission already exists" in response.text
 
 
 # MARK: DELETE tests

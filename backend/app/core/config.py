@@ -84,6 +84,7 @@ class Settings(BaseSettings):
             401: {"model": HTTPExceptionSchema},
             403: {"model": HTTPExceptionSchema},
             404: {"model": HTTPExceptionSchema},
+            409: {"model": HTTPExceptionSchema},
             422: {"model": HTTPValidationExceptionSchema},
             500: {"model": HTTPExceptionSchema},
         },

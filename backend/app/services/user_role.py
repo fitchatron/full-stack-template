@@ -98,6 +98,12 @@ class UserRoleService:
         """
         Create a new user role object
         """
+        start_at = request_body.start_at or datetime.now(UTC)
+        try:
+            end_at = request_body.end_at or start_at + DEFAULT_USER_ROLE_DURATION
+        except OverflowError:
+            raise BadRequestError("start_at is too far in the future") from None
+
         if current_user.user_id == user_id:
             raise ForbiddenError("Users cannot change their own roles")
 

@@ -53,20 +53,7 @@ class PermissionSchemaPATCHRequest(BaseSchemaModel):
     Request schema for updating a permission on a PATCH request
     """
 
-    action: AuthorizationAction | None = Field(
-        None, description="Action of the permission"
-    )
-    resource: str | None = Field(None, description="Resource of the permission")
-    description: str | None = Field(None, description="Description of the permission")
-
-    @field_validator("action", "resource", "description")
-    @classmethod
-    def reject_null(cls, value: Any) -> Any:
-        # Fields may be omitted, but these columns are non-nullable so an explicit null is rejected
-        if value is None:
-            raise ValueError("field cannot be null")
-
-        return value
+    description: str = Field(description="Description of the permission")
 
 
 class PermissionSchemaPaginated(OptionalPage[PermissionSchema]):

@@ -255,17 +255,22 @@ def test_post_create_user_role_with_dates(
 
 
 @pytest.mark.parametrize(
-    "request_body",
+    "request_body, expected_status_code",
     [
-        pytest.param({}, id="invalid-missing-role-id"),
-        pytest.param({"roleId": None}, id="invalid-null-role-id"),
-        pytest.param({"roleId": "admin", "startAt": None}, id="invalid-null-start-at"),
-        pytest.param({"roleId": "admin", "endAt": None}, id="invalid-null-end-at"),
+        pytest.param({}, 422, id="invalid-missing-role-id"),
+        pytest.param({"roleId": None}, 422, id="invalid-null-role-id"),
         pytest.param(
-            {"roleId": "admin", "startAt": "not-a-date"}, id="invalid-malformed-date"
+            {"roleId": "admin", "startAt": None}, 422, id="invalid-null-start-at"
+        ),
+        pytest.param({"roleId": "admin", "endAt": None}, 422, id="invalid-null-end-at"),
+        pytest.param(
+            {"roleId": "admin", "startAt": "not-a-date"},
+            422,
+            id="invalid-malformed-date",
         ),
         pytest.param(
             {"roleId": "admin", "startAt": "2030-01-01T00:00:00"},
+            422,
             id="invalid-naive-date",
         ),
         pytest.param(
@@ -274,13 +279,14 @@ def test_post_create_user_role_with_dates(
                 "startAt": "2030-06-01T00:00:00Z",
                 "endAt": "2030-01-01T00:00:00Z",
             },
+            400,
             id="invalid-end-before-start",
         ),
     ],
 )
 @pytest.mark.usefixtures("act_as_admin")
 def test_post_create_user_role_invalid_body(
-    db_session, client, auth_headers, request_body
+    db_session, client, auth_headers, request_body, expected_status_code
 ):
     """
     WHEN a valid user attempts to assign a role with an invalid request body,
@@ -296,7 +302,7 @@ def test_post_create_user_role_invalid_body(
         headers=auth_headers,
     )
 
-    assert response.status_code == 422
+    assert response.status_code == expected_status_code
 
 
 @pytest.mark.usefixtures("act_as_admin")

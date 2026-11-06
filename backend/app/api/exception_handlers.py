@@ -106,11 +106,19 @@ async def integrity_error_handler(
 
 
 async def http_exception_handler(
-    _: Request, exception: StarletteHTTPException
+    request: Request, exception: StarletteHTTPException
 ) -> JSONResponse:
     """
     Framework errors (unknown routes, missing tokens) use the same body as domain errors
     """
+    logger.log(
+        logging.ERROR,
+        "%s %s -> HTTPException %s",
+        request.method,
+        request.url.path,
+        exception.status_code,
+        exc_info=exception,
+    )
     return JSONResponse(
         status_code=exception.status_code,
         content=error_body(
