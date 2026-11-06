@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import EmailStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.schemas.api import HTTPExceptionSchema
+from app.schemas.api import HTTPExceptionSchema, HTTPValidationExceptionSchema
 
 # backend/app/core/config.py -> repo root is two levels up from backend/
 ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
@@ -51,12 +51,14 @@ class Settings(BaseSettings):
             401: {"model": HTTPExceptionSchema},
             403: {"model": HTTPExceptionSchema},
             404: {"model": HTTPExceptionSchema},
+            422: {"model": HTTPValidationExceptionSchema},
             500: {"model": HTTPExceptionSchema},
         },
         "get_all": {
             400: {"model": HTTPExceptionSchema},
             401: {"model": HTTPExceptionSchema},
             403: {"model": HTTPExceptionSchema},
+            422: {"model": HTTPValidationExceptionSchema},
             500: {"model": HTTPExceptionSchema},
         },
         "post": {
@@ -65,6 +67,7 @@ class Settings(BaseSettings):
             403: {"model": HTTPExceptionSchema},
             404: {"model": HTTPExceptionSchema},
             409: {"model": HTTPExceptionSchema},
+            422: {"model": HTTPValidationExceptionSchema},
             500: {"model": HTTPExceptionSchema},
         },
         "put": {
@@ -73,6 +76,7 @@ class Settings(BaseSettings):
             403: {"model": HTTPExceptionSchema},
             404: {"model": HTTPExceptionSchema},
             409: {"model": HTTPExceptionSchema},
+            422: {"model": HTTPValidationExceptionSchema},
             500: {"model": HTTPExceptionSchema},
         },
         "delete": {
@@ -80,6 +84,7 @@ class Settings(BaseSettings):
             401: {"model": HTTPExceptionSchema},
             403: {"model": HTTPExceptionSchema},
             404: {"model": HTTPExceptionSchema},
+            422: {"model": HTTPValidationExceptionSchema},
             500: {"model": HTTPExceptionSchema},
         },
         "patch": {
@@ -88,6 +93,7 @@ class Settings(BaseSettings):
             403: {"model": HTTPExceptionSchema},
             404: {"model": HTTPExceptionSchema},
             409: {"model": HTTPExceptionSchema},
+            422: {"model": HTTPValidationExceptionSchema},
             500: {"model": HTTPExceptionSchema},
         },
     }

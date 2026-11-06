@@ -1,39 +1,5 @@
-from typing import Any
-
-from fastapi import HTTPException, status
-
-
-class TokenError(Exception):
-    pass
-
-
-class CommunicationError(TokenError):
-    pass
-
-
-class InvalidToken(TokenError):
-    pass
-
-
-class InvalidKeys(TokenError):
-    pass
-
-
-class AuthError(Exception):
-    pass
-
-
 class NoOrderByColumnsSpecified(Exception):
     pass
-
-
-class InvalidAuthorization(HTTPException):
-    def __init__(self, detail: Any = None) -> None:
-        super().__init__(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=detail,
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
 
 class AppError(Exception):
@@ -43,23 +9,41 @@ class AppError(Exception):
     """
 
     status_code = 500
+    code = "internal_error"
+    headers: dict[str, str] | None = None
+
+    def __init__(self, message: str, details: dict | None = None):
+        self.message = message
+        self.details = details or {}
+        super().__init__(message)
 
 
 class BadRequestError(AppError):
     status_code = 400
+    code = "bad_request"
+
+
+class UnauthorizedError(AppError):
+    status_code = 401
+    code = "unauthorized"
+    headers = {"WWW-Authenticate": "Bearer"}
 
 
 class ForbiddenError(AppError):
     status_code = 403
+    code = "forbidden"
 
 
 class NotFoundError(AppError):
     status_code = 404
+    code = "not_found"
 
 
 class ConflictError(AppError):
     status_code = 409
+    code = "conflict"
 
 
 class UnprocessableContentError(AppError):
     status_code = 422
+    code = "unprocessable_content"

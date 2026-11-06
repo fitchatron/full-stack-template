@@ -3,7 +3,7 @@ from typing import Annotated
 from uuid import UUID
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
@@ -16,6 +16,7 @@ from app.core.db import SessionLocal
 from app.schemas.auth import TokenPayload
 from app.schemas.user import UserResponseSchema
 from app.services.user import UserService
+from app.utils.exception import ForbiddenError, NotFoundError, UnauthorizedError
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
@@ -50,7 +51,7 @@ class AuthorizeUser:
         user = self._get_current_user(session, token)
         # check permisison
         if not self._is_authorized(session, user.user_id):
-            raise HTTPException(status_code=403)
+            raise ForbiddenError("Insufficient permissions")
 
         # return user
         return user
@@ -79,7 +80,8 @@ class AuthorizeUser:
         """
         Retrieves the current user based on the provided token.
 
-        Raises HTTPException if the token is invalid, the user is not found, or the user is inactive.
+        Raises UnauthorizedError if the token is invalid or the user no longer exists,
+        and ForbiddenError if the user is inactive.
 
         Returns the UserResponseSchema object.
         """
@@ -90,11 +92,11 @@ class AuthorizeUser:
             token_data = TokenPayload(**payload)
             user_id = UUID(token_data.sub)
         except InvalidTokenError, ValidationError, TypeError, ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Could not validate credentials",
-            )
-        user = UserService(session).read_by_id(user_id)
+            raise UnauthorizedError("Could not validate credentials")
+        try:
+            user = UserService(session).read_by_id(user_id)
+        except NotFoundError:
+            raise UnauthorizedError("Could not validate credentials")
         if not user.is_active:
-            raise HTTPException(status_code=400, detail="Inactive user")
+            raise ForbiddenError("Inactive user")
         return user

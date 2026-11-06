@@ -4,13 +4,12 @@ from datetime import UTC, timedelta
 import jwt
 import pytest
 from faker import Faker
-from fastapi import HTTPException
 
 from app.api.deps import AuthorizeUser
 from app.core.app_permissions import AppPermissions
 from app.core.config import settings
 from app.core.security import ALGORITHM, create_access_token
-from app.utils.exception import NotFoundError
+from app.utils.exception import ForbiddenError, UnauthorizedError
 
 Faker.seed(settings.DEFAULT_FAKER_SEED)
 
@@ -280,40 +279,40 @@ def test_get_current_user_returns_user_for_valid_token(db_session, act_as_user):
 def test_get_current_user_rejects_invalid_token(db_session, token):
     """
     WHEN an invalid token is provided,
-    THEN the current user retrieval should raise an HTTPException.
-    EXPECT the status code of the exception to be 403.
+    THEN the current user retrieval should raise an UnauthorizedError.
+    EXPECT the status code of the exception to be 401.
     """
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(UnauthorizedError) as exc_info:
         AuthorizeUser()._get_current_user(db_session, token)
 
-    assert exc_info.value.status_code == 403
+    assert exc_info.value.status_code == 401
 
 
 def test_get_current_user_unknown_user(db_session):
     """
     WHEN a valid token is provided for a user that does not exist in the database,
-    THEN the current user retrieval should raise a NotFoundError.
-    EXPECT the status code of the exception to be 404.
+    THEN the current user retrieval should raise an UnauthorizedError.
+    EXPECT the status code of the exception to be 401.
     """
     token = create_access_token(uuid.uuid7(), timedelta(minutes=5))
 
-    with pytest.raises(NotFoundError) as exc_info:
+    with pytest.raises(UnauthorizedError) as exc_info:
         AuthorizeUser()._get_current_user(db_session, token)
 
-    assert exc_info.value.status_code == 404
+    assert exc_info.value.status_code == 401
 
 
 def test_get_current_user_inactive_user(db_session, act_as_user):
     """
     WHEN a valid token is provided for a user that is inactive,
-    THEN the current user retrieval should raise an HTTPException.
-    EXPECT the status code of the exception to be 400.
+    THEN the current user retrieval should raise a ForbiddenError.
+    EXPECT the status code of the exception to be 403.
     """
     act_as_user.is_active = False
     db_session.flush()
     token = create_access_token(act_as_user.user_id, timedelta(minutes=5))
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(ForbiddenError) as exc_info:
         AuthorizeUser()._get_current_user(db_session, token)
 
-    assert exc_info.value.status_code == 400
+    assert exc_info.value.status_code == 403

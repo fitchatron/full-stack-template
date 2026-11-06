@@ -97,7 +97,7 @@ def test_register_existing_user(client, db_session):
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == "Email already registered"
+    assert response.json()["error"]["message"] == "Email already registered"
 
 
 @pytest.mark.parametrize(
@@ -112,15 +112,27 @@ def test_register_existing_user(client, db_session):
         pytest.param(
             True,
             "wrong-password",
-            400,
-            {"detail": "Incorrect email or password"},
+            401,
+            {
+                "error": {
+                    "code": "unauthorized",
+                    "message": "Incorrect email or password",
+                    "details": {},
+                }
+            },
             id="wrong-password-using-fixture-email",
         ),
         pytest.param(
             False,
             "wrong-password",
-            400,
-            {"detail": "Incorrect email or password"},
+            401,
+            {
+                "error": {
+                    "code": "unauthorized",
+                    "message": "Incorrect email or password",
+                    "details": {},
+                }
+            },
             id="wrong-password-not-using-fixture-email",
         ),
     ],
@@ -192,8 +204,13 @@ def test_test_token_valid_user_expired_token(client, act_as_user):
         headers={"Authorization": f"Bearer {token.access_token}"},
     )
 
-    assert response.status_code == 403
-    assert response.json()["detail"] == "Could not validate credentials"
+    assert response.status_code == 401
+    assert response.headers["WWW-Authenticate"] == "Bearer"
+    assert response.json()["error"] == {
+        "code": "unauthorized",
+        "message": "Could not validate credentials",
+        "details": {},
+    }
 
 
 def test_test_token_invalid_user(client):
@@ -213,5 +230,75 @@ def test_test_token_invalid_user(client):
         headers={"Authorization": f"Bearer {token.access_token}"},
     )
 
+    assert response.status_code == 401
+    assert response.headers["WWW-Authenticate"] == "Bearer"
+    assert response.json()["error"] == {
+        "code": "unauthorized",
+        "message": "Could not validate credentials",
+        "details": {},
+    }
+
+
+def test_register_validator_error_shape(client):
+    """
+    WHEN a schema validator raises a ValueError,
+    THEN the validation handler should still be able to serialize the error.
+    EXPECT a 422 in the standard error shape.
+    """
+    response = client.post(
+        f"{BASE_URL}/register",
+        json={
+            "email": "mismatch@test.example.com",
+            "username": "mismatch",
+            "password": "ValidPassword123!",
+            "password_confirm": "InvalidPassword123!",
+        },
+    )
+
+    assert response.status_code == 422
+    error = response.json()["error"]
+    assert error["code"] == "validation_error"
+    assert "passwords do not match" in error["details"]["errors"][0]["msg"]
+
+
+def test_login_inactive_user(client, db_session, act_as_user):
+    """
+    WHEN an inactive user logs in with the correct password,
+    THEN the login endpoint should reject the request.
+    EXPECT a 403 because the identity is known.
+    """
+    act_as_user.is_active = False
+    db_session.flush()
+
+    response = client.post(
+        f"{BASE_URL}/login",
+        data={"username": act_as_user.email, "password": settings.TEST_USER_PASSWORD},
+    )
+
     assert response.status_code == 403
-    assert response.json()["detail"] == "Could not validate credentials"
+    assert response.json()["error"]["code"] == "forbidden"
+
+
+def test_test_token_missing_token(client):
+    """
+    WHEN no token is provided,
+    THEN the framework's 401 should use the standard error shape.
+    EXPECT the WWW-Authenticate header to be preserved.
+    """
+    response = client.post(f"{BASE_URL}/test-token")
+
+    assert response.status_code == 401
+    assert response.headers["WWW-Authenticate"] == "Bearer"
+    assert response.json()["error"]["code"] == "unauthorized"
+
+
+def test_unknown_route_error_shape(client):
+    """
+    WHEN a route does not exist,
+    THEN the framework's 404 should use the standard error shape.
+    EXPECT the not_found code.
+    """
+    response = client.get(f"{BASE_URL}/does-not-exist")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "not_found"

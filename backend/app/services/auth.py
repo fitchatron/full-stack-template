@@ -13,7 +13,12 @@ from app.schemas.auth import Token
 
 # from app.schemas.user import RegisterUserPOSTRequest
 from app.schemas.user import RegisterUserPOSTRequest, RegisterUserSchema
-from app.utils.exception import AppError, BadRequestError
+from app.utils.exception import (
+    AppError,
+    BadRequestError,
+    ForbiddenError,
+    UnauthorizedError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +46,7 @@ class AuthService:
             logger.warning(
                 "Authentication failed for non-existent user with email: %s", email
             )
-            raise BadRequestError("Incorrect email or password")
+            raise UnauthorizedError("Incorrect email or password")
 
         verified = verify_password(f"{password}{user.salt}", user.hashed_password)
 
@@ -50,11 +55,11 @@ class AuthService:
                 "Authentication failed for user with email: %s due to incorrect password",
                 email,
             )
-            raise BadRequestError("Incorrect email or password")
+            raise UnauthorizedError("Incorrect email or password")
 
         if verified and not user.is_active:
             logger.warning("Inactive user attempted to authenticate: %s", user.user_id)
-            raise BadRequestError("Inactive user")
+            raise ForbiddenError("Inactive user")
 
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         return Token(

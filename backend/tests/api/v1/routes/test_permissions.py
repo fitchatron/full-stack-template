@@ -230,7 +230,7 @@ def test_post_create_permission_conflicting_action_and_resource(
     response = client.post(BASE_URL, json=request_body, headers=auth_headers)
 
     assert response.status_code == 409
-    assert "Action resource already in use" in response.text
+    assert "Permission already exists" in response.text
 
 
 @pytest.mark.usefixtures("act_as_admin")
@@ -368,7 +368,7 @@ def test_put_update_permission_conflicting_action_and_resource(
     )
 
     assert response.status_code == 409
-    assert "Action resource already in use" in response.text
+    assert "Permission already exists" in response.text
 
 
 # MARK: PATCH tests
@@ -466,7 +466,7 @@ def test_patch_update_permission_conflicting_action_and_resource(
     )
 
     assert response.status_code == 409
-    assert "Action resource already in use" in response.text
+    assert "Permission already exists" in response.text
 
 
 # MARK: DELETE tests
