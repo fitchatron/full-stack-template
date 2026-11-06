@@ -29,7 +29,6 @@ class User(Base):
         UUID(as_uuid=True),
         server_default=text("uuidv7()"),
         primary_key=True,
-        index=True,
     )
     username: Mapped[str] = mapped_column(Text)
     email: Mapped[str] = mapped_column(Text)
@@ -98,7 +97,6 @@ class Permission(AuditMixin, Base):
         UUID(as_uuid=True),
         server_default=text("uuidv7()"),
         primary_key=True,
-        index=True,
     )
     action: Mapped[AuthorizationAction] = mapped_column(authorization_action_type)
     resource: Mapped[str] = mapped_column(Text)
@@ -147,7 +145,6 @@ class RolePermission(AuditMixin, Base):
     role_id: Mapped[str] = mapped_column(
         ForeignKey(Role.role_id, ondelete="CASCADE"),
         primary_key=True,
-        index=True,
     )
     permission_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(Permission.permission_id, ondelete="CASCADE"),
@@ -179,7 +176,6 @@ class UserRole(AuditMixin, Base):
         UUID(as_uuid=True),
         server_default=text("uuidv7()"),
         primary_key=True,
-        index=True,
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(User.user_id, ondelete="CASCADE"),
