@@ -84,7 +84,11 @@ def test_readiness_endpoint_database_down(client_db_down):
     response = client_db_down.get(f"{BASE_URL}/ready", follow_redirects=False)
 
     assert response.status_code == 503
-    assert response.json()["detail"] == "Database is not ready"
+    assert response.json()["error"] == {
+        "code": "service_unavailable",
+        "message": "Database is not ready",
+        "details": {},
+    }
 
 
 def test_health_endpoints_not_logged(client, caplog):

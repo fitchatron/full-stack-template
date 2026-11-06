@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from types import SimpleNamespace
 
@@ -6,10 +7,11 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from starlette.requests import Request
 
-from app.api.exception_handlers import integrity_error_handler
+from app.api.exception_handlers import app_error_handler, integrity_error_handler
 from app.core.config import settings
 from app.core.logging import RequestIdFilter, request_id_ctx
 from app.main import app
+from app.utils.exception import AppError
 
 LOGIN_URL = "/api/v1/auth/login"
 BOOM_PATH = "/__test__/boom"
@@ -59,8 +61,11 @@ def make_request(method: str = "POST", path: str = "/api/v1/things") -> Request:
     )
 
 
-def make_integrity_error(constraint_name: str | None) -> IntegrityError:
+def make_integrity_error(
+    constraint_name: str | None, sqlstate: str | None = "23505"
+) -> IntegrityError:
     orig = Exception("constraint violated")
+    orig.sqlstate = sqlstate
     orig.diag = SimpleNamespace(constraint_name=constraint_name)
     return IntegrityError("INSERT ...", {}, orig)
 
@@ -76,7 +81,7 @@ def test_access_log_line(client, logs):
 
     (record,) = records_from(logs, "app.main")
     assert record.levelno == logging.INFO
-    assert record.getMessage().startswith(f"POST {LOGIN_URL} -> 400 (")
+    assert record.getMessage().startswith(f"POST {LOGIN_URL} -> 401 (")
     assert record.getMessage().endswith("ms)")
     assert record.request_id == response.headers["X-Request-ID"]
 
@@ -138,7 +143,13 @@ def test_unhandled_exception_is_logged(client, logs):
     response = client.get(BOOM_PATH)
 
     assert response.status_code == 500
-    assert response.json() == {"detail": "Internal server error"}
+    assert response.json() == {
+        "error": {
+            "code": "internal_error",
+            "message": "Internal server error",
+            "details": {},
+        }
+    }
     assert "X-Request-ID" in response.headers
 
     error, access = records_from(logs, "app.main")
@@ -161,7 +172,7 @@ def test_app_error_logged_without_traceback(client, logs):
     assert record.levelno == logging.INFO
     assert record.exc_info is None
     assert record.getMessage() == (
-        f"POST {LOGIN_URL} -> 400: Incorrect email or password"
+        f"POST {LOGIN_URL} -> 401: Incorrect email or password"
     )
 
 
@@ -185,27 +196,91 @@ def test_integrity_error_unique_constraint(logs):
 
 
 @pytest.mark.parametrize(
-    "constraint_name",
+    "constraint_name, sqlstate, expected_status_code, expected_message",
     [
-        pytest.param("fk__users__role_id", id="other-constraint"),
-        pytest.param(None, id="no-constraint"),
+        pytest.param(
+            "uq__users__username",
+            "23505",
+            409,
+            "Username already in use",
+            id="known-unique",
+        ),
+        pytest.param(
+            "uq__things__name", "23505", 409, "Resource already exists", id="unmapped"
+        ),
+        pytest.param(
+            "ex__things__period",
+            "23P01",
+            409,
+            "Resource conflicts with an existing record",
+            id="exclusion",
+        ),
+        pytest.param(
+            "fk__users__role_id",
+            "23503",
+            422,
+            "Referenced resource does not exist",
+            id="foreign-key",
+        ),
+        pytest.param(None, "23502", 422, "Invalid data", id="not-null"),
+        pytest.param("ck__users__age", "23514", 422, "Invalid data", id="check"),
     ],
 )
-def test_integrity_error_other(logs, constraint_name):
+def test_integrity_error_translated(
+    logs, constraint_name, sqlstate, expected_status_code, expected_message
+):
     """
-    WHEN any other integrity error occurs,
-    THEN the handler should log it with a traceback and return a 500.
-    EXPECT the log to be at ERROR level.
+    WHEN a known integrity error occurs,
+    THEN the handler should translate it into a client error.
+    EXPECT an INFO log with no traceback.
     """
     response = asyncio.run(
-        integrity_error_handler(make_request(), make_integrity_error(constraint_name))
+        integrity_error_handler(
+            make_request(), make_integrity_error(constraint_name, sqlstate)
+        )
     )
+
+    assert response.status_code == expected_status_code
+    assert json.loads(response.body)["error"]["message"] == expected_message
+    (record,) = records_from(logs, "app.api.exception_handlers")
+    assert record.levelno == logging.INFO
+    assert record.exc_info is None
+
+
+@pytest.mark.parametrize(
+    "sqlstate",
+    [pytest.param("23000", id="unknown"), pytest.param(None, id="no-sqlstate")],
+)
+def test_integrity_error_other(logs, sqlstate):
+    """
+    WHEN an unrecognised integrity error occurs,
+    THEN the handler should log it with a traceback and return a 500.
+    EXPECT the log to be at ERROR level with the real exception attached.
+    """
+    exception = make_integrity_error("fk__users__role_id", sqlstate)
+
+    response = asyncio.run(integrity_error_handler(make_request(), exception))
 
     assert response.status_code == 500
     (record,) = records_from(logs, "app.api.exception_handlers")
     assert record.levelno == logging.ERROR
-    assert record.exc_info is not None
-    assert record.getMessage() == "Integrity error on POST /api/v1/things"
+    assert record.exc_info[1] is exception
+
+
+def test_app_error_5xx_logged_with_traceback(logs):
+    """
+    WHEN a base AppError reaches the handler,
+    THEN it should be treated as a real fault.
+    EXPECT the log to be at ERROR level with the real exception attached.
+    """
+    exception = AppError("something broke")
+
+    response = asyncio.run(app_error_handler(make_request(), exception))
+
+    assert response.status_code == 500
+    (record,) = records_from(logs, "app.api.exception_handlers")
+    assert record.levelno == logging.ERROR
+    assert record.exc_info[1] is exception
 
 
 # MARK: auth service

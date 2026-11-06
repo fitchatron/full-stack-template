@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi_pagination import add_pagination
 
-from app.api.exception_handlers import register_exception_handlers
+from app.api.exception_handlers import error_body, register_exception_handlers
 from app.api.main import api_router
 from app.core.config import settings
 from app.core.logging import request_id_ctx, setup_logging
@@ -48,7 +48,8 @@ async def request_context(request: Request, call_next):
                 "Unhandled error on %s %s", request.method, request.url.path
             )
             response = JSONResponse(
-                status_code=500, content={"detail": "Internal server error"}
+                status_code=500,
+                content=error_body("internal_error", "Internal server error"),
             )
         duration_ms = (time.perf_counter() - start) * 1000
         if request.url.path not in UNLOGGED_PATHS or response.status_code >= 400:
