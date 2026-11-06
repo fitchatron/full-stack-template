@@ -60,13 +60,6 @@ class UserRoleSchemaPOSTRequest(BaseSchemaModel):
 
         return value
 
-    @model_validator(mode="after")
-    def verify_end_after_start(self) -> Self:
-        if self.start_at and self.end_at and self.start_at > self.end_at:
-            raise ValueError("start_at cannot be later than end_at")
-
-        return self
-
 
 class UserRoleSchemaPATCHRequest(BaseSchemaModel):
     """
