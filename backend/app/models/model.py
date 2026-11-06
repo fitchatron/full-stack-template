@@ -1,7 +1,15 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Text, UniqueConstraint, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -202,4 +210,4 @@ class UserRole(AuditMixin, Base):
         back_populates="user_roles",
         primaryjoin="UserRole.user_id == User.user_id",
     )
-    __table_args__ = (UniqueConstraint(user_id, role_id),)
+    __table_args__ = (CheckConstraint(end_at >= start_at),)

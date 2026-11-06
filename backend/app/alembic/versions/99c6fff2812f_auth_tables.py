@@ -110,7 +110,7 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['role_id'], ['roles.role_id'], name=op.f('fk__user_roles__role_id__roles'), ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], name=op.f('fk__user_roles__user_id__users'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('user_role_id', name=op.f('pk__user_roles')),
-    sa.UniqueConstraint('user_id', 'role_id', name=op.f('uq__user_roles__user_id_role_id'))
+    sa.CheckConstraint('end_at >= start_at', name=op.f('ck__user_roles__end_at_start_at'))
     )
     op.create_index(op.f('ix__user_roles__role_id'), 'user_roles', ['role_id'], unique=False)
     op.create_index(op.f('ix__user_roles__user_id'), 'user_roles', ['user_id'], unique=False)
