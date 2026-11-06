@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from app.models.model import Permission, Role, RolePermission
@@ -80,8 +81,10 @@ class RolePermissionService:
 
         role_permission = self.repository.delete_single_item(
             filters=(
-                (RolePermission.role_id == role_id)
-                & (RolePermission.permission_id == permission_id)
+                and_(
+                    RolePermission.role_id == role_id,
+                    RolePermission.permission_id == permission_id,
+                )
             )
         )
 
