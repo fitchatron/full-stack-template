@@ -4,7 +4,7 @@ from typing import Any, Self
 
 from pydantic import EmailStr, Field, SecretStr, field_validator, model_validator
 
-from app.schemas.base import BaseSchemaModel
+from app.schemas.base import BaseSchemaModel, reject_null
 from app.schemas.pagination import OptionalPage
 
 
@@ -72,14 +72,9 @@ class UserSchemaPATCHRequest(BaseSchemaModel):
     )
     is_active: bool | None = Field(None, description="Active status of the user")
 
-    @field_validator("username", "email_verified", "is_active")
-    @classmethod
-    def reject_null(cls, value: Any) -> Any:
-        # Fields may be omitted, but these columns are non-nullable so an explicit null is rejected
-        if value is None:
-            raise ValueError("field cannot be null")
-
-        return value
+    _reject_null = field_validator("username", "email_verified", "is_active")(
+        reject_null
+    )
 
 
 class RegisterUserPOSTRequest(BaseSchemaModel):

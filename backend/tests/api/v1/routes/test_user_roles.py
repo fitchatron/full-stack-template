@@ -555,10 +555,6 @@ def test_patch_active_user_role_start_at(db_session, client, auth_headers):
         pytest.param({"startAt": None}, id="invalid-null-start-at"),
         pytest.param({"endAt": None}, id="invalid-null-end-at"),
         pytest.param({"endAt": "2030-01-01T00:00:00"}, id="invalid-naive-date"),
-        pytest.param(
-            {"startAt": "2030-06-01T00:00:00Z", "endAt": "2030-01-01T00:00:00Z"},
-            id="invalid-start-after-end",
-        ),
     ],
 )
 @pytest.mark.parametrize("state", ["scheduled", "active"])

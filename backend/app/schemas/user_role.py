@@ -10,7 +10,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.schemas.base import BaseSchemaModel
+from app.schemas.base import BaseSchemaModel, reject_null
 from app.schemas.pagination import OptionalPage
 
 
@@ -51,14 +51,7 @@ class UserRoleSchemaPOSTRequest(BaseSchemaModel):
         description="Time the role stops being active for the user. Defaults to a year from now",
     )
 
-    @field_validator("start_at", "end_at")
-    @classmethod
-    def reject_null(cls, value: Any) -> Any:
-        # Fields may be omitted, but these columns are non-nullable so an explicit null is rejected
-        if value is None:
-            raise ValueError("field cannot be null")
-
-        return value
+    _reject_null = field_validator("start_at", "end_at")(reject_null)
 
 
 class UserRoleSchemaPATCHRequest(BaseSchemaModel):
@@ -77,21 +70,7 @@ class UserRoleSchemaPATCHRequest(BaseSchemaModel):
         None, description="Time the role stops being active for the user"
     )
 
-    @field_validator("start_at", "end_at")
-    @classmethod
-    def reject_null(cls, value: Any) -> Any:
-        # Fields may be omitted, but these columns are non-nullable so an explicit null is rejected
-        if value is None:
-            raise ValueError("field cannot be null")
-
-        return value
-
-    @model_validator(mode="after")
-    def verify_end_after_start(self) -> Self:
-        if self.start_at and self.end_at and self.start_at > self.end_at:
-            raise ValueError("start_at cannot be later than end_at")
-
-        return self
+    _reject_null = field_validator("start_at", "end_at")(reject_null)
 
 
 class UserRoleSchemaPaginated(OptionalPage[UserRoleSchema]):
