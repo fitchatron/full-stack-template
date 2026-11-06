@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
-from typing import Any
 
-from pydantic import Field, field_validator
+from pydantic import Field
 
 from app.models.enums import AuthorizationAction
 from app.schemas.base import BaseSchemaModel
