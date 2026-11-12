@@ -1,7 +1,6 @@
 name: full-stack-template
 services:
   db:
-    container_name: db
     image: postgres:18
     # restart: always vs unless-stopped
     # always will also restart the container after a manual docker stop
@@ -23,5 +22,27 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Variable not set}
       POSTGRES_DB: ${POSTGRES_DB:-app}
 
+  redis:
+    image: redis:8
+    restart: always
+    mem_limit: 2G
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis-data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?Variable not set}
+    command: >
+      redis-server /usr/local/etc/redis/redis.conf
+      --requirepass ${REDIS_PASSWORD:?Variable not set}
+    healthcheck:
+      test: timeout 5 redis-cli -h localhost ping | grep -q PONG || exit 1
+      interval: 1s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
 volumes:
   app-db-data:
+  redis-data:
