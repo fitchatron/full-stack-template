@@ -99,5 +99,12 @@ class Settings(BaseSettings):
         },
     }
 
+    # MARK: Celery
+    # celery broker url including password if applicable
+    CELERY_BROKER_URL: str
+
+    # celery result backend url including password if applicable
+    CELERY_RESULT_BACKEND: str
+
 
 settings = Settings()  # type: ignore # ty: ignore[unused-ignore-comment]
