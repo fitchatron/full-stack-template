@@ -12,10 +12,11 @@ health = APIRouter(prefix="/health", tags=["health"])
     status_code=status.HTTP_200_OK,
 )
 def health_check():
-    from tasks import add
 
-    add.delay(4, 4)
-    return {"status": "ok"}
+    from app.tasks import add
+
+    result = add.delay(2, 2)
+    return {"status": "ok", "task_id": result.id}
 
 
 @health.get(
