@@ -24,3 +24,25 @@ class CeleryTaskSchemaPOSTRequest(BaseSchemaModel):
     """
 
     task_id: str = Field(description="Task ID")
+
+
+class SleepTaskPOSTRequest(BaseSchemaModel):
+    """
+    Schema for a POST request triggering a sleep_task celery task
+    """
+
+    sleeping_time_in_seconds: int = Field(
+        default=10, description="Time to sleep in seconds"
+    )
+    success: bool = Field(
+        default=True, description="Indicates if the task should succeed"
+    )
+
+
+class AddTaskPOSTRequest(BaseSchemaModel):
+    """
+    Schema for a POST request triggering an add celery task
+    """
+
+    a: int = Field(default=5, description="First integer")
+    b: int = Field(default=4, description="Second integer")
