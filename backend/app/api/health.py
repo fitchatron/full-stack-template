@@ -13,10 +13,7 @@ health = APIRouter(prefix="/health", tags=["health"])
 )
 def health_check():
 
-    from app.tasks import add
-
-    result = add.delay(2, 2)
-    return {"status": "ok", "task_id": result.id}
+    return {"status": "ok"}
 
 
 @health.get(
