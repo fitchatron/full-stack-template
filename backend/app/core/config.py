@@ -106,5 +106,17 @@ class Settings(BaseSettings):
     # celery result backend url including password if applicable
     CELERY_RESULT_BACKEND: str
 
+    # MARK: Email
+    MAIL_USERNAME: str = ""
+    MAIL_PASSWORD: str = ""
+    MAIL_FROM: str = "test@email.com"
+    MAIL_PORT: int = 1025
+    MAIL_SERVER: str = "localhost"
+    MAIL_FROM_NAME: str = "Test Email"
+    MAIL_STARTTLS: bool = False
+    MAIL_SSL_TLS: bool = False
+    USE_CREDENTIALS: bool = False
+    VALIDATE_CERTS: bool = False
+
 
 settings = Settings()  # type: ignore # ty: ignore[unused-ignore-comment]
