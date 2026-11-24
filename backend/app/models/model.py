@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     DateTime,
@@ -108,6 +109,7 @@ class Permission(AuditMixin, Base):
         back_populates="permission",
         cascade="all, delete-orphan",
     )
+
     __table_args__ = (UniqueConstraint(action, resource),)
 
 
@@ -206,4 +208,27 @@ class UserRole(AuditMixin, Base):
         back_populates="user_roles",
         primaryjoin="UserRole.user_id == User.user_id",
     )
+
     __table_args__ = (CheckConstraint(end_at >= start_at),)
+
+
+class EmailTemplate(AuditMixin, Base):
+    """
+    Email template database model
+    """
+
+    __tablename__ = "email_templates"
+    email_template_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        server_default=text("uuidv7()"),
+        primary_key=True,
+    )
+    template_name: Mapped[str] = mapped_column(Text)
+    description: Mapped[str] = mapped_column(Text)
+    subject_template: Mapped[str] = mapped_column(Text)
+    subject_context_schema: Mapped[dict] = mapped_column(JSON)
+    body_template: Mapped[str] = mapped_column(Text)
+    body_context_schema: Mapped[dict] = mapped_column(JSON)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    __table_args__ = (UniqueConstraint(template_name),)
