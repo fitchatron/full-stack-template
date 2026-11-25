@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Literal, cast
+from pathlib import Path
+from typing import Any, Literal, cast
 
 from fastapi_mail import (
     ConnectionConfig,
@@ -8,6 +9,7 @@ from fastapi_mail import (
     MessageType,
     NameEmail,
 )
+from jinja2 import Template
 from pydantic import SecretStr
 
 from app.core.config import settings
@@ -18,6 +20,13 @@ class EmailService(ABC):
     @abstractmethod
     async def send_email(self, message: EmailMessageSchema) -> SendResult:
         """Send an email with the given message details"""
+
+    def render_email_template(
+        self, *, template_body: str, context: dict[str, Any]
+    ) -> str:
+        template: Template = Template(template_body)
+        html_content = template.render(context)
+        return html_content
 
 
 class FastApiMailService(EmailService):
@@ -50,6 +59,30 @@ class FastApiMailService(EmailService):
     async def send_email(self, msg: EmailMessageSchema) -> SendResult:
         """Send an email with the given message details"""
         try:
+            await self.fm.send_message(
+                MessageSchema(
+                    recipients=cast(list[NameEmail], msg.to),
+                    cc=cast(list[NameEmail], msg.cc),
+                    bcc=cast(list[NameEmail], msg.bcc),
+                    subject=msg.subject,
+                    body=msg.body,
+                    subtype=self.get_message_type(msg.subtype),
+                )
+            )
+
+            return SendResult(success=True, message="Email has been sent")
+
+        except Exception as e:
+            return SendResult(success=False, message=f"{e}")
+
+    async def send_email_template(self, msg: EmailMessageSchema) -> SendResult:
+        """Send an email with the given message details"""
+        try:
+            # TODO: get template row
+            # TODO: validate subject context matches row json schema
+            # TODO: validate body context matches row json schema
+            # TODO: parse subject jinja template
+            # TODO: parse body jinja template
             await self.fm.send_message(
                 MessageSchema(
                     recipients=cast(list[NameEmail], msg.to),

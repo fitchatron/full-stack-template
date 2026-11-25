@@ -32,6 +32,25 @@ class EmailMessageSchema(BaseSchemaModel):
     attachments: list[Attachment] = Field(default=[], description="Email attachments")
 
 
+class EmailTemplateMessageSchema(BaseSchemaModel):
+    """
+    Schema for an email message to send
+    """
+
+    to: list[str] = Field(default=[], description="The TO recipients in the email")
+    cc: list[str] = Field(default=[], description="The CC recipients in the email")
+    bcc: list[str] = Field(default=[], description="The BCC recipients in the email")
+    template_name: str = Field(
+        description="The email template to send",
+        examples=["test_email", "new_account", "reset_password"],
+    )
+    body_context: str = Field(
+        description="The values to populate in the jinja template",
+        examples=["test_email", "new_account", "reset_password"],
+    )
+    attachments: list[Attachment] = Field(default=[], description="Email attachments")
+
+
 class SendResult(BaseSchemaModel):
     """
     Schema for an email message to send

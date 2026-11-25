@@ -14,7 +14,7 @@ router = APIRouter(prefix="/email", tags=["Email"])
     status_code=status.HTTP_201_CREATED,
     responses=settings.HTTP_EXCEPTION_RESPONSES_SET["post"],
 )
-async def sned_email(
+async def send_email(
     body: Annotated[
         EmailMessageSchema,
         Body(description="List of email addresses to send to"),
@@ -23,4 +23,5 @@ async def sned_email(
 
     service = FastApiMailService()
     result = await service.send_email(body)
+    # result = await service.send_template_email(body)
     return {"message": f"{result.message}"}
