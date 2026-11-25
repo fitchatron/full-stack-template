@@ -16,7 +16,8 @@ from app.models import (
     User,
     UserRole,
 )
-from seeding.factories import PermissionFactory, UserFactory
+from app.models.model import EmailTemplate
+from seeding.factories import EmailTemplateFactory, PermissionFactory, UserFactory
 from seeding.plan import SeedPlan, SeedResult
 
 # Fixed role <-> permission mapping
@@ -67,20 +68,27 @@ class DatabaseSeeder:
 
         admin_user = self._seed_admin_user(core.roles) if plan.admin_user else None
 
-        users = self.seed_mock_data(core.roles, plan) if plan.include_mock_data else []
+        (users, email_templates) = (
+            self.seed_mock_data(core.roles, plan)
+            if plan.include_mock_data
+            else ([], [])
+        )
 
+        # self.session.add_all(email_templates)
         self.session.commit()
         return SeedResult(
             roles=core.roles,
             permissions=core.permissions,
             admin_user=admin_user,
             users=users,
+            email_templates=email_templates,
         )
 
     def _load_core_data(self) -> CoreSeedResult:
         roles = {r.role_id: r for r in self.session.scalars(select(Role))}
         permissions = {
-            (p.action, p.resource): p for p in self.session.scalars(select(Permission))
+            (p.action.__str__(), p.resource): p
+            for p in self.session.scalars(select(Permission))
         }
         return CoreSeedResult(roles=roles, permissions=permissions)
 
@@ -89,16 +97,75 @@ class DatabaseSeeder:
         roles = self._seed_roles(permissions)
         return CoreSeedResult(roles=roles, permissions=permissions)
 
-    def seed_mock_data(self, roles: dict[str, Role], plan: SeedPlan) -> list[User]:
+    def seed_mock_data(
+        self, roles: dict[str, Role], plan: SeedPlan
+    ) -> tuple[list[User], list[EmailTemplate]]:
         factory.random.reseed_random(plan.faker_seed)
 
-        salt, hashed_password = hash_password(plan.bulk_user_password)
+        users = self._seed_users(
+            faker_seed=plan.faker_seed,
+            bulk_user_password=plan.bulk_user_password,
+            user_count=plan.user_count,
+            roles=roles,
+        )
+
+        email_templates = self._create_email_templates()
+        return (users, email_templates)
+
+    def _seed_users(
+        self,
+        faker_seed: int,
+        bulk_user_password: str,
+        user_count: int,
+        roles: dict[str, Role],
+    ) -> list[User]:
+        salt, hashed_password = hash_password(bulk_user_password)
         users = UserFactory.build_batch(
-            plan.user_count, salt=salt, hashed_password=hashed_password
+            user_count, salt=salt, hashed_password=hashed_password
         )
         self.session.add_all(users)
-        self._assign_random_roles(users, roles, random.Random(plan.faker_seed))
+        self._assign_random_roles(users, roles, random.Random(faker_seed))
+
         return users
+
+    def _create_email_templates(self):
+        templates = [
+            {
+                "name": "test_email",
+                "body_template": '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html dir="ltr" lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/><meta name="x-apple-disable-message-reformatting"/><title>{{ project_name }} - Test email</title></head><body style="background-color:#f4f7f6;margin:0;padding:0"><!--$--><!--html--><!--head--><div style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0" data-skip-in-text="true">{{ project_name }} email delivery is working<div></div></div><!--body--><table border="0" width="100%" cellPadding="0" cellSpacing="0" role="presentation" align="center"><tbody><tr><td style="background-color:#f4f7f6;color:#1e293b;font-family:-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Helvetica, Arial, sans-serif;margin:0;padding:32px 12px"><table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="max-width:560px;background-color:#ffffff;border:1px solid #dce7e5;border-radius:8px;box-sizing:border-box;margin:0 auto;width:100%"><tbody><tr style="width:100%"><td><table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation"><tbody style="width:100%"><tr style="width:100%"><td data-id="__react-email-column" style="padding:40px 36px 32px"><table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation"><tbody><tr><td><hr style="width:32px;border:0;border-top:3px solid #00897b;margin:0 0 16px"/><p style="font-size:13px;line-height:20px;color:#334155;font-weight:700;letter-spacing:1px;margin:0 0 32px;text-transform:uppercase;margin-top:0;margin-right:0;margin-bottom:32px;margin-left:0">{{ project_name }}</p></td></tr></tbody></table><table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation"><tbody><tr><td><h1 style="color:#17212b;font-size:26px;font-weight:700;letter-spacing:-0.3px;line-height:34px;margin:0 0 20px">Test email</h1><p style="font-size:15px;line-height:26px;color:#334155;margin:0 0 18px;margin-top:0;margin-right:0;margin-bottom:18px;margin-left:0">Hi,</p><p style="font-size:15px;line-height:26px;color:#334155;margin:0 0 18px;margin-top:0;margin-right:0;margin-bottom:18px;margin-left:0">This is a test email from <!-- -->{{ project_name }}<!-- -->. If you&#x27;re reading it, email delivery is configured correctly.</p><table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="background-color:#f2f8f7;border-left:3px solid #00897b;margin:24px 0 28px;padding:6px 18px"><tbody><tr><td><p style="font-size:14px;line-height:24px;margin:12px 0;margin-top:12px;margin-right:0;margin-bottom:12px;margin-left:0"><span style="color:#64748b;font-size:11px;font-weight:700;letter-spacing:1px;line-height:16px;text-transform:uppercase">Sent to</span><br/><span style="color:#1e293b;font-family:Consolas, &quot;Courier New&quot;, monospace;font-size:14px;font-weight:700;line-height:22px;word-break:break-all">{{ email }}</span></p></td></tr></tbody></table><p style="font-size:14px;line-height:23px;color:#64748b;margin:0 0 16px;margin-top:0;margin-right:0;margin-bottom:16px;margin-left:0">If you weren&#x27;t expecting this email, you can safely ignore it.</p></td></tr></tbody></table><hr style="width:100%;border:0;border-top:1px solid #dce7e5;margin:36px 0 18px"/><table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation"><tbody><tr><td><p style="font-size:12px;line-height:20px;color:#64748b;margin:0;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">© <!-- -->2026<!-- --> <!-- -->{{ project_name }}<!-- -->. All rights reserved.</p></td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table><!--/$--></body></html>',
+                "body_context_schema": {
+                    "type": "object",
+                    "properties": {
+                        "project_name": {"type": "string"},
+                        "email": {"type": "string"},
+                    },
+                    "required": ["project_name", "email"],
+                    "additionalProperties": False,
+                },
+                "subject_template": "This is a test for {{ project_name }}",
+                "subject_context_schema": {
+                    "type": "object",
+                    "properties": {"project_name": {"type": "string"}},
+                    "required": ["project_name"],
+                    "additionalProperties": False,
+                },
+            }
+        ]
+
+        email_templates: list[EmailTemplate] = []
+        for template in templates:
+            email_templates.append(
+                EmailTemplateFactory.build(
+                    name=template["name"],
+                    subject_template=template["subject_template"],
+                    subject_context_schema=template["subject_context_schema"],
+                    body_template=template["body_template"],
+                    body_context_schema=template["body_context_schema"],
+                )
+            )
+
+        self.session.add_all(email_templates)
+        return email_templates
 
     def _seed_permissions(self) -> dict[tuple[str, str], Permission]:
         permissions: dict[tuple[str, str], Permission] = {}

@@ -14,12 +14,14 @@ from factory.faker import Faker
 from app.core.security import create_salt, hash_with_salt
 from app.models import (
     AuthorizationAction,
+    EmailTemplate,
     Permission,
     Role,
     RolePermission,
     User,
     UserRole,
 )
+from app.utils.case_converter import to_snake_case
 
 DEFAULT_USER_PASSWORD = "Password123!"  # local dev only, not a secret
 
@@ -129,3 +131,68 @@ class RolePermissionFactory(SQLAlchemyModelFactory[RolePermission]):
 
     role = SubFactory(RoleFactory)
     permission = SubFactory(PermissionFactory)
+
+
+class EmailTemplateFactory(SQLAlchemyModelFactory[EmailTemplate]):
+    class Meta:
+        model = EmailTemplate
+
+    @classmethod
+    def _context_schema(cls, *fields: str) -> dict:
+        """JSON schema for a context where every field is a required string."""
+        return {
+            "type": "object",
+            "properties": {field: {"type": "string"} for field in fields},
+            "required": list(fields),
+            "additionalProperties": False,
+        }
+
+    @classmethod
+    def _placeholder(cls, field: str) -> str:
+        """Jinja expression for a context field: 'email' -> '{{ email }}'."""
+        return f"{{{{ {field} }}}}"
+
+    class Params:
+        # Non-model pseudo-field: `template_name` is this in snake_case, so
+        # name="Reset Password" gives template_name="reset_password".
+        name = Sequence(lambda n: f"Email Template {n}")
+        inactive = Trait(is_active=False)
+        # Variables used by each template: expanded into the matching
+        # `*_template` and `*_context_schema` below, so the two always agree.
+        subject_context_fields = ("project_name",)
+        body_context_fields = ("project_name", "email")
+
+    template_name = LazyAttribute(lambda o: to_snake_case(o.name))
+    description = LazyAttribute(lambda o: f"Description for email template {o.name}")
+
+    # Overriding a template directly? Set its `*_context_fields` to match.
+    # Override the schema itself only for something other than required strings.
+    subject_template = LazyAttribute(
+        lambda o: " - ".join(
+            [
+                *(
+                    EmailTemplateFactory._placeholder(field)
+                    for field in o.subject_context_fields
+                ),
+                o.name,
+            ]
+        )
+    )
+    subject_context_schema = LazyAttribute(
+        lambda o: EmailTemplateFactory._context_schema(*o.subject_context_fields)
+    )
+    body_template = LazyAttribute(
+        lambda o: "".join(
+            [
+                f"<h1>{o.name}</h1>",
+                *(
+                    f"<p>{field}: {EmailTemplateFactory._placeholder(field)}</p>"
+                    for field in o.body_context_fields
+                ),
+            ]
+        )
+    )
+    body_context_schema = LazyAttribute(
+        lambda o: EmailTemplateFactory._context_schema(*o.body_context_fields)
+    )
+    is_active = True

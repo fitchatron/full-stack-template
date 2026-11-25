@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from app.models import Permission, Role, User
+from app.models.model import EmailTemplate
 
 # Fixed so a seed run produces the same Faker-driven field values and the
 # same random role assignments every time, against a freshly reset schema.
@@ -23,3 +24,4 @@ class SeedResult:
     permissions: dict[tuple[str, str], Permission]
     admin_user: User | None
     users: list[User]
+    email_templates: list[EmailTemplate]

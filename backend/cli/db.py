@@ -1,3 +1,4 @@
+import traceback  # at the top of the file
 from typing import Annotated
 
 import typer
@@ -52,7 +53,7 @@ def create_local_db(
         assert result is not None
 
         typer.secho("SUCCESS ✅", fg=typer.colors.GREEN)
-        message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}"
+        message = f"Done: tables recreated via {mode.value!r} mode.\nSeeded the following with mock_data={mock_data}\nroles: {len(result.roles)}\npermissions: {len(result.permissions)}\nusers: {len(result.users)}\nemail templates: {len(result.email_templates)}"
         typer.secho(message, fg=typer.colors.YELLOW)
         typer.secho(
             f"Admin user email: {result.admin_user.email}"
@@ -60,9 +61,11 @@ def create_local_db(
             else "No admin user created",
             fg=typer.colors.CYAN,
         )
+
     except Exception as e:
+        traceback.print_exc()
         typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
     finally:
         manager.dispose()
 
