@@ -1,5 +1,6 @@
 from app.models.model import (
     AuthorizationAction,
+    EmailTemplate,
     Permission,
     Role,
     RolePermission,
@@ -9,6 +10,7 @@ from app.models.model import (
 
 __all__ = [
     "AuthorizationAction",
+    "EmailTemplate",
     "Permission",
     "User",
     "Role",
