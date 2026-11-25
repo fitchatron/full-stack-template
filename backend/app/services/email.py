@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Literal, cast
+from typing import Any, cast
 
 from fastapi_mail import (
     ConnectionConfig,
@@ -20,7 +20,11 @@ from app.schemas.email import EmailMessageSchema, EmailTemplateMessageSchema, Se
 from app.utils.exception import NotFoundError
 
 
-class EmailService(ABC):
+class EmailService:
+    pass
+
+
+class BaseMailService(ABC):
     @abstractmethod
     async def send_email(self, message: EmailMessageSchema) -> SendResult:
         """Send an email with the given message details"""
@@ -33,7 +37,7 @@ class EmailService(ABC):
         return html_content
 
 
-class FastApiMailService(EmailService):
+class FastApiMailService(BaseMailService):
     def __init__(self, session: Session) -> None:
         self.conf = ConnectionConfig(
             MAIL_USERNAME=settings.MAIL_USERNAME,

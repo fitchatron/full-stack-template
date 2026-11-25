@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, status
 
 from app.api.deps import SessionDep
 from app.core.config import settings
-from app.schemas.email import EmailMessageSchema, EmailTemplateMessageSchema
+from app.schemas.email import EmailTemplateMessageSchema
 from app.services.email import FastApiMailService
 
 router = APIRouter(prefix="/email", tags=["Email"])

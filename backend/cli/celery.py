@@ -1,6 +1,5 @@
 # 6ed0d9a9-eb8b-46ce-bea1-03031a2f02de | 8169cdac-1ca9-40d1-8a00-9647706e38ab
 from subprocess import STDOUT, call
-from typing import Annotated, Literal
 
 import typer
 
@@ -8,14 +7,7 @@ app = typer.Typer()
 
 
 @app.command("run")
-def run(
-    mode: Annotated[
-        Literal["dev", "prod"],
-        typer.Argument(
-            help="The mode in which to run the application (dev or prod).",
-        ),
-    ] = "dev",
-):
+def run():
     """
     Run the celery worker application.
     https://docs.celeryq.dev/en/stable/getting-started/next-steps.html#in-the-background

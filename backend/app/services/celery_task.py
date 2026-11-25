@@ -7,7 +7,7 @@ from app.schemas.celery_task import (
     CeleryTaskSchemaPOSTRequest,
     SleepTaskPOSTRequest,
 )
-from app.tasks import sleep_task, add_task
+from app.tasks import add_task, sleep_task
 from app.utils.exception import NotFoundError
 
 
