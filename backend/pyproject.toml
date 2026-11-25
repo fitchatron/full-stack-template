@@ -15,6 +15,7 @@ dependencies = [
     "fastapi-mail>=1.6.8,<1.7.0",
     "fastapi-pagination>=0.15.16,<0.16.0",
     "fastapi[standard]>=0.141.1,<1.0.0",
+    "jsonschema>=4.26.0,<5",
     "psycopg[binary]>=3.3.5,<3.4.0",
     "pwdlib[argon2,bcrypt]>=0.3.1,<0.4.0",
     "pyjwt>=2.13.0,<2.14.0",

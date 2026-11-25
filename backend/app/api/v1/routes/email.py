@@ -2,8 +2,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, status
 
+from app.api.deps import SessionDep
 from app.core.config import settings
-from app.schemas.email import EmailMessageSchema
+from app.schemas.email import EmailMessageSchema, EmailTemplateMessageSchema
 from app.services.email import FastApiMailService
 
 router = APIRouter(prefix="/email", tags=["Email"])
@@ -15,13 +16,14 @@ router = APIRouter(prefix="/email", tags=["Email"])
     responses=settings.HTTP_EXCEPTION_RESPONSES_SET["post"],
 )
 async def send_email(
+    session: SessionDep,
     body: Annotated[
-        EmailMessageSchema,
+        EmailTemplateMessageSchema,
         Body(description="List of email addresses to send to"),
     ],
 ) -> dict[str, str]:
 
-    service = FastApiMailService()
-    result = await service.send_email(body)
-    # result = await service.send_template_email(body)
+    service = FastApiMailService(session=session)
+    # result = await service.send_email(body)
+    result = await service.send_email_template(body)
     return {"message": f"{result.message}"}

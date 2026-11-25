@@ -229,6 +229,7 @@ class EmailTemplate(AuditMixin, Base):
     subject_context_schema: Mapped[dict | None] = mapped_column(JSON)
     body_template: Mapped[str] = mapped_column(Text)
     body_context_schema: Mapped[dict | None] = mapped_column(JSON)
+    subtype: Mapped[str] = mapped_column(Text, default="html")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     __table_args__ = (UniqueConstraint(template_name),)

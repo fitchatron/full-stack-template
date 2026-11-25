@@ -44,9 +44,11 @@ class EmailTemplateMessageSchema(BaseSchemaModel):
         description="The email template to send",
         examples=["test_email", "new_account", "reset_password"],
     )
-    body_context: str = Field(
+    body_context: dict = Field(
         description="The values to populate in the jinja template",
-        examples=["test_email", "new_account", "reset_password"],
+    )
+    subject_context: dict = Field(
+        description="The values to populate in the jinja template",
     )
     attachments: list[Attachment] = Field(default=[], description="Email attachments")
 
@@ -57,7 +59,8 @@ class SendResult(BaseSchemaModel):
     """
 
     message_id: int | None = Field(
-        default=None, description="The TO recipients in the email"
+        default=None,
+        description="ID of the result in the relevant service e.g.celery task or email service ",
     )
     success: bool = Field(
         description="Whether the message was successfully sent or not"
