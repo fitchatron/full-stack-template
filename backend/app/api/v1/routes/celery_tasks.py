@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.api.deps import AuthorizeUser
+from app.core.app_permissions import AppPermissions
 from app.core.config import settings
 from app.schemas.celery_task import (
     AddTaskPOSTRequest,
@@ -24,7 +25,9 @@ router = APIRouter(prefix="/celery-tasks", tags=["Celery Tasks"])
 def get_task_by_id(
     _current_user: Annotated[
         UserResponseSchema,
-        Depends(AuthorizeUser(required_permissions=None)),
+        Depends(
+            AuthorizeUser(required_permissions=[AppPermissions.ASTERISK__ASTERISK])
+        ),
     ],
     task_id: str = Path(),
 ) -> CeleryTaskSchema:
@@ -45,7 +48,9 @@ if settings.FASTAPI_ENV == "development":
     async def sleep(
         _current_user: Annotated[
             UserResponseSchema,
-            Depends(AuthorizeUser(required_permissions=None)),
+            Depends(
+                AuthorizeUser(required_permissions=[AppPermissions.ASTERISK__ASTERISK])
+            ),
         ],
         request: SleepTaskPOSTRequest = Body(),
     ) -> CeleryTaskSchemaPOSTRequest:
@@ -64,7 +69,9 @@ if settings.FASTAPI_ENV == "development":
     async def add(
         _current_user: Annotated[
             UserResponseSchema,
-            Depends(AuthorizeUser(required_permissions=None)),
+            Depends(
+                AuthorizeUser(required_permissions=[AppPermissions.ASTERISK__ASTERISK])
+            ),
         ],
         request: AddTaskPOSTRequest = Body(),
     ) -> CeleryTaskSchemaPOSTRequest:
