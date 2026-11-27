@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from app.schemas.base import BaseSchemaModel
 
@@ -26,10 +26,16 @@ class EmailMessageSchema(BaseSchemaModel):
         description="The email body",
         examples=["<p>Hi this test mail, thanks for using Fastapi-mail</p>"],
     )
-    subtype: Literal["text", "html"] = Field(
-        default="html", description="The message embed type"
+    subtype: str = Field(
+        default="html", description="The message embed type", examples=["text", "html"]
     )
     attachments: list[Attachment] = Field(default=[], description="Email attachments")
+
+    @model_validator(mode="after")
+    def check_recipients(self):
+        if len(self.to + self.cc + self.bcc) == 0:
+            raise ValueError("There must be at least one recipient.")
+        return self
 
 
 class EmailTemplateMessageSchema(BaseSchemaModel):
