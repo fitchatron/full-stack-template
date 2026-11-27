@@ -7,17 +7,16 @@ from sqlalchemy.orm import Session
 from app.models import EmailTemplate
 from app.repositories.generic import CRUDRepository
 from app.schemas.email import EmailMessageSchema, EmailTemplateMessageSchema, SendResult
-from app.services.email import EmailService
+from app.services.celery_task import CeleryTaskService
 from app.utils.exception import NotFoundError
 
 
-class EmailTemplateService:
-    def __init__(self, session: Session, email_service: EmailService) -> None:
+class EmailMessageService:
+    def __init__(self, session: Session) -> None:
         """
-        PermissionService constructor.
+        EmailMessageService constructor.
         """
         self.repository = CRUDRepository(session, EmailTemplate)
-        self.email_service = email_service
 
     def _render_email_template(
         self, *, template_body: str, context: dict[str, Any]
@@ -26,7 +25,7 @@ class EmailTemplateService:
         html_content = template.render(context)
         return html_content
 
-    async def send_email_template_by_name(
+    def send_email_template_by_name(
         self, msg: EmailTemplateMessageSchema
     ) -> SendResult:
         """Send an email with the given message details"""
@@ -72,19 +71,19 @@ class EmailTemplateService:
                     context=msg.body_context,
                 )
 
-            await self.email_service.send_email(
-                msg=EmailMessageSchema(
-                    to=msg.to,
-                    cc=msg.cc,
-                    bcc=msg.bcc,
-                    subject=subject,
-                    body=body,
-                    attachments=msg.attachments,
-                    subtype=email_template.subtype,
-                )
+            compiled_message = EmailMessageSchema(
+                to=msg.to,
+                cc=msg.cc,
+                bcc=msg.bcc,
+                subject=subject,
+                body=body,
+                attachments=msg.attachments,
+                subtype=email_template.subtype,
             )
-
-            return SendResult(success=True, message="Email has been sent")
+            result = CeleryTaskService().trigger_send_email(msg=compiled_message)
+            return SendResult(
+                message_id=result.task_id, success=True, message="Email queued"
+            )
 
         except Exception as e:
             return SendResult(success=False, message=f"{e}")

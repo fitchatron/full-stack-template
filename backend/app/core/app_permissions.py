@@ -66,3 +66,5 @@ class AppPermissions(StrEnum):
     READ__USER_ROLES = auto()
     UPDATE__USER_ROLES = auto()
     DELETE__USER_ROLES = auto()
+
+    CREATE__EMAIL = auto()

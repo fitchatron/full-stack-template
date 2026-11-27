@@ -7,7 +7,8 @@ from app.schemas.celery_task import (
     CeleryTaskSchemaPOSTRequest,
     SleepTaskPOSTRequest,
 )
-from app.tasks import add_task, sleep_task
+from app.schemas.email import EmailMessageSchema
+from app.tasks import add_task, send_email, sleep_task
 from app.utils.exception import NotFoundError
 
 
@@ -51,4 +52,15 @@ class CeleryTaskService:
         """
 
         task = add_task.delay(request.a, request.b)
+        return CeleryTaskSchemaPOSTRequest.model_validate({"task_id": task.id})
+
+    def trigger_send_email(
+        self, msg: EmailMessageSchema
+    ) -> CeleryTaskSchemaPOSTRequest:
+        """
+        Function to trigger a send_email calery task
+        """
+
+        task = send_email.delay(msg=msg.model_dump_json())
+
         return CeleryTaskSchemaPOSTRequest.model_validate({"task_id": task.id})

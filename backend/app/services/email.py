@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, cast
+from typing import cast
 
 from fastapi_mail import (
     ConnectionConfig,
@@ -8,14 +8,9 @@ from fastapi_mail import (
     MessageType,
     NameEmail,
 )
-from jinja2 import Template
-from jsonschema import validate
 from pydantic import SecretStr
-from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models import EmailTemplate
-from app.repositories.generic import CRUDRepository
 from app.schemas.email import EmailMessageSchema, SendResult
 
 
@@ -26,7 +21,7 @@ class EmailService(ABC):
 
 
 class FastApiMailService(EmailService):
-    def __init__(self, session: Session) -> None:
+    def __init__(self) -> None:
         self.conf = ConnectionConfig(
             MAIL_USERNAME=settings.MAIL_USERNAME,
             MAIL_PASSWORD=SecretStr(settings.MAIL_PASSWORD),
@@ -41,7 +36,6 @@ class FastApiMailService(EmailService):
         )
 
         self.fm = FastMail(self.conf)
-        self.repository = CRUDRepository(session, EmailTemplate)
 
     @classmethod
     def get_message_type(cls, subtype: str = "html"):

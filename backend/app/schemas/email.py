@@ -1,11 +1,12 @@
-from typing import Literal
-
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
 from app.schemas.base import BaseSchemaModel
 
 
 class Attachment(BaseSchemaModel):
+    # base64 in JSON so binary files survive the API and the Celery broker
+    model_config = ConfigDict(ser_json_bytes="base64", val_json_bytes="base64")
+
     filename: str
     content: bytes
     content_type: str
@@ -64,7 +65,7 @@ class SendResult(BaseSchemaModel):
     Schema for an email message to send
     """
 
-    message_id: int | None = Field(
+    message_id: str | None = Field(
         default=None,
         description="ID of the result in the relevant service e.g.celery task or email service ",
     )
