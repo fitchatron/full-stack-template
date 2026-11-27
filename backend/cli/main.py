@@ -1,14 +1,15 @@
 import typer
 
-from cli import backend, db, setup, test
+from cli import backend, celery, db, setup, test
 
 app = typer.Typer()
 
 # cli to manage backend dev scripts
-app.add_typer(db.app, name="db", help="Subcommands to manage database")
-app.add_typer(test.app, name="test", help="Subcommands to run tests")
-app.add_typer(setup.app, name="setup", help="Subcommands to set-up the env")
 app.add_typer(backend.app, name="backend", help="Subcommands to manage backend")
+app.add_typer(celery.app, name="celery", help="Subcommands to manage celery")
+app.add_typer(db.app, name="db", help="Subcommands to manage database")
+app.add_typer(setup.app, name="setup", help="Subcommands to set-up the env")
+app.add_typer(test.app, name="test", help="Subcommands to run tests")
 
 
 if __name__ == "__main__":
